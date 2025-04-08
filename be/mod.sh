@@ -1,3 +1,7 @@
+go get github.com/go-redis/redis_rate/v10
+go get github.com/vikram1565/request-ip
+go get github.com/google/uuid
+go get github.com/sirupsen/logrus
 go get github.com/gorilla/mux
 go get github.com/golang-jwt/jwt/v5
 go get github.com/redis/go-redis/v9

@@ -12,4 +12,6 @@ type UserRepository interface {
 	Deleter[models.User]
 
 	FindByEmail(ctx context.Context, email string) (result *models.User, err error)
+	FindByUsername(ctx context.Context, username string) (result *models.User, err error)
+	FindByPhoneNumber(ctx context.Context, phoneNumber string) (result *models.User, err error)
 }

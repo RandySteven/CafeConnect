@@ -1,6 +1,8 @@
 module github.com/RandySteven/CafeConnect/be
 
-go 1.22.2
+go 1.23.0
+
+toolchain go1.23.7
 
 require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -14,6 +16,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/vikram1565/request-ip v0.0.1 // indirect
+	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

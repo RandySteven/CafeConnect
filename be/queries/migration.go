@@ -1,0 +1,44 @@
+package queries
+
+const (
+	CreateUserTable GoQuery = `
+		CREATE TABLE IF NOT EXISTS users (
+		    id BIGINT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+		    name VARCHAR(64) NOT NULL,
+		    username VARCHAR(64) NOT NULL,
+		    email VARCHAR(64) NOT NULL,
+		    password VARCHAR(244) NOT NULL,
+		    phone_number VARCHAR(16) NOT NULL,
+		    profile_picture VARCHAR(244) NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL
+		)
+	`
+
+	CreatePointTable GoQuery = `
+		CREATE TABLE IF NOT EXISTS points (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    point INT NOT NULL DEFAULT VALUE 0,
+			user_id BIGINT NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			deleted_at TIMESTAMP DEFAULT NULL,
+			FOREIGN KEY user_id REFERENCES users(id) ON DELETE CASCADE
+		)
+	`
+
+	CreateAddressTable GoQuery = `
+		CREATE TABLE IF NOT EXISTS addresses (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    address TEXT NOT NULL,
+		    coordinate POINT NOT NULL,
+		    is_default BOOLEAN DEFAULT FALSE,
+		    user_id BIGINT NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL,
+		    FOREIGN KEY user_id REFERENCES users(id) ON DELETE CASCADE
+		)
+	`
+)

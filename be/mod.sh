@@ -1,3 +1,4 @@
+go get golang.org/x/oauth2
 go get github.com/go-redis/redis_rate/v10
 go get github.com/vikram1565/request-ip
 go get github.com/google/uuid

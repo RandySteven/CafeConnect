@@ -2,6 +2,10 @@ package routes
 
 import (
 	"github.com/RandySteven/CafeConnect/be/enums"
+	"github.com/RandySteven/CafeConnect/be/handlers/apis"
+	"github.com/RandySteven/CafeConnect/be/middlewares"
+	"github.com/gorilla/mux"
+	"log"
 	"net/http"
 )
 
@@ -17,3 +21,37 @@ type (
 
 	RouterPrefix map[enums.RouterPrefix][]*Router
 )
+
+func NewEndpointRouters(api *apis.APIs) RouterPrefix {
+	endpoint := make(RouterPrefix)
+
+	endpoint[enums.DevPrefix] = []*Router{
+		Get(`/check-health`, api.DevApi.CheckHealth),
+	}
+
+	return endpoint
+}
+
+func InitRouter(routers RouterPrefix, r *mux.Router) {
+	middleware := middlewares.NewMiddlewares()
+	_ = middlewares.RegisterClientMiddleware(middleware)
+	serverMiddleware := middlewares.RegisterServerMiddleware(middleware)
+
+	r.Use(
+		serverMiddleware.LoggingMiddleware,
+		serverMiddleware.CorsMiddleware,
+		serverMiddleware.TimeoutMiddleware,
+		serverMiddleware.CheckHealthMiddleware,
+	)
+
+	devRouter := r.PathPrefix(enums.DevPrefix.ToString()).Subrouter()
+	for _, router := range routers[enums.DevPrefix] {
+		devRouter.HandleFunc(router.path, router.handler).Methods(router.method)
+		router.RouterLog(enums.DevPrefix.ToString())
+	}
+
+}
+
+func (router *Router) RouterLog(prefix string) {
+	log.Printf("%12s | %4s/ \n", router.method, prefix+router.path)
+}

@@ -7,11 +7,14 @@ services:
       - "8080:8080"
   db:
     image: mysql:latest
+    ports:
+      - "3306:3306"
     environment:
-      MYSQL_DATABASE_NAME: cafeConn
+      MYSQL_DATABASE: cafeConn
       MYSQL_USER_NAME: root
       MYSQL_ROOT_PASSWORD:
-
+    volumes:
+      - /db:/var/lib/mysql
 
 networks:
   web:

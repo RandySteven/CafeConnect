@@ -50,5 +50,12 @@ type Config struct {
 			Password      string        `yaml:"password"`
 			Db            int           `yaml:"db"`
 		} `yaml:"redis"`
+
+		Oauth2 struct {
+			GoogleClientID     string   `yaml:"googleClientID"`
+			GoogleClientSecret string   `yaml:"googleClientSecret"`
+			Scopes             []string `yaml:"scopes"`
+			RedirectEndpoint   string   `yaml:"redirectEndpoint"`
+		} `yaml:"oauth2"`
 	} `yaml:"config"`
 }

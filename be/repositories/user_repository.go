@@ -20,7 +20,8 @@ type userRepository struct {
 
 func (u *userRepository) Save(ctx context.Context, entity *models.User) (result *models.User, err error) {
 	id, err := mysql_client.Save[models.User](ctx, u.dbx(ctx), queries.InsertUser,
-		&entity.Name, &entity.Username, &entity.Email, &entity.Password, &entity.ProfilePicture, &entity.PhoneNumber)
+		&entity.Name, &entity.Username, &entity.Email, &entity.Password,
+		&entity.ProfilePicture, &entity.PhoneNumber, &entity.DoB)
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +81,8 @@ func (u *userRepository) finderBy(ctx context.Context, identify int, identifier 
 	}
 	result = &models.User{}
 	err = u.dbx(ctx).QueryRowContext(ctx, query.String(), identifier).Scan(
-		&result.ID, &result.Name, &result.Email, &result.Username, &result.Password,
-		&result.ProfilePicture, &result.PhoneNumber, &result.CreatedAt, &result.UpdatedAt, &result.DeletedAt,
+		&result.ID, &result.Name, &result.Email, &result.Username, &result.Password, &result.PhoneNumber,
+		&result.ProfilePicture, &result.DoB, &result.CreatedAt, &result.UpdatedAt, &result.DeletedAt,
 	)
 	if err != nil {
 		return nil, err

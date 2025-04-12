@@ -1,6 +1,7 @@
 package mysql_client
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/configs"
@@ -13,6 +14,7 @@ type (
 		Close()
 		Ping() error
 		Client() *sql.DB
+		Migration(ctx context.Context) error
 	}
 
 	mysqlClient struct {

@@ -2,11 +2,10 @@ package models
 
 import "time"
 
-type Address struct {
+type Cafe struct {
 	ID        uint64
-	Address   string
-	Latitude  float32
-	Longitude float32
+	Name      string
+	LogoURL   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time

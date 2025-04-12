@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/configs"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"time"
 )
@@ -48,7 +49,7 @@ func NewMySQLClient(config *configs.Config) (*mysqlClient, error) {
 	connPool := mysql.ConnPool
 	db.SetMaxIdleConns(connPool.MaxIdle)
 	db.SetMaxOpenConns(connPool.ConnLimit)
-	db.SetConnMaxIdleTime(connPool.IdleTime * time.Second)
+	db.SetConnMaxIdleTime(time.Duration(connPool.IdleTime) * time.Second)
 
 	return &mysqlClient{
 		db: db,

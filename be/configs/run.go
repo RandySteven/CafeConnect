@@ -46,9 +46,9 @@ func (c *Config) Run(r *mux.Router) {
 	srv := &http.Server{
 		Addr:         server.Host + ":" + server.Port,
 		Handler:      r,
-		ReadTimeout:  server.Timeout.Read * time.Second,
-		WriteTimeout: server.Timeout.Write * time.Second,
-		IdleTimeout:  server.Timeout.Idle * time.Second,
+		ReadTimeout:  time.Duration(server.Timeout.Read) * time.Second,
+		WriteTimeout: time.Duration(server.Timeout.Write) * time.Second,
+		IdleTimeout:  time.Duration(server.Timeout.Idle) * time.Second,
 	}
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

@@ -12,7 +12,7 @@ func initMigrations() []queries.MigrationQuery {
 		queries.CreateRoleTable,
 		queries.CreateRoleUserTable,
 		queries.CreateAddressTable,
-		queries.CreateAddressOwnerTable,
+		queries.CreateAddressUserTable,
 		queries.CreateReferralTable,
 	}
 }

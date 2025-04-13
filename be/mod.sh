@@ -1,3 +1,6 @@
+go get github.com/iancoleman/strcase
+go get github.com/nfnt/resize
+go get googlemaps.github.io/maps
 go get cloud.google.com/go
 go get github.com/go-sql-driver/mysql
 go get golang.org/x/oauth2

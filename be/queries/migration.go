@@ -40,17 +40,17 @@ const (
 		)
 	`
 
-	CreateAddressOwnerTable MigrationQuery = `
-		CREATE TABLE IF NOT EXISTS address_owner (
+	CreateAddressUserTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS address_user (
 		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 		    address_id BIGINT NOT NULL,
-		    owner_id BIGINT NOT NULL,
-		    owner_type VARCHAR(12) NOT NULL,
+		    user_id BIGINT NOT NULL,
 		    is_default BOOLEAN DEFAULT FALSE,
 		    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		    deleted_at TIMESTAMP DEFAULT NULL,
-		    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE CASCADE
+		    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE CASCADE,
+		    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)
 	`
 
@@ -87,6 +87,32 @@ const (
 		    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		    deleted_at TIMESTAMP DEFAULT NULL
+		)
+	`
+
+	CreateCafeFranchiseTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS cafe_franchises (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    name VARCHAR(64) NOT NULL,
+		    logo_url VARCHAR(244) NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL
+		)
+	`
+
+	CreateCafeTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS cafes (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    cafe_franchise_id BIGINT NOT NULL,
+		    cafe_type VARCHAR(16) NOT NULL,
+		    photo_url VARCHAR(244) NOT NULL,
+		    open_hour TIME NOT NULL,
+		    close_hour TIME NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL,
+		    cafe_franchise_id 
 		)
 	`
 )

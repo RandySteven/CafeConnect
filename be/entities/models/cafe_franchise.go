@@ -2,12 +2,10 @@ package models
 
 import "time"
 
-type AddressOwner struct {
+type CafeFranchise struct {
 	ID        uint64
-	AddressID uint64
-	OwnerID   uint64
-	OwnerType string
-	IsDefault bool
+	Name      string
+	LogoURL   string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time

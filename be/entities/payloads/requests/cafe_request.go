@@ -2,6 +2,7 @@ package requests
 
 type (
 	AddCafeRequest struct {
+		Name string `json:"cafe"`
 	}
 
 	GetCafeListRequest struct {

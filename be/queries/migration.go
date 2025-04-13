@@ -68,4 +68,25 @@ const (
 		    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)
 	`
+
+	CreateRoleTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS roles (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    role VARCHAR(24) NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL
+		)
+	`
+
+	CreateRoleUserTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS role_users (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    role_id BIGINT NOT NULL,
+		    user_id BIGINT NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL
+		)
+	`
 )

@@ -9,6 +9,8 @@ func initMigrations() []queries.MigrationQuery {
 	return []queries.MigrationQuery{
 		queries.CreateUserTable,
 		queries.CreatePointTable,
+		queries.CreateRoleTable,
+		queries.CreateRoleUserTable,
 		queries.CreateAddressTable,
 		queries.CreateAddressOwnerTable,
 		queries.CreateReferralTable,

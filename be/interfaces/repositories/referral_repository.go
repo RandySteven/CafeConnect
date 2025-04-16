@@ -8,6 +8,7 @@ import (
 type ReferralRepository interface {
 	Saver[models.Referral]
 	Finder[models.Referral]
+	Updater[models.Referral]
 
 	FindByUserID(ctx context.Context, userId uint64) (result *models.Referral, err error)
 	FindByCode(ctx context.Context, code string) (result *models.Referral, err error)

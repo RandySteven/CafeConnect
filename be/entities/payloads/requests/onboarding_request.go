@@ -1,25 +1,24 @@
 package requests
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 type (
 	RegisterUserRequest struct {
-		FirstName      string    `json:"first_name"`
-		LastName       string    `json:"last_name"`
-		Username       string    `json:"username"`
-		Email          string    `json:"email"`
-		Password       string    `json:"password"`
-		ProfilePicture string    `json:"profile_picture"`
-		PhoneNumber    string    `json:"phone_number"`
-		DoB            time.Time `json:"dob"`
-		Referral       *struct {
-			Code string `json:"code"`
-		} `json:"referral"`
-		Address *struct {
-			Address   string  `json:"address"`
-			Longitude float32 `json:"longitude"`
-			Latitude  float32 `json:"latitude"`
-		} `json:"address"`
+		FirstName      string    `form:"first_name"`
+		LastName       string    `form:"last_name"`
+		Username       string    `form:"username"`
+		Email          string    `form:"email"`
+		Password       string    `form:"password"`
+		ProfilePicture io.Reader `form:"profile_picture"`
+		PhoneNumber    string    `form:"phone_number"`
+		DoB            time.Time `form:"dob"`
+		ReferralCode   string    `form:"referral_code"`
+		Address        string    `form:"address"`
+		Longitude      float32   `form:"longitude"`
+		Latitude       float32   `form:"latitude"`
 	}
 
 	LoginUserRequest struct {

@@ -4,7 +4,7 @@ import "time"
 
 type (
 	RegisterUserResponse struct {
-		ID           uint64    `json:"id"`
+		ID           string    `json:"id"`
 		Email        string    `json:"email"`
 		RegisterTime time.Time `json:"register_time"`
 	}

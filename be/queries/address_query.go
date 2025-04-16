@@ -2,6 +2,8 @@ package queries
 
 const (
 	InsertAddress = `
-		INSERT INTO addresses ()
+		INSERT INTO addresses (address, coordinate)
+		VALUES 
+		    (?, POINT(?, ?))
 	`
 )

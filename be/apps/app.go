@@ -5,11 +5,13 @@ import (
 	"github.com/RandySteven/CafeConnect/be/configs"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
+	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 )
 
 type App struct {
-	MySQL mysql_client.MySQL
-	Redis redis_client.Redis
+	MySQL         mysql_client.MySQL
+	Redis         redis_client.Redis
+	GoogleStorage storage_client.GoogleStorage
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -24,9 +26,15 @@ func NewApps(config *configs.Config) (*App, error) {
 		return nil, err
 	}
 
+	googleStorage, err := storage_client.NewGoogleStorage(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
-		MySQL: mysql,
-		Redis: redis,
+		MySQL:         mysql,
+		Redis:         redis,
+		GoogleStorage: googleStorage,
 	}, nil
 }
 

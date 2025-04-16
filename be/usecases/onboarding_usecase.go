@@ -11,34 +11,40 @@ import (
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	"github.com/google/uuid"
 	"sync"
+	"time"
 )
 
 type onboardingUsecase struct {
 	userRepo     repository_interfaces.UserRepository
 	pointRepo    repository_interfaces.PointRepository
 	referralRepo repository_interfaces.ReferralRepository
+	addressRepo  repository_interfaces.AddressRepository
 	transaction  repository_interfaces.Transaction
 }
 
 func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.RegisterUserRequest) (result *responses.RegisterUserResponse, customErr *apperror.CustomError) {
 	var (
 		user = &models.User{
-			Name:           fmt.Sprintf("%s %s", request.FirstName, request.LastName),
-			Username:       request.Username,
-			Email:          request.Email,
-			ProfilePicture: request.ProfilePicture,
-			PhoneNumber:    request.PhoneNumber,
+			Name:        fmt.Sprintf("%s %s", request.FirstName, request.LastName),
+			Username:    request.Username,
+			Email:       request.Email,
+			PhoneNumber: request.PhoneNumber,
 		}
 		point = &models.Point{
 			Point: 0,
 		}
-		referral = &models.Referral{
-			Code: uuid.NewString(),
+		referral = &models.Referral{}
+		address  = &models.Address{
+			Address:   request.Address,
+			Latitude:  request.Latitude,
+			Longitude: request.Longitude,
 		}
 		err         error
 		wg          *sync.WaitGroup
 		customErrCh = make(chan *apperror.CustomError)
 	)
+
+	//photo uploader
 
 	customErr = o.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
 		//insert user
@@ -48,8 +54,17 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 		}
 
 		//check referral
-		if request.Referral != nil {
-
+		if request.ReferralCode != "" {
+			referral, err = o.referralRepo.FindByCode(ctx, request.ReferralCode)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get referral`, err)
+			}
+			referral.NumbOfUsage += 1
+			referral.UpdatedAt = time.Now()
+			_, err = o.referralRepo.Update(ctx, referral)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update referral`, err)
+			}
 		}
 
 		wg.Add(3)
@@ -69,9 +84,10 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 		go func() {
 			defer wg.Done()
 			referral.UserID = user.ID
+			referral.Code = uuid.NewString()
 			referral, err = o.referralRepo.Save(ctx, referral)
 			if err != nil {
-				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to create point`, err)
+				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to create referall`, err)
 				return
 			}
 		}()
@@ -79,14 +95,31 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 		//insert address
 		go func() {
 			defer wg.Done()
-
+			address, err = o.addressRepo.Save(ctx, address)
+			if err != nil {
+				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to insert address`, err)
+				return
+			}
 		}()
-		return
+
+		go func() {
+			wg.Wait()
+			close(customErrCh)
+		}()
+
+		select {
+		case customErr = <-customErrCh:
+			return customErr
+		}
 	})
 	if customErr != nil {
 		return nil, customErr
 	}
-	return
+	return &responses.RegisterUserResponse{
+		ID:           uuid.NewString(),
+		Email:        request.Email,
+		RegisterTime: time.Now(),
+	}, nil
 }
 
 func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.LoginUserRequest) (result *responses.LoginUserResponse, customErr *apperror.CustomError) {

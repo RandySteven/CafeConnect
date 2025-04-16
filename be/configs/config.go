@@ -55,5 +55,10 @@ type Config struct {
 			Scopes             []string `yaml:"scopes"`
 			RedirectEndpoint   string   `yaml:"redirectEndpoint"`
 		} `yaml:"oauth2"`
+
+		Storage struct {
+			ProjectID  string `yaml:"projectId"`
+			BucketName string `yaml:"bucketName"`
+		} `yaml:"storage"`
 	} `yaml:"config"`
 }

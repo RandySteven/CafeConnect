@@ -12,6 +12,14 @@ type referralRepository struct {
 	dbx repository_interfaces.DBX
 }
 
+func (r *referralRepository) Update(ctx context.Context, entity *models.Referral) (result *models.Referral, err error) {
+	err = mysql_client.Update[models.Referral](ctx, r.dbx(ctx), queries.UpdateReferralByID, entity)
+	if err != nil {
+		return nil, err
+	}
+	return entity, nil
+}
+
 func (r *referralRepository) FindByUserID(ctx context.Context, userId uint64) (result *models.Referral, err error) {
 	result = &models.Referral{}
 	err = r.dbx(ctx).QueryRowContext(ctx, queries.SelectReferralByUserID.String(), userId).Scan(

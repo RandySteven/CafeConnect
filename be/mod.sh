@@ -1,3 +1,5 @@
+go get cloud.google.com/go/storage
+go get github.com/midtrans/midtrans-go
 go get github.com/iancoleman/strcase
 go get github.com/nfnt/resize
 go get googlemaps.github.io/maps

@@ -43,7 +43,7 @@ func NewApps(config *configs.Config) (*App, error) {
 
 func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
-	usecases := usecases2.NewUsecases(repositories)
+	usecases := usecases2.NewUsecases(repositories, a.GoogleStorage)
 	return apis.NewAPIs(usecases)
 }
 

@@ -6,6 +6,7 @@ import (
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	"github.com/RandySteven/CafeConnect/be/queries"
+	"log"
 )
 
 const (
@@ -20,9 +21,10 @@ type userRepository struct {
 
 func (u *userRepository) Save(ctx context.Context, entity *models.User) (result *models.User, err error) {
 	id, err := mysql_client.Save[models.User](ctx, u.dbx(ctx), queries.InsertUser,
-		&entity.Name, &entity.Username, &entity.Email, &entity.Password,
-		&entity.ProfilePicture, &entity.PhoneNumber, &entity.DoB)
+		&entity.Name, &entity.Username, &entity.Email, &entity.Password, &entity.PhoneNumber,
+		&entity.ProfilePicture, &entity.DoB)
 	if err != nil {
+		log.Println("err query ", err)
 		return nil, err
 	}
 	entity.ID = *id

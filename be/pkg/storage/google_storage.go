@@ -71,7 +71,7 @@ func (g *googleStorage) UploadFile(ctx context.Context, filePath string, fileReq
 	}
 
 	fileExt := filepath.Ext(fileHeader.Filename)
-	renamedImage := uuid.NewString() + fileExt
+	renamedImage := filePath + uuid.NewString() + fileExt
 	if err = ctx.Err(); err != nil {
 		return "", fmt.Errorf("operation canceled before opening resized file: %w", err)
 	}

@@ -2,9 +2,9 @@ package queries
 
 const (
 	InsertUser GoQuery = `
-		INSERT INTO users (name, username, email, password, profile_picture, phone_number, dob)
+		INSERT INTO users (name, username, email, password, phone_number, profile_picture, dob)
 		VALUES 
-		    (?, ?, ?, ?, ?, ?)
+		    (?, ?, ?, ?, ?, ?, ?)
 	`
 
 	SelectUsers GoQuery = `

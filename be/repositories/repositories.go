@@ -17,8 +17,11 @@ type Repositories struct {
 func NewRepositories(db *sql.DB) *Repositories {
 	transaction, dbx := newTransaction(db)
 	return &Repositories{
-		UserRepository:  newUserRepository(dbx),
-		PointRepository: newPointRepository(dbx),
-		Transaction:     transaction,
+		UserRepository:        newUserRepository(dbx),
+		PointRepository:       newPointRepository(dbx),
+		AddressRepository:     newAddressRepository(dbx),
+		AddressUserRepository: newAddressUserRepository(dbx),
+		ReferralRepository:    newReferralRepository(dbx),
+		Transaction:           transaction,
 	}
 }

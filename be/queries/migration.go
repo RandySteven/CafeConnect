@@ -112,7 +112,7 @@ const (
 		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
 		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
 		    deleted_at TIMESTAMP DEFAULT NULL,
-		    cafe_franchise_id 
+		    FOREIGN KEY (cafe_franchise_id) REFERENCES cafe_franchises(id) ON DELETE CASCADE
 		)
 	`
 )

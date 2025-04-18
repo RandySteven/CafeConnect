@@ -128,8 +128,20 @@ func WriteLogFile() (*os.File, error) {
 	return logFile, nil
 }
 
-func ConvertDateString(dateString string) time.Time {
+func ConvertDateString(dateString string) (*time.Time, error) {
 	layout := `2006-01-02`
-	t, _ := time.Parse(layout, dateString)
-	return t
+	t, err := time.Parse(layout, dateString)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func RandomString(length int) string {
+	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	result := make([]byte, length)
+	for i := range result {
+		result[i] = charset[rand.Intn(len(charset))]
+	}
+	return string(result)
 }

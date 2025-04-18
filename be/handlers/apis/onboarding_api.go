@@ -9,6 +9,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
 	"net/http"
+	"strconv"
 )
 
 type OnboardingApi struct {
@@ -17,9 +18,23 @@ type OnboardingApi struct {
 
 func (o *OnboardingApi) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var (
-		rID     = uuid.NewString()
-		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
-		request = &requests.RegisterUserRequest{}
+		rID          = uuid.NewString()
+		ctx          = context.WithValue(r.Context(), enums.RequestID, rID)
+		longitude, _ = strconv.ParseFloat(r.FormValue("longitude"), 32)
+		latitude, _  = strconv.ParseFloat(r.FormValue("latitude"), 32)
+		request      = &requests.RegisterUserRequest{
+			FirstName:    r.FormValue("first_name"),
+			LastName:     r.FormValue("last_name"),
+			Username:     r.FormValue("username"),
+			Email:        r.FormValue("email"),
+			Password:     r.FormValue("password"),
+			PhoneNumber:  r.FormValue("phone_number"),
+			DoB:          r.FormValue("dob"),
+			ReferralCode: r.FormValue("referral_code"),
+			Address:      r.FormValue("address"),
+			Longitude:    float32(longitude),
+			Latitude:     float32(latitude),
+		}
 		dataKey = `data`
 	)
 
@@ -32,7 +47,8 @@ func (o *OnboardingApi) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	request.ProfilePicture = imageFile
 
-	if err := utils.BindMultipartForm(r, &request); err != nil {
+	if err := utils.BindRequest(r, request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
 		return
 	}
 	ctx2 := context.WithValue(ctx, enums.FileHeader, fileHeader)

@@ -12,5 +12,7 @@ type Usecases struct {
 
 func NewUsecases(repo *repositories.Repositories,
 	googleStorage storage_client.GoogleStorage) *Usecases {
-	return &Usecases{}
+	return &Usecases{
+		OnboardingUsecase: newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, googleStorage),
+	}
 }

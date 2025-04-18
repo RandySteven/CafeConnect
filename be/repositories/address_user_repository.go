@@ -80,7 +80,7 @@ func (a *addressUserRepository) FindAll(ctx context.Context, skip uint64, take u
 
 var _ repository_interfaces.AddressUserRepository = &addressUserRepository{}
 
-func newAddressOwnerRepository(dbx repository_interfaces.DBX) *addressUserRepository {
+func newAddressUserRepository(dbx repository_interfaces.DBX) *addressUserRepository {
 	return &addressUserRepository{
 		dbx: dbx,
 	}

@@ -13,6 +13,7 @@ import (
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
+	"log"
 	"mime/multipart"
 	"sync"
 	"time"
@@ -29,13 +30,29 @@ type onboardingUsecase struct {
 }
 
 func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.RegisterUserRequest) (result *responses.RegisterUserResponse, customErr *apperror.CustomError) {
+	var err error
+	fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
+	resultPath, err := o.googleStorage.UploadFile(ctx, enums.UsersStorage, request.ProfilePicture, fileHeader, 40, 40)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `failed to upload image `, err)
+	}
+	timeDoB, err := utils.ConvertDateString(request.DoB)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `failed to convert dob `, err)
+	}
+	log.Println("time dob ", *timeDoB)
+
 	var (
+		password = utils.HashPassword(request.Password)
+
 		user = &models.User{
-			Name:        fmt.Sprintf("%s %s", request.FirstName, request.LastName),
-			Username:    request.Username,
-			Email:       request.Email,
-			PhoneNumber: request.PhoneNumber,
-			DoB:         utils.ConvertDateString(request.DoB),
+			Name:           fmt.Sprintf("%s %s", request.FirstName, request.LastName),
+			Username:       request.Username,
+			Email:          request.Email,
+			PhoneNumber:    request.PhoneNumber,
+			DoB:            time.DateOnly,
+			Password:       password,
+			ProfilePicture: resultPath,
 		}
 		point = &models.Point{
 			Point: 0,
@@ -46,23 +63,17 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			Latitude:  request.Latitude,
 			Longitude: request.Longitude,
 		}
-		err         error
-		wg          *sync.WaitGroup
+		wg          sync.WaitGroup
 		customErrCh = make(chan *apperror.CustomError)
 	)
 
-	//photo uploader
-	fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
-	o.googleStorage.UploadFile(ctx, "", request.ProfilePicture, fileHeader, 40, 40)
-
 	customErr = o.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
-		//insert user
+		numbOfWorkers := 3
 		user, err = o.userRepo.Save(ctx, user)
 		if err != nil {
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create user`, err)
 		}
 
-		//check referral
 		if request.ReferralCode != "" {
 			referral, err = o.referralRepo.FindByCode(ctx, request.ReferralCode)
 			if err != nil {
@@ -77,7 +88,19 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			}
 		}
 
-		wg.Add(3)
+		wg.Add(numbOfWorkers)
+		go func() {
+			defer wg.Done()
+			referral.UserID = user.ID
+			referral.Code = utils.RandomString(16)
+			referral.ExpiredTime = time.Now().Add(8 * 24 * time.Hour)
+			referral, err = o.referralRepo.Save(ctx, referral)
+			if err != nil {
+				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to create referall`, err)
+				return
+			}
+		}()
+
 		go func() {
 			defer wg.Done()
 			point.UserID = user.ID
@@ -88,19 +111,6 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			}
 		}()
 
-		//insert referral
-		go func() {
-			defer wg.Done()
-			referral.UserID = user.ID
-			referral.Code = uuid.NewString()
-			referral, err = o.referralRepo.Save(ctx, referral)
-			if err != nil {
-				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to create referall`, err)
-				return
-			}
-		}()
-
-		//insert address
 		go func() {
 			defer wg.Done()
 			address, err = o.addressRepo.Save(ctx, address)
@@ -148,13 +158,19 @@ var _ usecase_interfaces.OnboardingUsecase = &onboardingUsecase{}
 func newOnboardingUsecase(
 	userRepo repository_interfaces.UserRepository,
 	pointRepo repository_interfaces.PointRepository,
+	addressRepo repository_interfaces.AddressRepository,
+	addressUserRepo repository_interfaces.AddressUserRepository,
+	referralRepo repository_interfaces.ReferralRepository,
 	transaction repository_interfaces.Transaction,
 	googleStorage storage_client.GoogleStorage,
 ) *onboardingUsecase {
 	return &onboardingUsecase{
-		userRepo:      userRepo,
-		pointRepo:     pointRepo,
-		transaction:   transaction,
-		googleStorage: googleStorage,
+		userRepo:        userRepo,
+		pointRepo:       pointRepo,
+		addressRepo:     addressRepo,
+		addressUserRepo: addressUserRepo,
+		referralRepo:    referralRepo,
+		transaction:     transaction,
+		googleStorage:   googleStorage,
 	}
 }

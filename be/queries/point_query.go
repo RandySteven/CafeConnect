@@ -20,6 +20,13 @@ const (
 		WHERE id = ?
 	`
 
+	SelectPointByUserID GoQuery = `
+		SELECT id, point, user_id, created_at, updated_at, deleted_at
+		FROM
+		    points
+		WHERE user_id = ?
+	`
+
 	UpdatePointByID GoQuery = `
 		UPDATE points SET
 			point = ?,

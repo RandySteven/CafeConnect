@@ -11,6 +11,10 @@ import (
 
 func (c *ClientMiddleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !c.middlewares.WhiteListed(r.Method, utils.ReplaceLastURLID(r.RequestURI), enums.AuthenticationMiddleware) {
+			next.ServeHTTP(w, r)
+			return
+		}
 		auth := r.Header.Get("Authorization")
 		if len(auth) == 0 || auth == "" {
 			utils.ResponseHandler(w, http.StatusUnauthorized, `Invalid get token from auth`, nil, nil, nil)
@@ -32,7 +36,6 @@ func (c *ClientMiddleware) AuthenticationMiddleware(next http.Handler) http.Hand
 		ctx := context.WithValue(r.Context(), enums.UserID, claims.UserID)
 		ctx2 := context.WithValue(ctx, enums.RoleID, claims.RoleID)
 		r = r.WithContext(ctx2)
-
 		next.ServeHTTP(w, r)
 	})
 }

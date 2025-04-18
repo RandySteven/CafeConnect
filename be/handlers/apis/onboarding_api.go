@@ -20,8 +20,8 @@ func (o *OnboardingApi) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var (
 		rID          = uuid.NewString()
 		ctx          = context.WithValue(r.Context(), enums.RequestID, rID)
-		longitude, _ = strconv.ParseFloat(r.FormValue("longitude"), 32)
-		latitude, _  = strconv.ParseFloat(r.FormValue("latitude"), 32)
+		longitude, _ = strconv.ParseFloat(r.FormValue("longitude"), 64)
+		latitude, _  = strconv.ParseFloat(r.FormValue("latitude"), 64)
 		request      = &requests.RegisterUserRequest{
 			FirstName:    r.FormValue("first_name"),
 			LastName:     r.FormValue("last_name"),
@@ -32,8 +32,8 @@ func (o *OnboardingApi) RegisterUser(w http.ResponseWriter, r *http.Request) {
 			DoB:          r.FormValue("dob"),
 			ReferralCode: r.FormValue("referral_code"),
 			Address:      r.FormValue("address"),
-			Longitude:    float32(longitude),
-			Latitude:     float32(latitude),
+			Longitude:    longitude,
+			Latitude:     latitude,
 		}
 		dataKey = `data`
 	)
@@ -86,6 +86,20 @@ func (o *OnboardingApi) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *OnboardingApi) GoogleCallback(w http.ResponseWriter, r *http.Request) {
+}
+
+func (o *OnboardingApi) GetOnboardUser(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		dataKey = `result`
+	)
+	result, customErr := o.usecase.GetOnboardUser(ctx)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success get user`, &dataKey, result, nil)
 }
 
 var _ api_interfaces.OnboardingApi = &OnboardingApi{}

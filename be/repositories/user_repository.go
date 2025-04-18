@@ -32,6 +32,7 @@ func (u *userRepository) Save(ctx context.Context, entity *models.User) (result 
 }
 
 func (u *userRepository) FindByID(ctx context.Context, id uint64) (result *models.User, err error) {
+	result = &models.User{}
 	err = mysql_client.FindByID[models.User](ctx, u.dbx(ctx), queries.SelectUserByID, id, result)
 	if err != nil {
 		return nil, err

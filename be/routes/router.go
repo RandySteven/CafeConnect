@@ -32,6 +32,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 	endpoint[enums.OnboardingPrefix] = []*Router{
 		Post(`/register`, api.OnboardingApi.RegisterUser),
 		Post(`/login`, api.OnboardingApi.LoginUser),
+		Get(``, api.OnboardingApi.GetOnboardUser, enums.AuthenticationMiddleware),
 	}
 
 	return endpoint
@@ -39,7 +40,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 
 func InitRouter(routers RouterPrefix, r *mux.Router) {
 	middleware := middlewares.NewMiddlewares()
-	_ = middlewares.RegisterClientMiddleware(middleware)
+	clientMiddleware := middlewares.RegisterClientMiddleware(middleware)
 	serverMiddleware := middlewares.RegisterServerMiddleware(middleware)
 
 	r.Use(
@@ -47,6 +48,7 @@ func InitRouter(routers RouterPrefix, r *mux.Router) {
 		serverMiddleware.CorsMiddleware,
 		serverMiddleware.TimeoutMiddleware,
 		serverMiddleware.CheckHealthMiddleware,
+		clientMiddleware.AuthenticationMiddleware,
 	)
 
 	devRouter := r.PathPrefix(enums.DevPrefix.ToString()).Subrouter()
@@ -56,7 +58,9 @@ func InitRouter(routers RouterPrefix, r *mux.Router) {
 	}
 
 	onboardingRouter := r.PathPrefix(enums.OnboardingPrefix.ToString()).Subrouter()
+	onboardingRouter.Use(clientMiddleware.AuthenticationMiddleware)
 	for _, router := range routers[enums.OnboardingPrefix] {
+		middleware.RegisterMiddleware(enums.OnboardingPrefix, router.method, router.path, router.middlewares)
 		onboardingRouter.HandleFunc(router.path, router.handler).Methods(router.method)
 		router.RouterLog(enums.OnboardingPrefix.ToString())
 	}

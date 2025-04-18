@@ -7,4 +7,5 @@ type OnboardingApi interface {
 	LoginUser(w http.ResponseWriter, r *http.Request)
 	GoogleLogin(w http.ResponseWriter, r *http.Request)
 	GoogleCallback(w http.ResponseWriter, r *http.Request)
+	GetOnboardUser(w http.ResponseWriter, r *http.Request)
 }

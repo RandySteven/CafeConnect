@@ -16,8 +16,8 @@ type (
 		DoB            string    `form:"dob"`
 		ReferralCode   string    `form:"referral_code"`
 		Address        string    `form:"address"`
-		Longitude      float32   `form:"longitude"`
-		Latitude       float32   `form:"latitude"`
+		Longitude      float64   `form:"longitude"`
+		Latitude       float64   `form:"latitude"`
 	}
 
 	LoginUserRequest struct {

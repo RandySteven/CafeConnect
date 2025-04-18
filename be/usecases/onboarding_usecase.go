@@ -166,14 +166,8 @@ func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.Log
 		return nil, apperror.NewCustomError(apperror.ErrNotFound, `invalid credentials`, err)
 	}
 
-	//roleUser, err := o.roleUserRepo.FindRoleUserByUserID(ctx, user.ID)
-	//if err != nil {
-	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get role user`, err)
-	//}
-
 	claims := &jwt_client.JWTClaim{
 		UserID: user.ID,
-		//RoleID: roleUser.RoleID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "Applications",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -190,6 +184,97 @@ func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.Log
 		LoginTime:   time.Now(),
 	}
 	return result, nil
+}
+
+func (o *onboardingUsecase) GetOnboardUser(ctx context.Context) (result *responses.OnboardUserResponse, customErr *apperror.CustomError) {
+	id := ctx.Value(enums.UserID).(uint64)
+	numbOfWorkers := 3
+	result = &responses.OnboardUserResponse{}
+	var (
+		user                   = &models.User{}
+		point                  = &models.Point{}
+		addressUsers           = []*models.AddressUser{}
+		err                    error
+		wg                     sync.WaitGroup
+		customErrCh            = make(chan *apperror.CustomError)
+		addressUsersResponse   = []*responses.OnboardUserAddress{}
+		addressUsersResponseCh = make(chan []*responses.OnboardUserAddress)
+		userCh                 = make(chan *models.User)
+		pointCh                = make(chan *models.Point)
+	)
+	wg.Add(numbOfWorkers)
+	go func() {
+		defer wg.Done()
+		user, err = o.userRepo.FindByID(ctx, id)
+		if err != nil {
+			customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get onboard user`, err)
+			return
+		}
+		userCh <- user
+	}()
+
+	go func() {
+		defer wg.Done()
+		point, err = o.pointRepo.FindByUserID(ctx, id)
+		if err != nil {
+			customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get point user `, err)
+			return
+		}
+		pointCh <- point
+	}()
+
+	go func() {
+		defer wg.Done()
+		addressUsers, err = o.addressUserRepo.FindByUserID(ctx, id)
+		if err != nil {
+			customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address users`, err)
+			return
+		}
+		for _, addressUser := range addressUsers {
+			address, err := o.addressRepo.FindByID(ctx, addressUser.AddressID)
+			if err != nil {
+				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address `, err)
+				return
+			}
+			addressUsersResponse = append(addressUsersResponse, &responses.OnboardUserAddress{
+				ID:        address.ID,
+				Address:   address.Address,
+				Latitude:  address.Latitude,
+				Longitude: address.Longitude,
+				IsDefault: addressUser.IsDefault,
+			})
+		}
+		addressUsersResponseCh <- addressUsersResponse
+	}()
+
+	go func() {
+		wg.Wait()
+		close(customErrCh)
+		close(userCh)
+		close(pointCh)
+		close(addressUsersResponseCh)
+	}()
+
+	select {
+	case customErr = <-customErrCh:
+		return nil, customErr
+	default:
+		user = <-userCh
+		point = <-pointCh
+		addressUsersResponse = <-addressUsersResponseCh
+		result = &responses.OnboardUserResponse{
+			ID:        user.ID,
+			Name:      user.Name,
+			Username:  user.Username,
+			Email:     user.Email,
+			Point:     point.Point,
+			Addresses: addressUsersResponse,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			DeletedAt: user.DeletedAt,
+		}
+		return result, nil
+	}
 }
 
 var _ usecase_interfaces.OnboardingUsecase = &onboardingUsecase{}

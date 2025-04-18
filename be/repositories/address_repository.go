@@ -13,7 +13,7 @@ type addressRepository struct {
 }
 
 func (a *addressRepository) Save(ctx context.Context, entity *models.Address) (result *models.Address, err error) {
-	id, err := mysql_client.Save[models.Address](ctx, a.dbx(ctx), queries.InsertAddress, &entity.Address, &entity.Latitude, &entity.Longitude)
+	id, err := mysql_client.Save[models.Address](ctx, a.dbx(ctx), queries.InsertAddress, &entity.Address, &entity.Longitude, &entity.Latitude)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,20 @@ func (a *addressRepository) Save(ctx context.Context, entity *models.Address) (r
 }
 
 func (a *addressRepository) FindByID(ctx context.Context, id uint64) (result *models.Address, err error) {
-	return
+	result = &models.Address{}
+	err = a.dbx(ctx).QueryRowContext(ctx, queries.SelectAddressByID.String(), id).Scan(
+		&result.ID,
+		&result.Address,
+		&result.Longitude,
+		&result.Latitude,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+		&result.DeletedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (a *addressRepository) FindAll(ctx context.Context, skip uint64, take uint64) (result []*models.Address, err error) {

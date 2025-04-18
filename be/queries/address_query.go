@@ -1,9 +1,20 @@
 package queries
 
 const (
-	InsertAddress = `
+	InsertAddress GoQuery = `
 		INSERT INTO addresses (address, coordinate)
 		VALUES 
 		    (?, POINT(?, ?))
+	`
+
+	SelectAddressByID GoQuery = `
+		SELECT 
+		  id,
+		  address,
+		  ST_X(coordinate) AS longitude,
+		  ST_Y(coordinate) AS latitude,
+		  created_at, updated_at, deleted_at
+		FROM addresses
+		WHERE id = ?
 	`
 )

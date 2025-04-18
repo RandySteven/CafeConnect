@@ -5,8 +5,8 @@ import "time"
 type Address struct {
 	ID        uint64
 	Address   string
-	Latitude  float32
-	Longitude float32
+	Latitude  float64
+	Longitude float64
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time

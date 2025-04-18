@@ -43,7 +43,19 @@ func (p *pointRepository) Update(ctx context.Context, entity *models.Point) (res
 }
 
 func (p *pointRepository) FindByUserID(ctx context.Context, userId uint64) (result *models.Point, err error) {
-	return
+	result = &models.Point{}
+	err = p.dbx(ctx).QueryRowContext(ctx, queries.SelectPointByUserID.String(), userId).Scan(
+		&result.ID,
+		&result.Point,
+		&result.UserID,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+		&result.DeletedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 var _ repository_interfaces.PointRepository = &pointRepository{}

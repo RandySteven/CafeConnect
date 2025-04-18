@@ -127,3 +127,9 @@ func WriteLogFile() (*os.File, error) {
 
 	return logFile, nil
 }
+
+func ConvertDateString(dateString string) time.Time {
+	layout := `2006-01-02`
+	t, _ := time.Parse(layout, dateString)
+	return t
+}

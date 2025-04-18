@@ -2,7 +2,6 @@ package requests
 
 import (
 	"io"
-	"time"
 )
 
 type (
@@ -14,7 +13,7 @@ type (
 		Password       string    `form:"password"`
 		ProfilePicture io.Reader `form:"profile_picture"`
 		PhoneNumber    string    `form:"phone_number"`
-		DoB            time.Time `form:"dob"`
+		DoB            string    `form:"dob"`
 		ReferralCode   string    `form:"referral_code"`
 		Address        string    `form:"address"`
 		Longitude      float32   `form:"longitude"`

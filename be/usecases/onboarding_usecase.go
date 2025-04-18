@@ -7,19 +7,25 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
+	"github.com/RandySteven/CafeConnect/be/enums"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
+	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
+	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
+	"mime/multipart"
 	"sync"
 	"time"
 )
 
 type onboardingUsecase struct {
-	userRepo     repository_interfaces.UserRepository
-	pointRepo    repository_interfaces.PointRepository
-	referralRepo repository_interfaces.ReferralRepository
-	addressRepo  repository_interfaces.AddressRepository
-	transaction  repository_interfaces.Transaction
+	userRepo        repository_interfaces.UserRepository
+	pointRepo       repository_interfaces.PointRepository
+	referralRepo    repository_interfaces.ReferralRepository
+	addressRepo     repository_interfaces.AddressRepository
+	addressUserRepo repository_interfaces.AddressUserRepository
+	transaction     repository_interfaces.Transaction
+	googleStorage   storage_client.GoogleStorage
 }
 
 func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.RegisterUserRequest) (result *responses.RegisterUserResponse, customErr *apperror.CustomError) {
@@ -29,6 +35,7 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			Username:    request.Username,
 			Email:       request.Email,
 			PhoneNumber: request.PhoneNumber,
+			DoB:         utils.ConvertDateString(request.DoB),
 		}
 		point = &models.Point{
 			Point: 0,
@@ -45,6 +52,8 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 	)
 
 	//photo uploader
+	fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
+	o.googleStorage.UploadFile(ctx, "", request.ProfilePicture, fileHeader, 40, 40)
 
 	customErr = o.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
 		//insert user
@@ -59,6 +68,7 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			if err != nil {
 				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get referral`, err)
 			}
+			point.Point += 100
 			referral.NumbOfUsage += 1
 			referral.UpdatedAt = time.Now()
 			_, err = o.referralRepo.Update(ctx, referral)
@@ -68,8 +78,6 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 		}
 
 		wg.Add(3)
-		//parallelysm progress between point and referral
-		//insert point
 		go func() {
 			defer wg.Done()
 			point.UserID = user.ID
@@ -98,6 +106,15 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			address, err = o.addressRepo.Save(ctx, address)
 			if err != nil {
 				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to insert address`, err)
+				return
+			}
+			addressUser := &models.AddressUser{
+				AddressID: address.ID,
+				UserID:    user.ID,
+			}
+			_, err = o.addressUserRepo.Save(ctx, addressUser)
+			if err != nil {
+				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to insert address user`, err)
 				return
 			}
 		}()
@@ -132,10 +149,12 @@ func newOnboardingUsecase(
 	userRepo repository_interfaces.UserRepository,
 	pointRepo repository_interfaces.PointRepository,
 	transaction repository_interfaces.Transaction,
+	googleStorage storage_client.GoogleStorage,
 ) *onboardingUsecase {
 	return &onboardingUsecase{
-		userRepo:    userRepo,
-		pointRepo:   pointRepo,
-		transaction: transaction,
+		userRepo:      userRepo,
+		pointRepo:     pointRepo,
+		transaction:   transaction,
+		googleStorage: googleStorage,
 	}
 }

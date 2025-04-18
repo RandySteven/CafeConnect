@@ -41,7 +41,7 @@ const (
 	`
 
 	CreateAddressUserTable MigrationQuery = `
-		CREATE TABLE IF NOT EXISTS address_user (
+		CREATE TABLE IF NOT EXISTS address_users (
 		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 		    address_id BIGINT NOT NULL,
 		    user_id BIGINT NOT NULL,

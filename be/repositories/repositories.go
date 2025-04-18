@@ -6,9 +6,12 @@ import (
 )
 
 type Repositories struct {
-	UserRepository  repository_interfaces.UserRepository
-	PointRepository repository_interfaces.PointRepository
-	Transaction     repository_interfaces.Transaction
+	UserRepository        repository_interfaces.UserRepository
+	PointRepository       repository_interfaces.PointRepository
+	AddressRepository     repository_interfaces.AddressRepository
+	AddressUserRepository repository_interfaces.AddressUserRepository
+	ReferralRepository    repository_interfaces.ReferralRepository
+	Transaction           repository_interfaces.Transaction
 }
 
 func NewRepositories(db *sql.DB) *Repositories {

@@ -6,11 +6,13 @@ import (
 )
 
 type APIs struct {
-	DevApi api_interfaces.DevApi
+	DevApi        api_interfaces.DevApi
+	OnboardingApi api_interfaces.OnboardingApi
 }
 
-func NewAPIs(usecases usecases.Usecases) *APIs {
+func NewAPIs(usecases *usecases.Usecases) *APIs {
 	return &APIs{
-		DevApi: newDevApi(),
+		DevApi:        newDevApi(),
+		OnboardingApi: newOnboardingApi(usecases.OnboardingUsecase),
 	}
 }

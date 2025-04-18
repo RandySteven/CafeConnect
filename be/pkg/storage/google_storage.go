@@ -87,9 +87,8 @@ func (g *googleStorage) UploadFile(ctx context.Context, filePath string, fileReq
 	}
 
 	fileWriter := g.bkt.Object(renamedImage).NewWriter(ctx)
-	msg := `this is a test`
-	if _, err = fileWriter.Write([]byte(msg)); err != nil {
-		log.Fatal(err)
+	if _, err = io.Copy(fileWriter, file); err != nil {
+		return "", fmt.Errorf("failed to upload file to storage: %w", err)
 	}
 	if err = fileWriter.Close(); err != nil {
 		log.Fatalf("closing writer: %v", err)
@@ -103,10 +102,12 @@ var _ GoogleStorage = &googleStorage{}
 func NewGoogleStorage(config *configs.Config) (*googleStorage, error) {
 	ctx := context.TODO()
 	c, err := storage.NewClient(ctx)
+
 	if err != nil {
+		log.Fatalln(`error google storage : `, err)
 		return nil, err
 	}
-	bkt := c.Bucket(``)
+	bkt := c.Bucket(config.Config.Storage.BucketName)
 	return &googleStorage{
 		c:   c,
 		bkt: bkt,

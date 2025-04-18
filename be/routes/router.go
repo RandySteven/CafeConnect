@@ -29,6 +29,11 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 		Get(`/check-health`, api.DevApi.CheckHealth),
 	}
 
+	endpoint[enums.OnboardingPrefix] = []*Router{
+		Post(`/register`, api.OnboardingApi.RegisterUser),
+		Post(`/login`, api.OnboardingApi.LoginUser),
+	}
+
 	return endpoint
 }
 
@@ -48,6 +53,12 @@ func InitRouter(routers RouterPrefix, r *mux.Router) {
 	for _, router := range routers[enums.DevPrefix] {
 		devRouter.HandleFunc(router.path, router.handler).Methods(router.method)
 		router.RouterLog(enums.DevPrefix.ToString())
+	}
+
+	onboardingRouter := r.PathPrefix(enums.OnboardingPrefix.ToString()).Subrouter()
+	for _, router := range routers[enums.OnboardingPrefix] {
+		onboardingRouter.HandleFunc(router.path, router.handler).Methods(router.method)
+		router.RouterLog(enums.OnboardingPrefix.ToString())
 	}
 
 }

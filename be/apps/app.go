@@ -3,9 +3,12 @@ package apps
 import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/configs"
+	"github.com/RandySteven/CafeConnect/be/handlers/apis"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
+	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
+	usecases2 "github.com/RandySteven/CafeConnect/be/usecases"
 )
 
 type App struct {
@@ -38,8 +41,10 @@ func NewApps(config *configs.Config) (*App, error) {
 	}, nil
 }
 
-func (a *App) PrepareHttpHandler(ctx context.Context) {
-
+func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
+	repositories := repositories2.NewRepositories(a.MySQL.Client())
+	usecases := usecases2.NewUsecases(repositories)
+	return apis.NewAPIs(usecases)
 }
 
 func (a *App) PrepareJobScheduler(ctx context.Context) {

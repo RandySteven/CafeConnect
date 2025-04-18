@@ -56,7 +56,7 @@ func (o *OnboardingApi) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 var _ api_interfaces.OnboardingApi = &OnboardingApi{}
 
-func NewOnboardingApi(usecase usecase_interfaces.OnboardingUsecase) *OnboardingApi {
+func newOnboardingApi(usecase usecase_interfaces.OnboardingUsecase) *OnboardingApi {
 	return &OnboardingApi{
 		usecase: usecase,
 	}

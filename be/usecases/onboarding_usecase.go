@@ -2,6 +2,8 @@ package usecases
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
@@ -10,8 +12,10 @@ import (
 	"github.com/RandySteven/CafeConnect/be/enums"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
+	jwt_client "github.com/RandySteven/CafeConnect/be/pkg/jwt"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/utils"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"log"
 	"mime/multipart"
@@ -150,7 +154,42 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 }
 
 func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.LoginUserRequest) (result *responses.LoginUserResponse, customErr *apperror.CustomError) {
-	return
+	user, err := o.userRepo.FindByEmail(ctx, request.Email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, apperror.NewCustomError(apperror.ErrNotFound, `failed to login consumers not found`, err)
+		}
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to connect db`, err)
+	}
+	isPassExists := utils.ComparePassword(request.Password, user.Password)
+	if !isPassExists {
+		return nil, apperror.NewCustomError(apperror.ErrNotFound, `invalid credentials`, err)
+	}
+
+	//roleUser, err := o.roleUserRepo.FindRoleUserByUserID(ctx, user.ID)
+	//if err != nil {
+	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get role user`, err)
+	//}
+
+	claims := &jwt_client.JWTClaim{
+		UserID: user.ID,
+		//RoleID: roleUser.RoleID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "Applications",
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 1)),
+		},
+	}
+	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token, err := tokenAlgo.SignedString(jwt_client.JwtKey)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to generate token`, err)
+	}
+	result = &responses.LoginUserResponse{
+		AccessToken: token,
+		LoginTime:   time.Now(),
+	}
+	return result, nil
 }
 
 var _ usecase_interfaces.OnboardingUsecase = &onboardingUsecase{}

@@ -62,6 +62,24 @@ func (o *OnboardingApi) RegisterUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *OnboardingApi) LoginUser(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		request = &requests.LoginUserRequest{}
+		dataKey = `token`
+	)
+
+	if err := utils.BindJSON(r, &request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
+		return
+	}
+
+	result, customErr := o.usecase.LoginUser(ctx, request)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success login user`, &dataKey, result, nil)
 }
 
 func (o *OnboardingApi) GoogleLogin(w http.ResponseWriter, r *http.Request) {

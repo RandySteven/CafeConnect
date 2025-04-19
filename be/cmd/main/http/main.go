@@ -51,8 +51,8 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	//if err = app.RefreshRedis(ctx); err != nil {
-	//	log.Fatal(err)
-	//	return
-	//}
+	if err = app.RefreshRedis(ctx); err != nil {
+		log.Fatal(err)
+		return
+	}
 }

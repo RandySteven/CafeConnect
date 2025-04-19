@@ -10,6 +10,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
+	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	jwt_client "github.com/RandySteven/CafeConnect/be/pkg/jwt"
@@ -17,8 +18,10 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"mime/multipart"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -30,6 +33,7 @@ type onboardingUsecase struct {
 	addressRepo     repository_interfaces.AddressRepository
 	addressUserRepo repository_interfaces.AddressUserRepository
 	transaction     repository_interfaces.Transaction
+	onboardingCache cache_interfaces.OnboardingCache
 	googleStorage   storage_client.GoogleStorage
 }
 
@@ -188,7 +192,6 @@ func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.Log
 
 func (o *onboardingUsecase) GetOnboardUser(ctx context.Context) (result *responses.OnboardUserResponse, customErr *apperror.CustomError) {
 	id := ctx.Value(enums.UserID).(uint64)
-	numbOfWorkers := 3
 	result = &responses.OnboardUserResponse{}
 	var (
 		user                   = &models.User{}
@@ -202,6 +205,16 @@ func (o *onboardingUsecase) GetOnboardUser(ctx context.Context) (result *respons
 		userCh                 = make(chan *models.User)
 		pointCh                = make(chan *models.Point)
 	)
+	result, err = o.onboardingCache.Get(ctx, strconv.Itoa(int(id)))
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed on progress the cache`, err)
+	}
+	if result != nil {
+		log.Println("INI DAPAT DARI REDIS LOH")
+		return result, nil
+	}
+
+	numbOfWorkers := 3
 	wg.Add(numbOfWorkers)
 	go func() {
 		defer wg.Done()
@@ -274,6 +287,7 @@ func (o *onboardingUsecase) GetOnboardUser(ctx context.Context) (result *respons
 			UpdatedAt:      user.UpdatedAt,
 			DeletedAt:      user.DeletedAt,
 		}
+		o.onboardingCache.Set(ctx, strconv.Itoa(int(id)), result)
 		return result, nil
 	}
 }
@@ -287,6 +301,7 @@ func newOnboardingUsecase(
 	addressUserRepo repository_interfaces.AddressUserRepository,
 	referralRepo repository_interfaces.ReferralRepository,
 	transaction repository_interfaces.Transaction,
+	onboardingCache cache_interfaces.OnboardingCache,
 	googleStorage storage_client.GoogleStorage,
 ) *onboardingUsecase {
 	return &onboardingUsecase{
@@ -296,6 +311,7 @@ func newOnboardingUsecase(
 		addressUserRepo: addressUserRepo,
 		referralRepo:    referralRepo,
 		transaction:     transaction,
+		onboardingCache: onboardingCache,
 		googleStorage:   googleStorage,
 	}
 }

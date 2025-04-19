@@ -2,6 +2,7 @@ package apps
 
 import (
 	"context"
+	caches2 "github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
@@ -43,8 +44,13 @@ func NewApps(config *configs.Config) (*App, error) {
 
 func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
-	usecases := usecases2.NewUsecases(repositories, a.GoogleStorage)
+	caches := caches2.NewCaches(a.Redis.Client())
+	usecases := usecases2.NewUsecases(repositories, caches, a.GoogleStorage)
 	return apis.NewAPIs(usecases)
+}
+
+func (a *App) RefreshRedis(ctx context.Context) error {
+	return a.Redis.ClearCache(ctx)
 }
 
 func (a *App) PrepareJobScheduler(ctx context.Context) {

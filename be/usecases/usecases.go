@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"github.com/RandySteven/CafeConnect/be/caches"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/repositories"
@@ -12,9 +13,10 @@ type Usecases struct {
 }
 
 func NewUsecases(repo *repositories.Repositories,
+	cache *caches.Caches,
 	googleStorage storage_client.GoogleStorage) *Usecases {
 	return &Usecases{
-		OnboardingUsecase: newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, googleStorage),
+		OnboardingUsecase: newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, cache.OnboardCache, googleStorage),
 		CafeUsecase:       newCafeUsecase(repo.Transaction),
 	}
 }

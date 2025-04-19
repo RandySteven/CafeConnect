@@ -86,6 +86,10 @@ func (o *OnboardingApi) GoogleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *OnboardingApi) GoogleCallback(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID = uuid.NewString()
+		_   = context.WithValue(r.Context(), enums.RequestID, rID)
+	)
 }
 
 func (o *OnboardingApi) GetOnboardUser(w http.ResponseWriter, r *http.Request) {

@@ -24,14 +24,15 @@ type (
 	}
 
 	OnboardUserResponse struct {
-		ID        uint64                `json:"id"`
-		Name      string                `json:"name"`
-		Username  string                `json:"username"`
-		Email     string                `json:"email"`
-		Point     uint64                `json:"point"`
-		Addresses []*OnboardUserAddress `json:"addresses"`
-		CreatedAt time.Time             `json:"created_at"`
-		UpdatedAt time.Time             `json:"updated_at"`
-		DeletedAt *time.Time            `json:"deleted_at"`
+		ID             uint64                `json:"id"`
+		Name           string                `json:"name"`
+		Username       string                `json:"username"`
+		Email          string                `json:"email"`
+		ProfilePicture string                `json:"profile_picture"`
+		Point          uint64                `json:"point"`
+		Addresses      []*OnboardUserAddress `json:"addresses"`
+		CreatedAt      time.Time             `json:"created_at"`
+		UpdatedAt      time.Time             `json:"updated_at"`
+		DeletedAt      *time.Time            `json:"deleted_at"`
 	}
 )

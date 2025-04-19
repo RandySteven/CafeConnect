@@ -8,11 +8,13 @@ import (
 type APIs struct {
 	DevApi        api_interfaces.DevApi
 	OnboardingApi api_interfaces.OnboardingApi
+	CafeApi       api_interfaces.CafeApi
 }
 
 func NewAPIs(usecases *usecases.Usecases) *APIs {
 	return &APIs{
 		DevApi:        newDevApi(),
 		OnboardingApi: newOnboardingApi(usecases.OnboardingUsecase),
+		CafeApi:       newCafeApi(usecases.CafeUsecase),
 	}
 }

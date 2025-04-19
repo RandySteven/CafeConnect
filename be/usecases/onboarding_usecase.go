@@ -263,15 +263,16 @@ func (o *onboardingUsecase) GetOnboardUser(ctx context.Context) (result *respons
 		point = <-pointCh
 		addressUsersResponse = <-addressUsersResponseCh
 		result = &responses.OnboardUserResponse{
-			ID:        user.ID,
-			Name:      user.Name,
-			Username:  user.Username,
-			Email:     user.Email,
-			Point:     point.Point,
-			Addresses: addressUsersResponse,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			DeletedAt: user.DeletedAt,
+			ID:             user.ID,
+			Name:           user.Name,
+			Username:       user.Username,
+			ProfilePicture: user.ProfilePicture,
+			Email:          user.Email,
+			Point:          point.Point,
+			Addresses:      addressUsersResponse,
+			CreatedAt:      user.CreatedAt,
+			UpdatedAt:      user.UpdatedAt,
+			DeletedAt:      user.DeletedAt,
 		}
 		return result, nil
 	}

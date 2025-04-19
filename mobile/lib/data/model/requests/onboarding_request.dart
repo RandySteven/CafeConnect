@@ -13,3 +13,8 @@ class RegisterRequest {
   Float64x2? longitude;
   Float64x2? latitude;
 }
+
+class LoginRequest {
+  String? email;
+  String? password;
+}

@@ -3,3 +3,4 @@
 *.local.yaml
 .env
 service-account-key.json
+*.log

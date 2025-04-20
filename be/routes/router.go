@@ -37,6 +37,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 
 	endpoint[enums.CafePrefix] = []*Router{
 		Get(`/franchises`, api.CafeApi.GetListCafeFranchise, enums.RateLimiterMiddleware),
+		Post(`/franchises`, api.CafeApi.RegisterCafeAndFranchise),
 	}
 
 	return endpoint

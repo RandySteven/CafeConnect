@@ -45,7 +45,7 @@ func (c *cafeUsecase) GetListCafeFranchises(ctx context.Context) (result []*resp
 	return result, nil
 }
 
-func (c *cafeUsecase) RegisterCafe(ctx context.Context) {
+func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *requests.RegisterCafeAndFranchiseRequest) (result *responses.RegisterCafeResponse, customErr *apperror.CustomError) {
 	//TODO implement me
 	panic("implement me")
 }

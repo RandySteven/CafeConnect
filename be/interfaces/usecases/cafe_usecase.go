@@ -8,7 +8,8 @@ import (
 )
 
 type CafeUsecase interface {
-	RegisterCafe(ctx context.Context)
+	RegisterCafeAndFranchise(ctx context.Context, request *requests.RegisterCafeAndFranchiseRequest) (result *responses.RegisterCafeResponse, customErr *apperror.CustomError)
 	GetListOfCafeBasedOnRadius(ctx context.Context, request *requests.GetCafeListRequest) (result []*responses.ListCafeResponse, customErr *apperror.CustomError)
 	GetListCafeFranchises(ctx context.Context) (result []*responses.FranchiseListResponse, customErr *apperror.CustomError)
+	//GetCafeDetail(ctx context.Context, id uint64)
 }

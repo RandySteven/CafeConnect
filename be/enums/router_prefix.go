@@ -6,6 +6,7 @@ const (
 	DevPrefix        RouterPrefix = `/dev`
 	OnboardingPrefix RouterPrefix = `/onboarding`
 	UserPrefix       RouterPrefix = `/users`
+	CafePrefix       RouterPrefix = `/cafes`
 )
 
 func (r RouterPrefix) ToString() string {

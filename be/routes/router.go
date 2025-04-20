@@ -35,6 +35,10 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 		Get(``, api.OnboardingApi.GetOnboardUser, enums.AuthenticationMiddleware),
 	}
 
+	endpoint[enums.CafePrefix] = []*Router{
+		Get(`/franchises`, api.CafeApi.GetListCafeFranchise, enums.RateLimiterMiddleware),
+	}
+
 	return endpoint
 }
 
@@ -49,6 +53,7 @@ func InitRouter(routers RouterPrefix, r *mux.Router) {
 		serverMiddleware.TimeoutMiddleware,
 		serverMiddleware.CheckHealthMiddleware,
 		clientMiddleware.AuthenticationMiddleware,
+		clientMiddleware.RateLimiterMiddleware,
 	)
 
 	devRouter := r.PathPrefix(enums.DevPrefix.ToString()).Subrouter()
@@ -58,13 +63,18 @@ func InitRouter(routers RouterPrefix, r *mux.Router) {
 	}
 
 	onboardingRouter := r.PathPrefix(enums.OnboardingPrefix.ToString()).Subrouter()
-	onboardingRouter.Use(clientMiddleware.AuthenticationMiddleware)
 	for _, router := range routers[enums.OnboardingPrefix] {
 		middleware.RegisterMiddleware(enums.OnboardingPrefix, router.method, router.path, router.middlewares)
 		onboardingRouter.HandleFunc(router.path, router.handler).Methods(router.method)
 		router.RouterLog(enums.OnboardingPrefix.ToString())
 	}
 
+	cafeRouter := r.PathPrefix(enums.CafePrefix.ToString()).Subrouter()
+	for _, router := range routers[enums.CafePrefix] {
+		middleware.RegisterMiddleware(enums.CafePrefix, router.method, router.path, router.middlewares)
+		cafeRouter.HandleFunc(router.path, router.handler).Methods(router.method)
+		router.RouterLog(enums.CafePrefix.ToString())
+	}
 }
 
 func (router *Router) RouterLog(prefix string) {

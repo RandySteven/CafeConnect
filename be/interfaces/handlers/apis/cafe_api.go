@@ -7,4 +7,5 @@ type CafeApi interface {
 	GetCafeDetail(w http.ResponseWriter, r *http.Request)
 	GetCafeProducts(w http.ResponseWriter, r *http.Request)
 	GetListOfCafeBasedOnRadius(w http.ResponseWriter, r *http.Request)
+	GetListCafeFranchise(w http.ResponseWriter, r *http.Request)
 }

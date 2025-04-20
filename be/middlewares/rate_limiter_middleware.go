@@ -11,8 +11,8 @@ import (
 
 func (c *ClientMiddleware) RateLimiterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer next.ServeHTTP(w, r)
 		if !c.middlewares.WhiteListed(r.Method, utils.ReplaceLastURLID(r.RequestURI), enums.RateLimiterMiddleware) {
+			next.ServeHTTP(w, r)
 			return
 		}
 		clientIp := ip.GetClientIP(r)
@@ -22,5 +22,6 @@ func (c *ClientMiddleware) RateLimiterMiddleware(next http.Handler) http.Handler
 			utils.ResponseHandler(w, http.StatusTooManyRequests, `too many request`, nil, nil, err)
 			return
 		}
+		next.ServeHTTP(w, r)
 	})
 }

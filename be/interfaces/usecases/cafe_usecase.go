@@ -10,4 +10,5 @@ import (
 type CafeUsecase interface {
 	RegisterCafe(ctx context.Context)
 	GetListOfCafeBasedOnRadius(ctx context.Context, request *requests.GetCafeListRequest) (result []*responses.ListCafeResponse, customErr *apperror.CustomError)
+	GetListCafeFranchises(ctx context.Context) (result []*responses.FranchiseListResponse, customErr *apperror.CustomError)
 }

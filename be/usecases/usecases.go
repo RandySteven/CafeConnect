@@ -17,6 +17,6 @@ func NewUsecases(repo *repositories.Repositories,
 	googleStorage storage_client.GoogleStorage) *Usecases {
 	return &Usecases{
 		OnboardingUsecase: newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, cache.OnboardCache, googleStorage),
-		CafeUsecase:       newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.Transaction, cache.CafeCache),
+		CafeUsecase:       newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, googleStorage, cache.CafeCache),
 	}
 }

@@ -9,30 +9,56 @@ import (
 
 var JwtKey = []byte(os.Getenv("JWT_KEY"))
 
-type JWTClaim struct {
-	UserID   uint64
-	RoleID   []uint64
-	IsVerify bool
-	jwt.RegisteredClaims
-}
+type (
+	JWTAccessClaim struct {
+		UserID   uint64
+		Username string
+		RoleID   []uint64
+		IsVerify bool
+		jwt.RegisteredClaims
+	}
 
-func GenerateToken(user *models.User, roleUser []*models.RoleUser) string {
+	JWTRefreshClaim struct {
+		UserID uint64
+		Email  string
+		jwt.RegisteredClaims
+	}
+)
 
-	claims := &JWTClaim{
-		UserID: user.ID,
+func GenerateTokens(user *models.User, roleUser []*models.RoleUser) (string, string) {
+
+	access := &JWTAccessClaim{
+		UserID:   user.ID,
+		Username: user.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "Applications",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 1)),
 		},
 	}
-	for _, role := range roleUser {
-		claims.RoleID = append(claims.RoleID, role.RoleID)
-	}
-	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := tokenAlgo.SignedString(JwtKey)
+	//for _, role := range roleUser {
+	//	access.RoleID = append(access.RoleID, role.RoleID)
+	//}
+	tokenAccessAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, access)
+	accessToken, err := tokenAccessAlgo.SignedString(JwtKey)
 	if err != nil {
-		return ""
+		return "", ""
 	}
-	return token
+
+	refresh := &JWTRefreshClaim{
+		UserID: user.ID,
+		Email:  user.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "Applications",
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 10)),
+		},
+	}
+	tokenRefreshAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, refresh)
+	refreshToken, err := tokenRefreshAlgo.SignedString(JwtKey)
+	if err != nil {
+		return "", ""
+	}
+
+	return accessToken, refreshToken
 }

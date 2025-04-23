@@ -25,7 +25,7 @@ func (c *ClientMiddleware) AuthenticationMiddleware(next http.Handler) http.Hand
 			utils.ResponseHandler(w, http.StatusUnauthorized, `Invalid token failed to split from bearer`, nil, nil, nil)
 			return
 		}
-		claims := &jwt_client.JWTClaim{}
+		claims := &jwt_client.JWTAccessClaim{}
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(j *jwt.Token) (interface{}, error) {
 			return jwt_client.JwtKey, nil
 		})
@@ -34,8 +34,8 @@ func (c *ClientMiddleware) AuthenticationMiddleware(next http.Handler) http.Hand
 			return
 		}
 		ctx := context.WithValue(r.Context(), enums.UserID, claims.UserID)
-		ctx2 := context.WithValue(ctx, enums.RoleID, claims.RoleID)
-		r = r.WithContext(ctx2)
+		//ctx2 := context.WithValue(ctx, enums.RoleID, claims.RoleID)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }

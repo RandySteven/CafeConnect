@@ -16,7 +16,6 @@ import (
 	jwt_client "github.com/RandySteven/CafeConnect/be/pkg/jwt"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/utils"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"log"
@@ -170,22 +169,12 @@ func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.Log
 		return nil, apperror.NewCustomError(apperror.ErrNotFound, `invalid credentials`, err)
 	}
 
-	claims := &jwt_client.JWTClaim{
-		UserID: user.ID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "Applications",
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 1)),
-		},
-	}
-	tokenAlgo := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := tokenAlgo.SignedString(jwt_client.JwtKey)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to generate token`, err)
-	}
+	accessToken, refreshToken := jwt_client.GenerateTokens(user, nil)
+
 	result = &responses.LoginUserResponse{
-		AccessToken: token,
-		LoginTime:   time.Now(),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		LoginTime:    time.Now(),
 	}
 	return result, nil
 }

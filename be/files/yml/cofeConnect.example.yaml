@@ -21,7 +21,7 @@ config:
     port: "3306"
     username: "root"
     password: ""
-    database: "cofeConnect"
+    database: "cafeConnect"
     connPool:
       maxIdle: 15
       connLimit: 100
@@ -34,3 +34,13 @@ config:
     poolTimeout: 1400
     password: ""
     db: 0
+  oauth2:
+    googleClientID: "{{GOOGLE_CLIENT_ID}}"
+    googleClientSecret: "{{GOOGLE_CLIENT_SECRET}}"
+    scopes:
+      - "https://www.googleapis.com/auth/userinfo.email"
+      - "https://www.googleapis.com/auth/userinfo.profile"
+    redirectEndpoint: "/google_callback"
+  storage:
+    projectId: "{{PROJECT_ID}}"
+    bucketName: "{{BUCKET_NAME}}"

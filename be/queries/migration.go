@@ -104,15 +104,17 @@ const (
 	CreateCafeTable MigrationQuery = `
 		CREATE TABLE IF NOT EXISTS cafes (
 		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    address_id BIGINT NOT NULL,
 		    cafe_franchise_id BIGINT NOT NULL,
 		    cafe_type VARCHAR(16) NOT NULL,
-		    photo_url VARCHAR(244) NOT NULL,
+		    photo_urls TEXT NOT NULL,
 		    open_hour TIME NOT NULL,
 		    close_hour TIME NOT NULL,
 		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
 		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
 		    deleted_at TIMESTAMP DEFAULT NULL,
-		    FOREIGN KEY (cafe_franchise_id) REFERENCES cafe_franchises(id) ON DELETE CASCADE
+		    FOREIGN KEY (cafe_franchise_id) REFERENCES cafe_franchises(id) ON DELETE CASCADE,
+		    FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE CASCADE
 		)
 	`
 

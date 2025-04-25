@@ -14,6 +14,7 @@ type (
 		OpenHour   string      `form:"open_hour"`
 		CloseHour  string      `form:"close_hour"`
 		PhotoFiles []io.Reader `form:"photo_files[]"`
+		CafeType   string      `form:"cafe_type"`
 	}
 
 	AddCafeFranchiseRequest struct {

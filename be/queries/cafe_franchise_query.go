@@ -6,4 +6,10 @@ const (
 		FROM
 		    cafe_franchises
 	`
+
+	InsertIntoCafeFranchise GoQuery = `
+		INSERT INTO cafe_franchises (name, logo_url)
+			VALUES
+			    (?, ?)
+	`
 )

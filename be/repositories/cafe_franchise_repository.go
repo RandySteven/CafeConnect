@@ -13,8 +13,12 @@ type cafeFranchiseRepository struct {
 }
 
 func (c *cafeFranchiseRepository) Save(ctx context.Context, entity *models.CafeFranchise) (result *models.CafeFranchise, err error) {
-	//TODO implement me
-	panic("implement me")
+	id, err := mysql_client.Save[models.Cafe](ctx, c.dbx(ctx), queries.InsertIntoCafeFranchise, &entity.Name, &entity.LogoURL)
+	if err != nil {
+		return nil, err
+	}
+	entity.ID = *id
+	return entity, nil
 }
 
 func (c *cafeFranchiseRepository) FindByID(ctx context.Context, id uint64) (result *models.CafeFranchise, err error) {

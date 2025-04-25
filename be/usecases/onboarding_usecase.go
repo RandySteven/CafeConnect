@@ -39,7 +39,7 @@ type onboardingUsecase struct {
 func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.RegisterUserRequest) (result *responses.RegisterUserResponse, customErr *apperror.CustomError) {
 	var err error
 	fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
-	resultPath, err := o.googleStorage.UploadFile(ctx, enums.UsersStorage, request.ProfilePicture, fileHeader, 40, 40)
+	resultPath, err := o.googleStorage.UploadFile(ctx, enums.UsersStorage, "", request.ProfilePicture, fileHeader, 40, 40)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `failed to upload image `, err)
 	}

@@ -145,3 +145,26 @@ func RandomString(length int) string {
 	}
 	return string(result)
 }
+
+func Join(arr []string, joiner string) string {
+	result := ""
+	for index, r := range arr {
+		result += r
+		if index != len(arr)-1 {
+			result += joiner
+		}
+	}
+	return result
+}
+
+func StrToTime(str string) time.Time {
+	layout := `15:04`
+	timeResult, _ := time.Parse(layout, str)
+	return timeResult
+}
+
+func CafeNameToSnakeCase(cafeName string) string {
+	cafeName = strings.ReplaceAll(cafeName, " ", "_")
+	cafeName = strings.ToLower(cafeName)
+	return cafeName
+}

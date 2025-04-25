@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"bytes"
 	"context"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/enums"
@@ -8,6 +9,7 @@ import (
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -55,7 +57,27 @@ func (c *CafeApi) RegisterCafeAndFranchise(w http.ResponseWriter, r *http.Reques
 
 	request.LogoFile = logoFile
 
-	if err := utils.BindRequest(r, &request); err != nil {
+	var photoFiles []io.Reader
+	files := r.MultipartForm.File["photo_urls[]"]
+	for _, fh := range files {
+		file, err := fh.Open()
+		if err != nil {
+			http.Error(w, "failed to open uploaded photo", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+
+		var buf bytes.Buffer
+		_, err = io.Copy(&buf, file)
+		if err != nil {
+			http.Error(w, "failed to read uploaded photo", http.StatusInternalServerError)
+			return
+		}
+		photoFiles = append(photoFiles, bytes.NewReader(buf.Bytes()))
+	}
+	request.PhotoFiles = photoFiles
+
+	if err := utils.BindRequest(r, request); err != nil {
 		utils.ResponseHandler(w, http.StatusBadRequest, `bad request`, nil, nil, err)
 		return
 	}

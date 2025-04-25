@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
@@ -12,6 +13,7 @@ import (
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
+	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"mime/multipart"
@@ -70,12 +72,25 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 		wg            sync.WaitGroup
 		numbOfWorkers = 2
 		customErrCh   = make(chan *apperror.CustomError)
+		addressIdCh   = make(chan uint64)
+		franchiseIdCh = make(chan uint64)
+		resultPaths   = []string{}
 	)
 
-	franchise.LogoURL, err = c.googleStorage.UploadFile(ctx, enums.CafesStorage+`logos/`, request.LogoFile, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 40, 40)
+	franchise.LogoURL, err = c.googleStorage.UploadFile(ctx, enums.CafesStorage+`logos/`, utils.CafeNameToSnakeCase(request.Name), request.LogoFile, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 40, 40)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload logo`, err)
 	}
+
+	for _, file := range request.PhotoFiles {
+		resultPath, err := c.googleStorage.UploadFile(ctx, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(request.Name)), "", file, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
+		}
+		resultPaths = append(resultPaths, resultPath)
+	}
+
+	photoUrls := utils.Join(resultPaths, ";")
 
 	//2. create transaction
 	customErr = c.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
@@ -88,6 +103,7 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to insert franchise data`, err)
 				return
 			}
+			franchiseIdCh <- franchise.ID
 		}()
 
 		//4. insert address data
@@ -98,6 +114,7 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to insert address data`, err)
 				return
 			}
+			addressIdCh <- address.ID
 		}()
 
 		go func() {
@@ -110,8 +127,16 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 		case customErr = <-customErrCh:
 			return customErr
 		default:
-			cafe.CafeFranchiseID = franchise.ID
-			cafe.AddressID = address.ID
+			cafe.CafeFranchiseID = <-franchiseIdCh
+			cafe.AddressID = <-addressIdCh
+			cafe.PhotoURLs = photoUrls
+			cafe.CafeType = request.CafeType
+			cafe.CloseHour = utils.StrToTime(request.CloseHour)
+			cafe.OpenHour = utils.StrToTime(request.OpenHour)
+			cafe, err = c.cafeRepo.Save(ctx, cafe)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create cafe`, err)
+			}
 			return nil
 		}
 	})

@@ -25,6 +25,7 @@ func NewRepositories(db *sql.DB) *Repositories {
 		AddressUserRepository:   newAddressUserRepository(dbx),
 		ReferralRepository:      newReferralRepository(dbx),
 		CafeFranchiseRepository: newCafeFranchiseRepository(dbx),
+		CafeRepository:          newCafeRepository(dbx),
 		Transaction:             transaction,
 	}
 }

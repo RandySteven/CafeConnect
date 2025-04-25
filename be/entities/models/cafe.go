@@ -7,7 +7,7 @@ type Cafe struct {
 	AddressID       uint64
 	CafeFranchiseID uint64
 	CafeType        string
-	PhotoURL        string
+	PhotoURLs       string
 	OpenHour        time.Time
 	CloseHour       time.Time
 	CreatedAt       time.Time

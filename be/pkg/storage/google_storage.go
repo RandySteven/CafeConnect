@@ -17,7 +17,7 @@ import (
 
 type (
 	GoogleStorage interface {
-		UploadFile(ctx context.Context, filePath string, fileRequest io.Reader, fileHeader *multipart.FileHeader, width, height uint) (resultPath string, err error)
+		UploadFile(ctx context.Context, filePath, fileName string, fileRequest io.Reader, fileHeader *multipart.FileHeader, width, height uint) (resultPath string, err error)
 	}
 
 	googleStorage struct {
@@ -26,7 +26,7 @@ type (
 	}
 )
 
-func (g *googleStorage) UploadFile(ctx context.Context, filePath string, fileRequest io.Reader, fileHeader *multipart.FileHeader, width, height uint) (resultPath string, err error) {
+func (g *googleStorage) UploadFile(ctx context.Context, filePath, fileName string, fileRequest io.Reader, fileHeader *multipart.FileHeader, width, height uint) (resultPath string, err error) {
 	err = os.MkdirAll("./temp-images", os.ModePerm)
 	if err != nil {
 		return "", err
@@ -71,7 +71,12 @@ func (g *googleStorage) UploadFile(ctx context.Context, filePath string, fileReq
 	}
 
 	fileExt := filepath.Ext(fileHeader.Filename)
-	renamedImage := filePath + uuid.NewString() + fileExt
+	renamedImage := ``
+	if fileName == "" {
+		renamedImage = filePath + uuid.NewString() + fileExt
+	} else {
+		renamedImage = filePath + fileName + fileExt
+	}
 	if err = ctx.Err(); err != nil {
 		return "", fmt.Errorf("operation canceled before opening resized file: %w", err)
 	}

@@ -125,6 +125,16 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 		//5. insert cafe data
 		select {
 		case customErr = <-customErrCh:
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for _, resultPath := range resultPaths {
+					_ = c.googleStorage.DeleteFile(ctx, resultPath)
+				}
+			}()
+			wg.Wait()
+
 			return customErr
 		default:
 			cafe.CafeFranchiseID = <-franchiseIdCh

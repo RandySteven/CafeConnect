@@ -9,6 +9,7 @@ const (
 	Env                   = `env`
 	ClientIP              = `client_ip`
 	FileHeader            = `file_header`
+	FileObject            = `file_object`
 )
 
 func (c ContextKey) ToString() string {

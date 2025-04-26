@@ -143,6 +143,7 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 
 		select {
 		case customErr = <-customErrCh:
+			_ = o.googleStorage.DeleteFile(ctx, resultPath)
 			return customErr
 		}
 	})

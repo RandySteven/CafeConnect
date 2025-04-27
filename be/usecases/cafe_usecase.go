@@ -179,6 +179,14 @@ func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *res
 		address     *models.Address
 	)
 
+	result, err = c.cache.GetCafeDetail(ctx, fmt.Sprintf("%d", id))
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get redis detail`, err)
+	}
+	if result != nil {
+		return result, nil
+	}
+
 	cafe, err = c.cafeRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
@@ -233,6 +241,7 @@ func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *res
 			UpdatedAt: cafe.UpdatedAt,
 			DeletedAt: cafe.DeletedAt,
 		}
+		c.cache.SetCafeDetail(ctx, fmt.Sprintf("%d", result.ID), result)
 		return result, nil
 	}
 }

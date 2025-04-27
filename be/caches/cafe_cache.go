@@ -2,6 +2,7 @@ package caches
 
 import (
 	"context"
+	"fmt"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
@@ -11,6 +12,14 @@ import (
 
 type cafeCache struct {
 	redis *redis.Client
+}
+
+func (c *cafeCache) SetCafeDetail(ctx context.Context, key string, value *responses.DetailCafeResponse) (err error) {
+	return redis_client.Set[responses.DetailCafeResponse](ctx, c.redis, fmt.Sprintf(enums.CafeCacheKey, key), value)
+}
+
+func (c *cafeCache) GetCafeDetail(ctx context.Context, key string) (value *responses.DetailCafeResponse, err error) {
+	return redis_client.Get[responses.DetailCafeResponse](ctx, c.redis, fmt.Sprintf(enums.CafeCacheKey, key))
 }
 
 func (c *cafeCache) GetFranchiseListCache(ctx context.Context) (result []*responses.FranchiseListResponse, err error) {

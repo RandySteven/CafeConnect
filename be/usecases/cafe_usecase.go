@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"mime/multipart"
+	"strings"
 	"sync"
 	"time"
 )
@@ -120,6 +121,8 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 		go func() {
 			wg.Wait()
 			close(customErrCh)
+			close(addressIdCh)
+			close(franchiseIdCh)
 		}()
 
 		//5. insert cafe data
@@ -225,6 +228,7 @@ func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *res
 				Latitude  float64 `json:"latitude"`
 				Longitude float64 `json:"longitude"`
 			}{Address: address.Address, Latitude: address.Latitude, Longitude: address.Longitude},
+			PhotoURLs: strings.Split(cafe.PhotoURLs, ";"),
 			CreatedAt: cafe.CreatedAt,
 			UpdatedAt: cafe.UpdatedAt,
 			DeletedAt: cafe.DeletedAt,

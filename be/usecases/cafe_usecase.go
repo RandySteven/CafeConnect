@@ -141,8 +141,8 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 			cafe.AddressID = <-addressIdCh
 			cafe.PhotoURLs = photoUrls
 			cafe.CafeType = request.CafeType
-			cafe.CloseHour = utils.StrToTime(request.CloseHour)
-			cafe.OpenHour = utils.StrToTime(request.OpenHour)
+			cafe.CloseHour = request.CloseHour
+			cafe.OpenHour = request.OpenHour
 			cafe, err = c.cafeRepo.Save(ctx, cafe)
 			if err != nil {
 				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create cafe`, err)
@@ -162,6 +162,75 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 
 func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *requests.GetCafeListRequest) (result []*responses.ListCafeResponse, customErr *apperror.CustomError) {
 	return
+}
+
+func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *responses.DetailCafeResponse, customErr *apperror.CustomError) {
+	var (
+		wg          sync.WaitGroup
+		customErrCh = make(chan *apperror.CustomError)
+		franchiseCh = make(chan *models.CafeFranchise)
+		addressCh   = make(chan *models.Address)
+		err         error
+		cafe        *models.Cafe
+		franchise   *models.CafeFranchise
+		address     *models.Address
+	)
+
+	cafe, err = c.cafeRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
+	}
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		franchise, err = c.franchiseRepo.FindByID(ctx, cafe.CafeFranchiseID)
+		if err != nil {
+			customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed franchise`, err)
+			return
+		}
+		franchiseCh <- franchise
+	}()
+
+	go func() {
+		defer wg.Done()
+		address, err = c.addressRepo.FindByID(ctx, cafe.AddressID)
+		if err != nil {
+			customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address`, err)
+			return
+		}
+		addressCh <- address
+	}()
+
+	go func() {
+		wg.Wait()
+		close(customErrCh)
+		close(addressCh)
+		close(franchiseCh)
+	}()
+
+	select {
+	case customErr = <-customErrCh:
+		return nil, customErr
+	default:
+		address = <-addressCh
+		franchise = <-franchiseCh
+		result = &responses.DetailCafeResponse{
+			ID:      cafe.ID,
+			Name:    franchise.Name,
+			LogoURL: franchise.LogoURL,
+			Address: struct {
+				Address   string  `json:"address"`
+				Latitude  float64 `json:"latitude"`
+				Longitude float64 `json:"longitude"`
+			}{Address: address.Address, Latitude: address.Latitude, Longitude: address.Longitude},
+			CreatedAt: cafe.CreatedAt,
+			UpdatedAt: cafe.UpdatedAt,
+			DeletedAt: cafe.DeletedAt,
+		}
+		return result, nil
+	}
 }
 
 var _ usecase_interfaces.CafeUsecase = &cafeUsecase{}

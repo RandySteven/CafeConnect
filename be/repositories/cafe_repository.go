@@ -14,7 +14,7 @@ type cafeRepository struct {
 
 func (c *cafeRepository) Save(ctx context.Context, entity *models.Cafe) (result *models.Cafe, err error) {
 	id, err := mysql_client.Save[models.Cafe](ctx, c.dbx(ctx), queries.InsertIntoCafe,
-		entity.AddressID, entity.CafeFranchiseID, entity.CafeType, entity.PhotoURLs, entity.OpenHour.Format("15:04:04"), entity.CloseHour.Format("15:04:04"))
+		entity.AddressID, entity.CafeFranchiseID, entity.CafeType, entity.PhotoURLs, entity.OpenHour, entity.CloseHour)
 	if err != nil {
 		return nil, err
 	}
@@ -23,8 +23,12 @@ func (c *cafeRepository) Save(ctx context.Context, entity *models.Cafe) (result 
 }
 
 func (c *cafeRepository) FindByID(ctx context.Context, id uint64) (result *models.Cafe, err error) {
-	//TODO implement me
-	panic("implement me")
+	result = &models.Cafe{}
+	err = mysql_client.FindByID[models.Cafe](ctx, c.dbx(ctx), queries.SelectCafeByID, id, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (c *cafeRepository) FindAll(ctx context.Context, skip uint64, take uint64) (result []*models.Cafe, err error) {

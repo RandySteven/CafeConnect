@@ -8,8 +8,8 @@ type Cafe struct {
 	CafeFranchiseID uint64
 	CafeType        string
 	PhotoURLs       string
-	OpenHour        time.Time
-	CloseHour       time.Time
+	OpenHour        string
+	CloseHour       string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       *time.Time

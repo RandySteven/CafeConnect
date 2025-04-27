@@ -22,8 +22,12 @@ func (c *cafeFranchiseRepository) Save(ctx context.Context, entity *models.CafeF
 }
 
 func (c *cafeFranchiseRepository) FindByID(ctx context.Context, id uint64) (result *models.CafeFranchise, err error) {
-	//TODO implement me
-	panic("implement me")
+	result = &models.CafeFranchise{}
+	err = mysql_client.FindByID[models.CafeFranchise](ctx, c.dbx(ctx), queries.SelectCafeFranchiseByID, id, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (c *cafeFranchiseRepository) FindAll(ctx context.Context, skip uint64, take uint64) (result []*models.CafeFranchise, err error) {

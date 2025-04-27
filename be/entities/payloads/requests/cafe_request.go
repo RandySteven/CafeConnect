@@ -28,10 +28,7 @@ type (
 	}
 
 	GetCafeListRequest struct {
-		Point struct {
-			Latitude  float32 `json:"latitude"`
-			Longitude float32 `json:"longitude"`
-		} `json:"point"`
-		Radius uint64 `json:"radius"`
+		AddressID uint64 `json:"address_id"`
+		Radius    uint64 `json:"radius"`
 	}
 )

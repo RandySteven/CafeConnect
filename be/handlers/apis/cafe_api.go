@@ -9,6 +9,7 @@ import (
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"strconv"
@@ -94,6 +95,19 @@ func (c *CafeApi) RegisterCafeAndFranchise(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *CafeApi) GetCafeDetail(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		vars    = mux.Vars(r)
+		dataKey = `cafe`
+	)
+	id, _ := strconv.Atoi(vars[`id`])
+	result, customErr := c.usecase.GetCafeDetail(ctx, uint64(id))
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success get cafe`, &dataKey, result, nil)
 }
 
 func (c *CafeApi) GetCafeProducts(w http.ResponseWriter, r *http.Request) {

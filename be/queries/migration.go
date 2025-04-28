@@ -140,4 +140,20 @@ const (
 		    FOREIGN KEY (product_category_id) REFERENCES product_categories(id) ON DELETE CASCADE
 		)
 	`
+
+	CreateCafeProductTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS cafe_products (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    cafe_id BIGINT NOT NULL,
+		    product_id BIGINT NOT NULL,
+		    price BIGINT NOT NULL,
+		    stock INT DEFAULT 0,
+		    status VARCHAR(24) DEFAULT "AVAILABLE",
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL,
+		    FOREIGN KEY (cafe_id) REFERENCES cafes (id) ON DELETE CASCADE,
+		    FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+		)
+	`
 )

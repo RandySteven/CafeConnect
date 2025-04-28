@@ -5,6 +5,11 @@ import (
 )
 
 type (
+	AddProductResponse struct {
+		ID        string    `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+	}
+
 	DetailProductResponse struct {
 		ID              uint64 `json:"id"`
 		Name            string `json:"name"`

@@ -2,9 +2,9 @@ package models
 
 import "time"
 
-type ProductOutlet struct {
+type CafeProduct struct {
 	ID        uint64
-	OutletID  uint64
+	CafeID    uint64
 	ProductID uint64
 	Price     uint64
 	Stock     uint64

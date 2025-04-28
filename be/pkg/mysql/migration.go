@@ -18,6 +18,7 @@ func initMigrations() []queries.MigrationQuery {
 		queries.CreateCafeTable,
 		queries.CreateProductCategoryTable,
 		queries.CreateProductTable,
+		queries.CreateCafeProductTable,
 	}
 }
 

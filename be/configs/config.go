@@ -60,5 +60,10 @@ type Config struct {
 			ProjectID  string `yaml:"projectId"`
 			BucketName string `yaml:"bucketName"`
 		} `yaml:"storage"`
+
+		Midtrans struct {
+			ServerKey   string `yaml:"serverKey"`
+			Environment string `yaml:"environment"`
+		} `yaml:"midtrans"`
 	} `yaml:"config"`
 }

@@ -10,4 +10,7 @@ type AddressUser struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time
+
+	Address *Address
+	User    *User
 }

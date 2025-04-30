@@ -13,4 +13,7 @@ type Cafe struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	DeletedAt       *time.Time
+
+	CafeFranchise *CafeFranchise
+	Address       *Address
 }

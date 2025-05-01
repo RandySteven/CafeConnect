@@ -36,6 +36,36 @@ func (c *cafeRepository) FindAll(ctx context.Context, skip uint64, take uint64) 
 	panic("implement me")
 }
 
+func (c *cafeRepository) FindByCafeFranchiseId(ctx context.Context, cafeFranchiseId uint64) (result []*models.Cafe, err error) {
+	rows, err := c.dbx(ctx).QueryContext(ctx, queries.SelectCafesByCafeFranchiseID.String(), cafeFranchiseId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		cafe := &models.Cafe{}
+		err = rows.Scan(
+			&cafe.ID,
+			&cafe.AddressID,
+			&cafe.CafeFranchiseID,
+			&cafe.CafeType,
+			&cafe.PhotoURLs,
+			&cafe.OpenHour,
+			&cafe.CloseHour,
+			&cafe.CreatedAt,
+			&cafe.UpdatedAt,
+			&cafe.DeletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, cafe)
+	}
+
+	return result, nil
+}
+
 var _ repository_interfaces.CafeRepository = &cafeRepository{}
 
 func newCafeRepository(dbx repository_interfaces.DBX) *cafeRepository {

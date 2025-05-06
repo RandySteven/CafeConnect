@@ -34,6 +34,26 @@ func (c *cafeProductRepository) FindAll(ctx context.Context, skip uint64, take u
 	return mysql_client.FindAll[models.CafeProduct](ctx, c.dbx(ctx), queries.SelectCafeProducts)
 }
 
+func (c *cafeProductRepository) FindByCafeID(ctx context.Context, cafeID uint64) (result []*models.CafeProduct, err error) {
+	rows, err := c.dbx(ctx).QueryContext(ctx, queries.SelectCafeProductsByCafeID.String(), cafeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		res := &models.CafeProduct{}
+		err = rows.Scan(&res.ID, &res.CafeID, &res.ProductID, &res.Price, &res.Stock, &res.Status,
+			&res.CreatedAt, &res.UpdatedAt, &res.DeletedAt)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, res)
+	}
+
+	return result, nil
+}
+
 var _ repository_interfaces.CafeProductRepository = &cafeProductRepository{}
 
 func newCafeProductRepository(dbx repository_interfaces.DBX) *cafeProductRepository {

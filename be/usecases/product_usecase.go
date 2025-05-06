@@ -77,7 +77,9 @@ func (p *productUsecase) AddProduct(ctx context.Context, request *requests.AddPr
 }
 
 func (p *productUsecase) GetProductByCafe(ctx context.Context, cafeId uint64) (result []*responses.ListProductResponse, customErr *apperror.CustomError) {
-	panic("implement me")
+	var ()
+
+	return
 }
 
 func (p *productUsecase) GetProductDetail(ctx context.Context, id uint64) (result *responses.DetailProductResponse, customErr *apperror.CustomError) {

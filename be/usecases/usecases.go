@@ -10,6 +10,7 @@ import (
 type Usecases struct {
 	OnboardingUsecase usecase_interfaces.OnboardingUsecase
 	CafeUsecase       usecase_interfaces.CafeUsecase
+	ProductUsecase    usecase_interfaces.ProductUsecase
 }
 
 func NewUsecases(repo *repositories.Repositories,
@@ -18,5 +19,6 @@ func NewUsecases(repo *repositories.Repositories,
 	return &Usecases{
 		OnboardingUsecase: newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, cache.OnboardCache, googleStorage),
 		CafeUsecase:       newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, googleStorage, cache.CafeCache),
+		ProductUsecase:    newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, googleStorage, repo.Transaction),
 	}
 }

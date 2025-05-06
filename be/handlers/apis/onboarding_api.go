@@ -47,7 +47,7 @@ func (o *OnboardingApi) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	request.ProfilePicture = imageFile
 
-	if err := utils.BindRequest(r, request); err != nil {
+	if err = utils.BindRequest(r, request); err != nil {
 		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
 		return
 	}

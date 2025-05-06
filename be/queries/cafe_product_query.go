@@ -28,4 +28,12 @@ const (
 		ON cp.product_id, p.id
 		WHERE id = ?
 	`
+
+	SelectCafeProductsByCafeID GoQuery = `
+		SELECT id, cafe_id, product_id, price, stock, status, created_at, updated_at, deleted_at
+		FROM
+		    cafe_products
+		WHERE
+		    product_id = ?
+	`
 )

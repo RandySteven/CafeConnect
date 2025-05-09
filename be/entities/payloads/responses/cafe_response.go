@@ -9,12 +9,12 @@ type (
 	}
 
 	ListCafeResponse struct {
-		ID        uint64    `json:"id"`
-		Name      string    `json:"name"`
-		LogoURL   string    `json:"logo_url"`
-		Status    string    `json:"status"`
-		OpenHour  time.Time `json:"open_hour"`
-		CloseHour time.Time `json:"close_hour"`
+		ID        uint64 `json:"id"`
+		Name      string `json:"name"`
+		LogoURL   string `json:"logo_url"`
+		Status    string `json:"status"`
+		OpenHour  string `json:"open_hour"`
+		CloseHour string `json:"close_hour"`
 	}
 
 	FranchiseListResponse struct {

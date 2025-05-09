@@ -66,6 +66,10 @@ func (c *cafeRepository) FindByCafeFranchiseId(ctx context.Context, cafeFranchis
 	return result, nil
 }
 
+func (c *cafeRepository) FindByAddressId(ctx context.Context, addressId uint64) (result *models.Cafe, err error) {
+	return
+}
+
 var _ repository_interfaces.CafeRepository = &cafeRepository{}
 
 func newCafeRepository(dbx repository_interfaces.DBX) *cafeRepository {

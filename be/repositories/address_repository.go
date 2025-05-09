@@ -46,6 +46,10 @@ func (a *addressRepository) Update(ctx context.Context, entity *models.Address) 
 	return
 }
 
+func (a *addressRepository) FindAddressBasedOnRadius(ctx context.Context, addressId uint64, rangeKm uint64) (result []*models.Address, err error) {
+	return
+}
+
 var _ repository_interfaces.AddressRepository = &addressRepository{}
 
 func newAddressRepository(dbx repository_interfaces.DBX) *addressRepository {

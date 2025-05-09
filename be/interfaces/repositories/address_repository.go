@@ -1,9 +1,13 @@
 package repository_interfaces
 
-import "github.com/RandySteven/CafeConnect/be/entities/models"
+import (
+	"context"
+	"github.com/RandySteven/CafeConnect/be/entities/models"
+)
 
 type AddressRepository interface {
 	Saver[models.Address]
 	Finder[models.Address]
 	Updater[models.Address]
+	FindAddressBasedOnRadius(ctx context.Context, addressId uint64, rangeKm uint64) (result []*models.Address, err error)
 }

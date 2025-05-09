@@ -164,7 +164,32 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 }
 
 func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *requests.GetCafeListRequest) (result []*responses.ListCafeResponse, customErr *apperror.CustomError) {
-	return
+	addresses, err := c.addressRepo.FindAddressBasedOnRadius(ctx, request.AddressID, request.Radius)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address`, err)
+	}
+
+	for _, address := range addresses {
+		cafe, err := c.cafeRepo.FindByAddressId(ctx, address.ID)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
+		}
+
+		cafeFranchise, err := c.franchiseRepo.FindByID(ctx, cafe.CafeFranchiseID)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
+		}
+
+		result = append(result, &responses.ListCafeResponse{
+			ID:        cafe.ID,
+			Name:      cafeFranchise.Name,
+			LogoURL:   cafeFranchise.LogoURL,
+			OpenHour:  cafe.OpenHour,
+			CloseHour: cafe.CloseHour,
+		})
+	}
+
+	return result, nil
 }
 
 func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *responses.DetailCafeResponse, customErr *apperror.CustomError) {

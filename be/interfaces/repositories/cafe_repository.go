@@ -10,4 +10,5 @@ type CafeRepository interface {
 	Finder[models.Cafe]
 
 	FindByCafeFranchiseId(ctx context.Context, cafeFranchiseId uint64) (result []*models.Cafe, err error)
+	FindByAddressId(ctx context.Context, addressId uint64) (result *models.Cafe, err error)
 }

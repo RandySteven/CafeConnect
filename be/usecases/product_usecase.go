@@ -77,13 +77,84 @@ func (p *productUsecase) AddProduct(ctx context.Context, request *requests.AddPr
 }
 
 func (p *productUsecase) GetProductByCafe(ctx context.Context, cafeId uint64) (result []*responses.ListProductResponse, customErr *apperror.CustomError) {
-	var ()
+	var (
+		cafe         = &models.Cafe{}
+		cafeProducts = []*models.CafeProduct{}
+		err          error
+		product      = &models.Product{}
+	)
 
-	return
+	cafe, err = p.cafeRepo.FindByID(ctx, cafeId)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
+	}
+
+	cafeProducts, err = p.cafeProductRepo.FindByCafeID(ctx, cafe.ID)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe products`, err)
+	}
+
+	for _, cafeProduct := range cafeProducts {
+		product, err = p.productRepo.FindByID(ctx, cafeProduct.ProductID)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get product`, err)
+		}
+
+		result = append(result, &responses.ListProductResponse{
+			ID:        cafeProduct.ID,
+			Name:      product.Name,
+			Photo:     product.PhotoURL,
+			Price:     cafeProduct.Price,
+			CreatedAt: cafeProduct.CreatedAt,
+			UpdatedAt: cafeProduct.UpdatedAt,
+			DeletedAt: cafeProduct.DeletedAt,
+		})
+	}
+
+	return result, nil
 }
 
 func (p *productUsecase) GetProductDetail(ctx context.Context, id uint64) (result *responses.DetailProductResponse, customErr *apperror.CustomError) {
-	panic("implement me")
+	var (
+		cafeProduct = &models.CafeProduct{}
+		product     = &models.Product{}
+		err         error
+		category    = &models.ProductCategory{}
+	)
+	cafeProduct, err = p.cafeProductRepo.FindByID(ctx, id)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+	}
+
+	product, err = p.productRepo.FindByID(ctx, cafeProduct.ProductID)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get product`, err)
+	}
+
+	category, err = p.productCategoryRepository.FindByID(ctx, product.ProductCategoryID)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get category`, err)
+	}
+
+	result = &responses.DetailProductResponse{
+		ID:    cafeProduct.ID,
+		Name:  product.Name,
+		Photo: product.PhotoURL,
+		Price: cafeProduct.Price,
+		Stock: cafeProduct.Stock,
+		ProductCategory: &struct {
+			ID       uint64 `json:"id"`
+			Category string `json:"category"`
+		}{
+			ID:       category.ID,
+			Category: category.Category,
+		},
+		CreatedAt: cafeProduct.CreatedAt,
+		UpdatedAt: cafeProduct.UpdatedAt,
+		DeletedAt: cafeProduct.DeletedAt,
+	}
+
+	return result, nil
 }
 
 var _ usecase_interfaces.ProductUsecase = &productUsecase{}

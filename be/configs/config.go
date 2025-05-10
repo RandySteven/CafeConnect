@@ -61,6 +61,10 @@ type Config struct {
 			BucketName string `yaml:"bucketName"`
 		} `yaml:"storage"`
 
+		Cron struct {
+			Time string `yaml:"time"`
+		} `yaml:"cron"`
+
 		Midtrans struct {
 			ServerKey   string `yaml:"serverKey"`
 			Environment string `yaml:"environment"`

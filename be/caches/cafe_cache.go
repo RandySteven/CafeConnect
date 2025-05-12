@@ -14,6 +14,14 @@ type cafeCache struct {
 	redis *redis.Client
 }
 
+func (c *cafeCache) SetCafeRadiusListCache(ctx context.Context, key string, response []*responses.ListCafeResponse) (err error) {
+	return redis_client.SetMultiple[responses.ListCafeResponse](ctx, c.redis, key, response)
+}
+
+func (c *cafeCache) GetCafeRadiusListCache(ctx context.Context, key string) (response []*responses.ListCafeResponse, err error) {
+	return redis_client.GetMultiple[responses.ListCafeResponse](ctx, c.redis, key)
+}
+
 func (c *cafeCache) SetCafeDetail(ctx context.Context, key string, value *responses.DetailCafeResponse) (err error) {
 	return redis_client.Set[responses.DetailCafeResponse](ctx, c.redis, fmt.Sprintf(enums.CafeCacheKey, key), value)
 }

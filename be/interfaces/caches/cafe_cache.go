@@ -10,4 +10,7 @@ type CafeCache interface {
 	SetFranchiseListCache(ctx context.Context, response []*responses.FranchiseListResponse) (err error)
 	SetCafeDetail(ctx context.Context, key string, value *responses.DetailCafeResponse) (err error)
 	GetCafeDetail(ctx context.Context, key string) (value *responses.DetailCafeResponse, err error)
+
+	SetCafeRadiusListCache(ctx context.Context, key string, response []*responses.ListCafeResponse) (err error)
+	GetCafeRadiusListCache(ctx context.Context, key string) (response []*responses.ListCafeResponse, err error)
 }

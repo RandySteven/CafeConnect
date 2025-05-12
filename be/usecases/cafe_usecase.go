@@ -165,6 +165,17 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 }
 
 func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *requests.GetCafeListRequest) (result []*responses.ListCafeResponse, customErr *apperror.CustomError) {
+	key := fmt.Sprintf(enums.ListCafeRadiusKey, fmt.Sprintf("%d", request.AddressID), fmt.Sprintf("%d", request.Radius))
+
+	result, err := c.cache.GetCafeRadiusListCache(ctx, key)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cache`, err)
+	}
+
+	if result != nil {
+		return result, nil
+	}
+
 	targetAddress, err := c.addressRepo.FindByID(ctx, request.AddressID)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address target`, err)
@@ -180,23 +191,25 @@ func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *r
 			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
 		}
 
-		if !errors.Is(err, sql.ErrNoRows) {
-			cafeFranchise, err := c.franchiseRepo.FindByID(ctx, cafe.CafeFranchiseID)
-			if err != nil {
-				return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
-			}
-
-			result = append(result, &responses.ListCafeResponse{
-				ID:        cafe.ID,
-				Name:      cafeFranchise.Name,
-				Status:    utils.GetCafeOpenCloseStatus(cafe.OpenHour, cafe.CloseHour),
-				LogoURL:   cafeFranchise.LogoURL,
-				OpenHour:  cafe.OpenHour,
-				CloseHour: cafe.CloseHour,
-			})
+		if errors.Is(err, sql.ErrNoRows) {
+			continue
 		}
-	}
 
+		cafeFranchise, err := c.franchiseRepo.FindByID(ctx, cafe.CafeFranchiseID)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
+		}
+
+		result = append(result, &responses.ListCafeResponse{
+			ID:        cafe.ID,
+			Name:      cafeFranchise.Name,
+			Status:    utils.GetCafeOpenCloseStatus(cafe.OpenHour, cafe.CloseHour),
+			LogoURL:   cafeFranchise.LogoURL,
+			OpenHour:  cafe.OpenHour,
+			CloseHour: cafe.CloseHour,
+		})
+	}
+	_ = c.cache.SetCafeRadiusListCache(ctx, key, result)
 	return result, nil
 }
 

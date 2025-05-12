@@ -45,6 +45,7 @@ type (
 			Latitude  float64 `json:"latitude"`
 			Longitude float64 `json:"longitude"`
 		} `json:"address"`
+		Status    string     `json:"status"`
 		PhotoURLs []string   `json:"photo_urls"`
 		CreatedAt time.Time  `json:"created_at"`
 		UpdatedAt time.Time  `json:"updated_at"`

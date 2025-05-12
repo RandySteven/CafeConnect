@@ -277,6 +277,7 @@ func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *res
 			ID:      cafe.ID,
 			Name:    franchise.Name,
 			LogoURL: franchise.LogoURL,
+			Status:  utils.GetCafeOpenCloseStatus(cafe.OpenHour, cafe.CloseHour),
 			Address: struct {
 				Address   string  `json:"address"`
 				Latitude  float64 `json:"latitude"`

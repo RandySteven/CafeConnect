@@ -46,8 +46,30 @@ func (a *addressRepository) Update(ctx context.Context, entity *models.Address) 
 	return
 }
 
-func (a *addressRepository) FindAddressBasedOnRadius(ctx context.Context, addressId uint64, rangeKm uint64) (result []*models.Address, err error) {
-	return
+func (a *addressRepository) FindAddressBasedOnRadius(ctx context.Context, longitude, latitude float64, rangeKm uint64) (result []*models.Address, err error) {
+	rows, err := a.dbx(ctx).QueryContext(ctx, queries.SelectAddressByRadiusNKm.String(), longitude, latitude, rangeKm)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		address := &models.Address{}
+		err = rows.Scan(
+			&address.ID,
+			&address.Address,
+			&address.Longitude,
+			&address.Latitude,
+			&address.CreatedAt,
+			&address.UpdatedAt,
+			&address.DeletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, address)
+	}
+
+	return result, nil
 }
 
 var _ repository_interfaces.AddressRepository = &addressRepository{}

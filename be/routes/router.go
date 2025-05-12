@@ -39,6 +39,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 		Get(`/franchises`, api.CafeApi.GetListCafeFranchise),
 		Post(`/franchises`, api.CafeApi.RegisterCafeAndFranchise),
 		Get(`/{id}`, api.CafeApi.GetCafeDetail),
+		Post(``, api.CafeApi.GetListOfCafeBasedOnRadius),
 	}
 
 	return endpoint

@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
@@ -164,29 +165,36 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 }
 
 func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *requests.GetCafeListRequest) (result []*responses.ListCafeResponse, customErr *apperror.CustomError) {
-	addresses, err := c.addressRepo.FindAddressBasedOnRadius(ctx, request.AddressID, request.Radius)
+	targetAddress, err := c.addressRepo.FindByID(ctx, request.AddressID)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address target`, err)
+	}
+	addresses, err := c.addressRepo.FindAddressBasedOnRadius(ctx, targetAddress.Longitude, targetAddress.Latitude, request.Radius)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address`, err)
 	}
 
 	for _, address := range addresses {
 		cafe, err := c.cafeRepo.FindByAddressId(ctx, address.ID)
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
 		}
 
-		cafeFranchise, err := c.franchiseRepo.FindByID(ctx, cafe.CafeFranchiseID)
-		if err != nil {
-			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
-		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			cafeFranchise, err := c.franchiseRepo.FindByID(ctx, cafe.CafeFranchiseID)
+			if err != nil {
+				return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
+			}
 
-		result = append(result, &responses.ListCafeResponse{
-			ID:        cafe.ID,
-			Name:      cafeFranchise.Name,
-			LogoURL:   cafeFranchise.LogoURL,
-			OpenHour:  cafe.OpenHour,
-			CloseHour: cafe.CloseHour,
-		})
+			result = append(result, &responses.ListCafeResponse{
+				ID:        cafe.ID,
+				Name:      cafeFranchise.Name,
+				Status:    utils.GetCafeOpenCloseStatus(cafe.OpenHour, cafe.CloseHour),
+				LogoURL:   cafeFranchise.LogoURL,
+				OpenHour:  cafe.OpenHour,
+				CloseHour: cafe.CloseHour,
+			})
+		}
 	}
 
 	return result, nil

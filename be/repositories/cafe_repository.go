@@ -67,7 +67,23 @@ func (c *cafeRepository) FindByCafeFranchiseId(ctx context.Context, cafeFranchis
 }
 
 func (c *cafeRepository) FindByAddressId(ctx context.Context, addressId uint64) (result *models.Cafe, err error) {
-	return
+	result = &models.Cafe{}
+	err = c.dbx(ctx).QueryRowContext(ctx, queries.SelectCafeByAddressID.String(), addressId).Scan(
+		&result.ID,
+		&result.AddressID,
+		&result.CafeFranchiseID,
+		&result.CafeType,
+		&result.PhotoURLs,
+		&result.OpenHour,
+		&result.CloseHour,
+		&result.CreatedAt,
+		&result.UpdatedAt,
+		&result.DeletedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 var _ repository_interfaces.CafeRepository = &cafeRepository{}

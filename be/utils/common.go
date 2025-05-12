@@ -168,3 +168,16 @@ func CafeNameToSnakeCase(cafeName string) string {
 	cafeName = strings.ToLower(cafeName)
 	return cafeName
 }
+
+func GetCafeOpenCloseStatus(startTime string, endTime string) string {
+	currTime := time.Now()
+
+	startTimeTime := StrToTime(startTime)
+	endTimeTime := StrToTime(endTime)
+
+	if currTime.After(startTimeTime) && currTime.Before(endTimeTime) {
+		return "OPEN"
+	}
+
+	return "CLOSED"
+}

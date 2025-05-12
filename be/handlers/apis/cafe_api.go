@@ -114,6 +114,24 @@ func (c *CafeApi) GetCafeProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *CafeApi) GetListOfCafeBasedOnRadius(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		dataKey = `cafes`
+		request = &requests.GetCafeListRequest{}
+	)
+	if err := utils.BindRequest(r, &request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `bad request`, nil, nil, err)
+		return
+	}
+
+	result, customErr := c.usecase.GetListOfCafeBasedOnRadius(ctx, request)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success get cafe list`, &dataKey, result, nil)
+
 }
 
 var _ api_interfaces.CafeApi = &CafeApi{}

@@ -1,0 +1,16 @@
+{
+  "contents": [
+    {
+      "title": "Home",
+      "href": "home"
+    },
+    {
+      "title": "Cafe",
+      "href": "cafe"
+    },
+    {
+      "title": "Menu",
+      "href": "menu"
+    }
+  ]
+}

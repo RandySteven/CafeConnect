@@ -5,6 +5,7 @@ import (
 	caches2 "github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
+	cron_client "github.com/RandySteven/CafeConnect/be/pkg/cron"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
@@ -16,6 +17,7 @@ type App struct {
 	MySQL         mysql_client.MySQL
 	Redis         redis_client.Redis
 	GoogleStorage storage_client.GoogleStorage
+	Scheduler     cron_client.Scheduler
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -35,10 +37,16 @@ func NewApps(config *configs.Config) (*App, error) {
 		return nil, err
 	}
 
+	scheduler, err := cron_client.NewScheduler(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		MySQL:         mysql,
 		Redis:         redis,
 		GoogleStorage: googleStorage,
+		Scheduler:     scheduler,
 	}, nil
 }
 

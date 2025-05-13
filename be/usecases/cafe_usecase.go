@@ -204,7 +204,7 @@ func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *r
 			ID:        cafe.ID,
 			Name:      cafeFranchise.Name,
 			Status:    utils.GetCafeOpenCloseStatus(cafe.OpenHour, cafe.CloseHour),
-			LogoURL:   cafeFranchise.LogoURL,
+			LogoURL:   utils.ImageStorage(cafeFranchise.LogoURL),
 			OpenHour:  cafe.OpenHour,
 			CloseHour: cafe.CloseHour,
 		})
@@ -276,7 +276,7 @@ func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *res
 		result = &responses.DetailCafeResponse{
 			ID:      cafe.ID,
 			Name:    franchise.Name,
-			LogoURL: franchise.LogoURL,
+			LogoURL: utils.ImageStorage(franchise.LogoURL),
 			Status:  utils.GetCafeOpenCloseStatus(cafe.OpenHour, cafe.CloseHour),
 			Address: struct {
 				Address   string  `json:"address"`

@@ -13,7 +13,6 @@ export const Footer = () => {
                 position: "fixed"
             }}
         >
-
         </BottomNavigation>
     </Fragment>
 }

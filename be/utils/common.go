@@ -170,7 +170,7 @@ func CafeNameToSnakeCase(cafeName string) string {
 }
 
 func GetCafeOpenCloseStatus(startTime string, endTime string) string {
-	currTime := time.Now()
+	currTime := time.Now().Local()
 
 	startTimeTime := StrToTime(startTime)
 	endTimeTime := StrToTime(endTime)
@@ -180,4 +180,8 @@ func GetCafeOpenCloseStatus(startTime string, endTime string) string {
 	}
 
 	return "CLOSED"
+}
+
+func ImageStorage(imgUri string) string {
+	return os.Getenv("BASE_GSTORAGE_URL") + imgUri
 }

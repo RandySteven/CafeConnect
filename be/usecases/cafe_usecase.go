@@ -165,7 +165,7 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 }
 
 func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *requests.GetCafeListRequest) (result []*responses.ListCafeResponse, customErr *apperror.CustomError) {
-	key := fmt.Sprintf(enums.ListCafeRadiusKey, fmt.Sprintf("%d", request.AddressID), fmt.Sprintf("%d", request.Radius))
+	key := fmt.Sprintf(enums.ListCafeRadiusKey, request.Point.Longitude, request.Point.Latitude, fmt.Sprintf("%d", request.Radius))
 
 	result, err := c.cache.GetCafeRadiusListCache(ctx, key)
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -176,10 +176,8 @@ func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *r
 		return result, nil
 	}
 
-	targetAddress, err := c.addressRepo.FindByID(ctx, request.AddressID)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address target`, err)
-	}
+	targetAddress := request.Point
+
 	addresses, err := c.addressRepo.FindAddressBasedOnRadius(ctx, targetAddress.Longitude, targetAddress.Latitude, request.Radius)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address`, err)

@@ -13,6 +13,7 @@ func (s *ServerMiddleware) CorsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Origin, Authorization")
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
+			return
 		}
 		utils.ContentType(w, enums.ContentTypeJSON)
 		next.ServeHTTP(w, r)

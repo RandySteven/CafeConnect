@@ -15,6 +15,7 @@ type (
 		Status    string `json:"status"`
 		OpenHour  string `json:"open_hour"`
 		CloseHour string `json:"close_hour"`
+		Address   string `json:"address"`
 	}
 
 	FranchiseListResponse struct {

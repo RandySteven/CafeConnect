@@ -205,6 +205,7 @@ func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *r
 			LogoURL:   utils.ImageStorage(cafeFranchise.LogoURL),
 			OpenHour:  cafe.OpenHour,
 			CloseHour: cafe.CloseHour,
+			Address:   address.Address,
 		})
 	}
 	_ = c.cache.SetCafeRadiusListCache(ctx, key, result)

@@ -1,11 +1,13 @@
-import Image from "next/image";
 import {Fragment} from "react";
-import {DummyTitle} from "@/components/Elements/DummyTitle";
+import {ListCafe} from "@/components/Fragments/ListCafe";
+import {MenuList} from "@mui/material";
+import {GridMenu} from "@/components/Fragments/GridMenu";
+import {HomeContainer} from "@/containers/HomeContainer";
 
 export default function Home() {
   return (
     <Fragment>
-        <DummyTitle />
+        <HomeContainer />
     </Fragment>
   );
 }

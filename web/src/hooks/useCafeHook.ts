@@ -5,23 +5,31 @@ import {useEffect, useState} from "react";
 import {ListRadiusCafeRequest} from "@/api/requests/CafeRequest";
 import {POST} from "@/api/api";
 
-export const useListCafeWithRadius = (address_id, radius : number) : ListCafeResponse  => {
+export const useListCafeWithRadius = (longitude, latitude, radius : number) : ListCafeResponse[] => {
     const [listCafeResponse, setListCafeResponse] = useState<ListCafeResponse[]>([])
 
-    useEffect(() => {
-        const listCafeRequest : ListRadiusCafeRequest = {
-            address_id: address_id,
-            radius: radius
-        }
+    const listCafeRequest: ListRadiusCafeRequest = {
+        point: {
+            longitude: longitude,
+            latitude: latitude
+        },
+        radius: radius
+    }
 
-        POST(`/cafes`, false, listCafeRequest)
-            .then((data) => {
-                return setListCafeResponse(data.data.cafes)
-            })
-            .catch((error) => {
-                return error
-            })
+    useEffect( () => {
 
+        console.log(listCafeRequest)
+        const fetchCafes = async () => {
+            try {
+                const result = await POST("cafes", false, listCafeRequest)
+                console.log(`resultnya `, result.data.cafes)
+                setListCafeResponse(result.data.cafes)
+            }catch (err) {
+                console.log(err)
+            }
+        };
+
+        fetchCafes()
     }, []);
 
     return listCafeResponse

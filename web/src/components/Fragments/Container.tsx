@@ -15,7 +15,9 @@ export const Container = ({ children }: ContainerProps) => {
                     maxWidth: "1200px",
                     mx: "auto", // center horizontally
                     width: "100%",
-                    maxHeight: "inherit"
+                    maxHeight: "inherit",
+                    my: 5,
+                    py: 4
                 }}
             >
                 {children}

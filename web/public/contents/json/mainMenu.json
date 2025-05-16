@@ -1,0 +1,24 @@
+{
+  "menus": [
+    {
+      "menu": "Menu",
+      "link": "#1",
+      "icon": "assets/icons/menu.png"
+    },
+    {
+      "menu": "Map",
+      "link": "#2",
+      "icon": "assets/icons/map.png"
+    },
+    {
+      "menu": "Coupon",
+      "link": "#3",
+      "icon": "assets/icons/coupon.png"
+    },
+    {
+      "menu": "Deliver",
+      "link": "#4",
+      "icon": "assets/icons/delivery-man.png"
+    }
+  ]
+}

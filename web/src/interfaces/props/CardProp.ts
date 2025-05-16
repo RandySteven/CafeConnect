@@ -1,17 +1,20 @@
-export interface CardProp {
-    title : String
-    description : String
-    img: String
-}
+export type BaseCardProp = {
+    img: string;
+};
 
-export interface ProductCardProp {
+export type ProductCardProp = BaseCardProp & {
+    type: 'product';
+    title: string;
+    description: string;
+};
 
-}
+export type CafeCardProp = BaseCardProp & {
+    type: 'cafe';
+    name: string;
+    status: string;
+    openHour: string;
+    closeHour: string;
+    address: string;
+};
 
-export interface CafeCardProp {
-    name : String
-    logoURL : String
-    status : String
-    openHour : String
-    closeHour : String
-}
+export type CardProp = ProductCardProp | CafeCardProp;

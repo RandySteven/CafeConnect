@@ -5,4 +5,5 @@ export interface ListCafeResponse {
     status : string
     open_hour : string
     close_hour : string
+    address : string
 }

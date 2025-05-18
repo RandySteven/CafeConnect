@@ -148,6 +148,9 @@ func RandomString(length int) string {
 
 func Join(arr []string, joiner string) string {
 	result := ""
+	if len(arr) == 0 {
+		return result
+	}
 	for index, r := range arr {
 		result += r
 		if index != len(arr)-1 {
@@ -158,9 +161,17 @@ func Join(arr []string, joiner string) string {
 }
 
 func StrToTime(str string) time.Time {
-	layout := `15:04`
-	timeResult, _ := time.Parse(layout, str)
-	return timeResult
+	layout := "15:04:05"
+	parsedTime, err := time.Parse(layout, str)
+	if err != nil {
+		log.Fatal("Failed to parse time:", err)
+	}
+
+	now := time.Now()
+	return time.Date(
+		now.Year(), now.Month(), now.Day(),
+		parsedTime.Hour(), parsedTime.Minute(), parsedTime.Second(), 0, now.Location(),
+	)
 }
 
 func CafeNameToSnakeCase(cafeName string) string {
@@ -170,7 +181,11 @@ func CafeNameToSnakeCase(cafeName string) string {
 }
 
 func GetCafeOpenCloseStatus(startTime string, endTime string) string {
-	currTime := time.Now().Local()
+	currTime := time.Now()
+
+	if startTime == "00:00:00" && endTime == "00:00:00" {
+		return "OPEN"
+	}
 
 	startTimeTime := StrToTime(startTime)
 	endTimeTime := StrToTime(endTime)
@@ -183,5 +198,5 @@ func GetCafeOpenCloseStatus(startTime string, endTime string) string {
 }
 
 func ImageStorage(imgUri string) string {
-	return os.Getenv("BASE_GSTORAGE_URL") + imgUri
+	return imgUri
 }

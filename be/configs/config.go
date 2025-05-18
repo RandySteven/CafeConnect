@@ -69,5 +69,11 @@ type Config struct {
 			ServerKey   string `yaml:"serverKey"`
 			Environment string `yaml:"environment"`
 		} `yaml:"midtrans"`
+
+		AWS struct {
+			AccessKeyID     string `yaml:"accessKeyID"`
+			SecretAccessKey string `yaml:"secretAccessKey"`
+			Region          string `yaml:"region"`
+		} `yaml:"aws"`
 	} `yaml:"config"`
 }

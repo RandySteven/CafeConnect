@@ -134,6 +134,57 @@ func (c *CafeApi) GetListOfCafeBasedOnRadius(w http.ResponseWriter, r *http.Requ
 
 }
 
+func (c *CafeApi) AddCafeOutlet(w http.ResponseWriter, r *http.Request) {
+	latitude, _ := strconv.ParseFloat(r.FormValue(`latitude`), 64)
+	longitude, _ := strconv.ParseFloat(r.FormValue(`longitude`), 64)
+	franchiseID, _ := strconv.Atoi(r.FormValue("franchise_id"))
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		request = &requests.AddCafeOutletRequest{
+			FranchiseID: uint64(franchiseID),
+			Address:     r.FormValue("address"),
+			Latitude:    latitude,
+			Longitude:   longitude,
+			OpenHour:    r.FormValue("open_hour"),
+			CloseHour:   r.FormValue("close_hour"),
+		}
+		dataKey = `result`
+	)
+
+	var photoFiles []io.Reader
+	files := r.MultipartForm.File["photo_urls[]"]
+	for _, fh := range files {
+		file, err := fh.Open()
+		if err != nil {
+			http.Error(w, "failed to open uploaded photo", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+
+		var buf bytes.Buffer
+		_, err = io.Copy(&buf, file)
+		if err != nil {
+			http.Error(w, "failed to read uploaded photo", http.StatusInternalServerError)
+			return
+		}
+		photoFiles = append(photoFiles, bytes.NewReader(buf.Bytes()))
+	}
+	request.PhotoFiles = photoFiles
+
+	if err := utils.BindRequest(r, request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `bad request`, nil, nil, err)
+		return
+	}
+
+	result, customErr := c.usecase.AddCafeOutlet(ctx, request)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success get cafe list`, &dataKey, result, nil)
+}
+
 var _ api_interfaces.CafeApi = &CafeApi{}
 
 func newCafeApi(usecase usecase_interfaces.CafeUsecase) *CafeApi {

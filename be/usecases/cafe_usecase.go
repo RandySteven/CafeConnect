@@ -13,6 +13,7 @@ import (
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
+	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
@@ -29,6 +30,7 @@ type cafeUsecase struct {
 	franchiseRepo repository_interfaces.CafeFranchiseRepository
 	addressRepo   repository_interfaces.AddressRepository
 	googleStorage storage_client.GoogleStorage
+	aws           aws_client.AWS
 	cache         cache_interfaces.CafeCache
 }
 
@@ -292,6 +294,69 @@ func (c *cafeUsecase) GetCafeDetail(ctx context.Context, id uint64) (result *res
 	}
 }
 
+func (c *cafeUsecase) AddCafeOutlet(ctx context.Context, request *requests.AddCafeOutletRequest) (result *responses.RegisterCafeResponse, customErr *apperror.CustomError) {
+	var (
+		cafe      = &models.Cafe{}
+		franchise = &models.CafeFranchise{}
+		address   = &models.Address{
+			Address:   request.Address,
+			Longitude: request.Longitude,
+			Latitude:  request.Latitude,
+		}
+		err         error
+		resultPaths = []string{}
+	)
+
+	franchise, err = c.franchiseRepo.FindByID(ctx, request.FranchiseID)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
+	}
+
+	if len(request.PhotoFiles) != 0 {
+		for _, file := range request.PhotoFiles {
+			resultPath, err := c.googleStorage.UploadFile(ctx, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(franchise.Name)), "", file, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
+			if err != nil {
+				return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
+			}
+			resultPaths = append(resultPaths, resultPath)
+		}
+	}
+
+	photoUrls := utils.Join(resultPaths, ";")
+
+	if customErr = c.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
+
+		//1. insert address
+		address, err = c.addressRepo.Save(ctx, address)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to add address`, err)
+		}
+
+		//2. insert cafe
+		cafe = &models.Cafe{
+			AddressID:       address.ID,
+			CafeFranchiseID: franchise.ID,
+			CafeType:        "",
+			PhotoURLs:       photoUrls,
+			OpenHour:        request.OpenHour,
+			CloseHour:       request.CloseHour,
+		}
+		cafe, err = c.cafeRepo.Save(ctx, cafe)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to add cafe`, err)
+		}
+
+		return nil
+	}); customErr != nil {
+		return nil, customErr
+	}
+
+	return &responses.RegisterCafeResponse{
+		ID:        uuid.NewString(),
+		CreatedAt: time.Now(),
+	}, nil
+}
+
 var _ usecase_interfaces.CafeUsecase = &cafeUsecase{}
 
 func newCafeUsecase(
@@ -300,6 +365,7 @@ func newCafeUsecase(
 	addressRepo repository_interfaces.AddressRepository,
 	transaction repository_interfaces.Transaction,
 	googleStorage storage_client.GoogleStorage,
+	aws aws_client.AWS,
 	cache cache_interfaces.CafeCache) *cafeUsecase {
 	return &cafeUsecase{
 		cafeRepo:      cafeRepo,
@@ -307,6 +373,7 @@ func newCafeUsecase(
 		addressRepo:   addressRepo,
 		transaction:   transaction,
 		googleStorage: googleStorage,
+		aws:           aws,
 		cache:         cache,
 	}
 }

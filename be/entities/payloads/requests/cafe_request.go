@@ -17,7 +17,7 @@ type (
 		CafeType   string      `form:"cafe_type"`
 	}
 
-	AddCafeFranchiseRequest struct {
+	AddCafeOutletRequest struct {
 		FranchiseID uint64      `form:"franchise_id"`
 		Address     string      `form:"address"`
 		Latitude    float64     `form:"latitude"`

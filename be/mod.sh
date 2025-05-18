@@ -16,3 +16,7 @@ go get github.com/redis/go-redis/v9
 go get gopkg.in/yaml.v3
 go get github.com/robfig/cron/v3@v3.0.0
 go get github.com/joho/godotenv
+go get github.com/aws/aws-sdk-go/aws
+go get github.com/aws/aws-sdk-go-v2
+go get github.com/rs/cors
+go get github.com/aws/aws-sdk-go/aws/awsutil@v1.55.7

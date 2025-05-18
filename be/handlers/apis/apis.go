@@ -10,6 +10,7 @@ type APIs struct {
 	OnboardingApi api_interfaces.OnboardingApi
 	CafeApi       api_interfaces.CafeApi
 	ProductApi    api_interfaces.ProductApi
+	ReviewApi     api_interfaces.ReviewApi
 }
 
 func NewAPIs(usecases *usecases.Usecases) *APIs {
@@ -18,5 +19,6 @@ func NewAPIs(usecases *usecases.Usecases) *APIs {
 		OnboardingApi: newOnboardingApi(usecases.OnboardingUsecase),
 		CafeApi:       newCafeApi(usecases.CafeUsecase),
 		ProductApi:    newProductApi(usecases.ProductUsecase),
+		ReviewApi:     newReviewApi(usecases.ReviewUsecase),
 	}
 }

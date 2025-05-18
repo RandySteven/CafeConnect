@@ -19,3 +19,11 @@ export type CafeCardProp = BaseCardProp & {
 };
 
 export type CardProp = ProductCardProp | CafeCardProp;
+
+export interface CommentProp {
+    avatar: string
+    name: string
+    score: number
+    comment: string
+    timestamp: string
+}

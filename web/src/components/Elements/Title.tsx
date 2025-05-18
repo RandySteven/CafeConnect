@@ -8,7 +8,7 @@ export const AppTitle = () => {
         <Fragment>
             <Box display="flex" alignItems="center" >
                 <img
-                    src="../assets/img/cafeConnect-logo.png"
+                    src="/assets/img/cafeConnect-logo.png"
                     alt="CafeConnect Logo"
                     style={{ height: 40, marginRight: 8 }}
                 />

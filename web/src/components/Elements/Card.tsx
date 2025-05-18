@@ -1,16 +1,17 @@
 import {Fragment} from "react";
 import {
-    Box,
-    Card, CardActionArea, CardContent,
+    Avatar,
+    Box, Button,
+    Card, CardActionArea, CardActions, CardContent,
     CardMedia,
     CardProps,
     Link,
     ListItemButton,
     ListItemIcon,
-    ListItemText,
+    ListItemText, Rating,
     Typography
 } from "@mui/material";
-import {CardProp} from "@/interfaces/props/CardProp";
+import {CardProp, CommentProp} from "@/interfaces/props/CardProp";
 import {MenuProp} from "@/interfaces/props/MenuProp";
 import Image from "next/image";
 
@@ -20,6 +21,11 @@ interface CafeDataProp {
     openHour : string
     closeHour : string
     address : string
+}
+
+interface ProductDataProp {
+    title: string
+    description: string
 }
 
 export const ListCard = (prop : CardProp) => {
@@ -36,12 +42,9 @@ export const ListCard = (prop : CardProp) => {
 
                     <Box ml={2} display="flex" flexDirection="column" justifyContent="center">
                         {prop.type === "product" && (
-                            <>
-                                <Typography variant="h6">{prop.title}</Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {prop.description}
-                                </Typography>
-                            </>
+                            <ProductCard
+                                title={prop.title}
+                                description={prop.description} />
                         )}
 
                         {prop.type === "cafe" && (
@@ -61,6 +64,39 @@ export const ListCard = (prop : CardProp) => {
     );
 }
 
+export const CommentCard = (prop : CommentProp) => {
+    return <Fragment>
+        <Card variant="outlined" sx={{ mb: 2 }}>
+            <CardContent sx={{ display: 'flex', gap: 2 }}>
+                <Avatar src={prop.avatar} alt={prop.name} />
+                <Box>
+                    <Box sx={{ backgroundColor: '#f0f2f5', p: 1.5, borderRadius: 2 }}>
+                        <Typography variant="subtitle2" fontWeight="bold">
+                            {prop.name}
+                        </Typography>
+                        <Rating
+                            name="read-only"
+                            value={prop.score} // must be a number between 0-5
+                            readOnly
+                            precision={0.5}
+                            size="small"
+                            sx={{ mb: 0.5 }}
+                        />
+                        <Typography variant="body2">
+                            {prop.comment}
+                        </Typography>
+                    </Box>
+                    {prop.timestamp && (
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {prop.timestamp}
+                        </Typography>
+                    )}
+                </Box>
+            </CardContent>
+        </Card>
+    </Fragment>
+}
+
 const CafeCard = (prop : CafeDataProp) => {
     return <Fragment>
         <>
@@ -73,6 +109,17 @@ const CafeCard = (prop : CafeDataProp) => {
 
         </>
     </Fragment>
+}
+
+const ProductCard = (prop : ProductDataProp) => {
+    return <>
+        <>
+            <Typography variant="h6">{prop.title}</Typography>
+            <Typography variant="body2" color="text.secondary">
+                {prop.description}
+            </Typography>
+        </>
+    </>
 }
 
 const Status = (prop : {
@@ -111,9 +158,47 @@ const Hour = (prop : {
     </Typography>
 }
 
-export const GridCard = () => {
+export const GridCard = (item : {
+    image: string
+    name: string
+    price: number
+    stock: number
+}) => {
     return <Fragment>
-
+        <Card sx={{ height: '100%' }}>
+            <CardMedia
+                component="img"
+                height="160"
+                image={item.image}
+                alt={item.name}
+                sx={{ height: 180,
+                    width: '100%',
+                    objectFit: 'cover',
+                    borderTopLeftRadius: 4,
+                    borderTopRightRadius: 4, }}
+            />
+            <CardContent>
+                <Typography gutterBottom variant="b" component="div">
+                    {item.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Price: Rp {item.price.toLocaleString()}
+                </Typography>
+                <Typography variant="body2" color={item.stock > 0 ? "text.primary" : "error"}>
+                    Stock: {item.stock > 0 ? item.stock : "Out of stock"}
+                </Typography>
+            </CardContent>
+            <CardActions>
+                <Button
+                    size="small"
+                    variant="contained"
+                    color="primary"
+                    disabled={item.stock === 0}
+                >
+                    See Detail
+                </Button>
+            </CardActions>
+        </Card>
     </Fragment>
 }
 

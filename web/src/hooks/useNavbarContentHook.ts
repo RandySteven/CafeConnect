@@ -10,7 +10,7 @@ export const useNavbarContent = () : Navbar => {
     })
 
     useEffect(() => {
-        fetch(`contents/json/navbarContent.json`)
+        fetch(`../contents/json/navbarContent.json`)
             .then((response) => {return response.json()})
             .then((data) => setNavbar(data))
             .catch((error) => {

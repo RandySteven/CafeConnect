@@ -10,13 +10,15 @@ export const GridMenu = () => {
     const menus = useMenu()
     return (
         <Fragment>
-            <Grid container spacing={2}>
-                {menus.menus.map((menu, idx) => (
-                    <Grid item xs={12} sm={6} md={3} key={idx}>
-                        <MenuCard name={menu.menu} icon={menu.icon} link={menu.link} />
-                    </Grid>
-                ))}
-            </Grid>
+            <Box alignItems="center">
+                <Grid container spacing={2}>
+                    {menus.menus.map((menu, idx) => (
+                        <Grid item xs={12} sm={6} md={3} key={idx}>
+                            <MenuCard name={menu.menu} icon={menu.icon} link={menu.link} />
+                        </Grid>
+                    ))}
+                </Grid>
+            </Box>
         </Fragment>
     );
 }

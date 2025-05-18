@@ -1,4 +1,5 @@
 export type BaseCardProp = {
+    link: string;
     img: string;
 };
 

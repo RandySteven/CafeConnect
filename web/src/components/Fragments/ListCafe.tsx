@@ -6,7 +6,7 @@ import {ListCard} from "@/components/Elements/Card";
 import {Box} from "@mui/material";
 
 export const ListCafe = () => {
-    const listCafes = useListCafeWithRadius(109.325903544546240, 0, 25000)
+    const listCafes = useListCafeWithRadius(109.34695696792511, -0.03646908129222186, 2500)
     return <Fragment>
         <Box
             sx={{
@@ -16,6 +16,7 @@ export const ListCafe = () => {
             {
                 listCafes.map((cafe, index) => (
                     <ListCard
+                        link={`/cafes/${cafe.id}`}
                         key={index}
                         type="cafe"
                         img={cafe.logo_url}

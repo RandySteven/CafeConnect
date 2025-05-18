@@ -2,9 +2,9 @@
 
 import {Fragment} from "react";
 import {AppBar, Box, Container, Toolbar} from "@mui/material";
-import {AppTitle} from "@/components/Elements/AppTitle";
 import {NavbarElementContent} from "@/components/Elements/NavbarElement";
 import {useNavbarContent} from "@/hooks/useNavbarContentHook";
+import {AppTitle} from "@/components/Elements/Title";
 
 export const Navbar = () => {
     const navbar = useNavbarContent()

@@ -156,4 +156,19 @@ const (
 		    FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
 		)
 	`
+
+	CreateReviewTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS reviews (
+			id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+			cafe_id BIGINT NOT NULL,
+			user_id BIGINT NOT NULL,
+			score FLOAT NOT NULL,
+			comment VARCHAR(244) DEFAULT "",
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL,
+		    FOREIGN KEY (cafe_id) REFERENCES cafes (id) ON DELETE CASCADE,
+		    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+		)
+	`
 )

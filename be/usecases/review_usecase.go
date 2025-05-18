@@ -22,13 +22,14 @@ type reviewUsecase struct {
 
 func (r *reviewUsecase) GetCafeReviews(ctx context.Context, request *requests.GetCafeReviewRequest) (result *responses.GetReviewsResponse, customErr *apperror.CustomError) {
 	var (
-		wg            sync.WaitGroup
-		numbOfWorkers = 2
-		customErrCh   = make(chan *apperror.CustomError)
+		wg              sync.WaitGroup
+		numbOfWorkers   = 2
+		customErrCh     = make(chan *apperror.CustomError)
+		resultReviewsCh = make(chan []*responses.ReviewsResponse)
+		avgCh           = make(chan float64)
 	)
-	result = &responses.GetReviewsResponse{
-		CafeID: request.CafeID,
-	}
+	result = &responses.GetReviewsResponse{}
+
 	wg.Add(numbOfWorkers)
 
 	go func() {
@@ -59,7 +60,7 @@ func (r *reviewUsecase) GetCafeReviews(ctx context.Context, request *requests.Ge
 				CreatedAt: review.CreatedAt,
 			}
 		}
-		result.Reviews = resultReviews
+		resultReviewsCh <- resultReviews
 	}()
 
 	go func() {
@@ -67,9 +68,10 @@ func (r *reviewUsecase) GetCafeReviews(ctx context.Context, request *requests.Ge
 		avg, err := r.reviewRepo.AvgCafeRating(ctx, request.CafeID)
 		if err != nil {
 			customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get avg`, err)
+			return
 		}
 
-		result.AvgScore = avg
+		avgCh <- avg
 	}()
 
 	go func() {
@@ -81,6 +83,9 @@ func (r *reviewUsecase) GetCafeReviews(ctx context.Context, request *requests.Ge
 	case customErr = <-customErrCh:
 		return nil, customErr
 	default:
+		result.CafeID = request.CafeID
+		result.Reviews = <-resultReviewsCh
+		result.AvgScore = <-avgCh
 		return result, nil
 	}
 }

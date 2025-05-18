@@ -30,6 +30,7 @@ type (
 		Name      string     `json:"name"`
 		Photo     string     `json:"photo"`
 		Price     uint64     `json:"price"`
+		Stock     uint64     `json:"stock"`
 		CreatedAt time.Time  `json:"created_at"`
 		UpdatedAt time.Time  `json:"updated_at"`
 		DeletedAt *time.Time `json:"deleted_at"`

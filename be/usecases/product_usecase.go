@@ -9,7 +9,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/enums"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
-	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
+	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	"github.com/google/uuid"
 	"mime/multipart"
 	"time"
@@ -21,7 +21,7 @@ type productUsecase struct {
 	cafeProductRepo           repository_interfaces.CafeProductRepository
 	productRepo               repository_interfaces.ProductRepository
 	productCategoryRepository repository_interfaces.ProductCategoryRepository
-	storage                   storage_client.GoogleStorage
+	aws                       aws_client.AWS
 	transaction               repository_interfaces.Transaction
 }
 
@@ -35,12 +35,12 @@ func (p *productUsecase) AddProduct(ctx context.Context, request *requests.AddPr
 		cafes []*models.Cafe
 	)
 
-	resultPath, err := p.storage.UploadFile(ctx, enums.ProductsStorage, "", request.Photo, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 40, 40)
+	resultPath, err := p.aws.UploadImageFile(ctx, request.Photo, enums.ProductsStorage, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 40, 40)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to upload product`, err)
 	}
 
-	product.PhotoURL = resultPath
+	product.PhotoURL = *resultPath
 
 	cafes, err = p.cafeRepo.FindByCafeFranchiseId(ctx, request.FranchiseID)
 	if err != nil {
@@ -76,20 +76,20 @@ func (p *productUsecase) AddProduct(ctx context.Context, request *requests.AddPr
 	}, nil
 }
 
-func (p *productUsecase) GetProductByCafe(ctx context.Context, cafeId uint64) (result []*responses.ListProductResponse, customErr *apperror.CustomError) {
+func (p *productUsecase) GetProductByCafe(ctx context.Context, request *requests.GetProductListByCafeIDRequest) (result []*responses.ListProductResponse, customErr *apperror.CustomError) {
 	var (
-		cafe         = &models.Cafe{}
+		//cafe         = &models.Cafe{}
 		cafeProducts = []*models.CafeProduct{}
 		err          error
 		product      = &models.Product{}
 	)
 
-	cafe, err = p.cafeRepo.FindByID(ctx, cafeId)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
-	}
+	//cafe, err = p.cafeRepo.FindByID(ctx, request.CafeID)
+	//if err != nil {
+	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
+	//}
 
-	cafeProducts, err = p.cafeProductRepo.FindByCafeID(ctx, cafe.ID)
+	cafeProducts, err = p.cafeProductRepo.FindByCafeID(ctx, request.CafeID)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe products`, err)
 	}
@@ -105,6 +105,7 @@ func (p *productUsecase) GetProductByCafe(ctx context.Context, cafeId uint64) (r
 			Name:      product.Name,
 			Photo:     product.PhotoURL,
 			Price:     cafeProduct.Price,
+			Stock:     cafeProduct.Stock,
 			CreatedAt: cafeProduct.CreatedAt,
 			UpdatedAt: cafeProduct.UpdatedAt,
 			DeletedAt: cafeProduct.DeletedAt,
@@ -165,7 +166,7 @@ func newProductUsecase(
 	cafeProductRepo repository_interfaces.CafeProductRepository,
 	productRepo repository_interfaces.ProductRepository,
 	productCategoryRepository repository_interfaces.ProductCategoryRepository,
-	storage storage_client.GoogleStorage,
+	aws aws_client.AWS,
 	transaction repository_interfaces.Transaction,
 ) *productUsecase {
 	return &productUsecase{
@@ -173,7 +174,7 @@ func newProductUsecase(
 		cafeFranchiseRepo:         cafeFranchiseRepo,
 		cafeProductRepo:           cafeProductRepo,
 		productRepo:               productRepo,
-		storage:                   storage,
+		aws:                       aws,
 		productCategoryRepository: productCategoryRepository,
 		transaction:               transaction,
 	}

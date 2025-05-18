@@ -34,6 +34,6 @@ const (
 		FROM
 		    cafe_products
 		WHERE
-		    product_id = ?
+		    cafe_id = ?
 	`
 )

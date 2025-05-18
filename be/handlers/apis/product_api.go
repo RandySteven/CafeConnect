@@ -56,6 +56,22 @@ func (p *ProductApi) AddProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *ProductApi) GetListOfProducts(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		request = &requests.GetProductListByCafeIDRequest{}
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		dataKey = `menus`
+	)
+	if err := utils.BindRequest(r, request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
+		return
+	}
+	result, customErr := p.usecase.GetProductByCafe(ctx, request)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success get menu list`, &dataKey, result, nil)
 
 }
 

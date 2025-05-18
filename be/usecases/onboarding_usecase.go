@@ -13,8 +13,8 @@ import (
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
+	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	jwt_client "github.com/RandySteven/CafeConnect/be/pkg/jwt"
-	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -33,13 +33,13 @@ type onboardingUsecase struct {
 	addressUserRepo repository_interfaces.AddressUserRepository
 	transaction     repository_interfaces.Transaction
 	onboardingCache cache_interfaces.OnboardingCache
-	googleStorage   storage_client.GoogleStorage
+	aws             aws_client.AWS
 }
 
 func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.RegisterUserRequest) (result *responses.RegisterUserResponse, customErr *apperror.CustomError) {
 	var err error
 	fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
-	resultPath, err := o.googleStorage.UploadFile(ctx, enums.UsersStorage, "", request.ProfilePicture, fileHeader, 40, 40)
+	resultPath, err := o.aws.UploadImageFile(ctx, request.ProfilePicture, enums.UsersStorage, fileHeader, 40, 40)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `failed to upload image `, err)
 	}
@@ -59,7 +59,7 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			PhoneNumber:    request.PhoneNumber,
 			DoB:            time.DateOnly,
 			Password:       password,
-			ProfilePicture: resultPath,
+			ProfilePicture: *resultPath,
 		}
 		point = &models.Point{
 			Point: 0,
@@ -143,7 +143,7 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 
 		select {
 		case customErr = <-customErrCh:
-			_ = o.googleStorage.DeleteFile(ctx, resultPath)
+			//_ = o.googleStorage.DeleteFile(ctx, resultPath)
 			return customErr
 		}
 	})
@@ -292,7 +292,7 @@ func newOnboardingUsecase(
 	referralRepo repository_interfaces.ReferralRepository,
 	transaction repository_interfaces.Transaction,
 	onboardingCache cache_interfaces.OnboardingCache,
-	googleStorage storage_client.GoogleStorage,
+	aws aws_client.AWS,
 ) *onboardingUsecase {
 	return &onboardingUsecase{
 		userRepo:        userRepo,
@@ -302,6 +302,6 @@ func newOnboardingUsecase(
 		referralRepo:    referralRepo,
 		transaction:     transaction,
 		onboardingCache: onboardingCache,
-		googleStorage:   googleStorage,
+		aws:             aws,
 	}
 }

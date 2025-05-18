@@ -48,6 +48,12 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 		Post(``, api.ReviewApi.AddCafeReview, enums.AuthenticationMiddleware),
 	}
 
+	endpoint[enums.ProductPrefix] = []*Router{
+		Post(``, api.ProductApi.AddProduct),
+		Get(`/{id}`, api.ProductApi.GetProductDetail),
+		Post(`/cafe-list`, api.ProductApi.GetListOfProducts),
+	}
+
 	return endpoint
 }
 
@@ -90,6 +96,13 @@ func InitRouter(routers RouterPrefix, r *mux.Router) {
 		middleware.RegisterMiddleware(enums.ReviewPrefix, router.method, router.path, router.middlewares)
 		reviewRouter.HandleFunc(router.path, router.handler).Methods(router.method)
 		router.RouterLog(enums.ReviewPrefix.ToString())
+	}
+
+	productRouter := r.PathPrefix(enums.ProductPrefix.ToString()).Subrouter()
+	for _, router := range routers[enums.ProductPrefix] {
+		middleware.RegisterMiddleware(enums.ProductPrefix, router.method, router.path, router.middlewares)
+		productRouter.HandleFunc(router.path, router.handler).Methods(router.method)
+		router.RouterLog(enums.ProductPrefix.ToString())
 	}
 }
 

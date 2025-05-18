@@ -10,4 +10,8 @@ type (
 		ProductCategoryID uint64    `form:"product_category_id"`
 		Price             uint64    `form:"price"`
 	}
+
+	GetProductListByCafeIDRequest struct {
+		CafeID uint64 `json:"cafe_id"`
+	}
 )

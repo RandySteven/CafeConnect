@@ -9,6 +9,6 @@ import (
 
 type ProductUsecase interface {
 	AddProduct(ctx context.Context, request *requests.AddProductRequest) (result *responses.AddProductResponse, customErr *apperror.CustomError)
-	GetProductByCafe(ctx context.Context, cafeId uint64) (result []*responses.ListProductResponse, customErr *apperror.CustomError)
+	GetProductByCafe(ctx context.Context, request *requests.GetProductListByCafeIDRequest) (result []*responses.ListProductResponse, customErr *apperror.CustomError)
 	GetProductDetail(ctx context.Context, id uint64) (result *responses.DetailProductResponse, customErr *apperror.CustomError)
 }

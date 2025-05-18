@@ -39,7 +39,6 @@ func (c *cafeProductRepository) FindByCafeID(ctx context.Context, cafeID uint64)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		res := &models.CafeProduct{}

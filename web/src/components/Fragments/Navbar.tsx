@@ -23,6 +23,7 @@ export const Navbar = () => {
                         justifyContent: "space-between",
                         alignItems: "center",
                         width: "100%",
+                        px: 5
                     }}
                 >
                     <AppTitle />

@@ -10,6 +10,11 @@ export const NavbarElementContent = (props : NavbarProp) => {
                     {item.title}
                 </Button>
             ))}
+            <Button sx={{
+                color: '#fff'
+            }}>
+                Login
+            </Button>
         </Box>
     </Fragment>
 }

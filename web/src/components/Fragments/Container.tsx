@@ -1,9 +1,6 @@
 import React, { Fragment, ReactNode } from "react";
 import { Box } from "@mui/material";
-
-type ContainerProps = {
-    children: ReactNode;
-};
+import {ContainerProps} from "@/interfaces/props/ContainerProp";
 
 export const Container = ({ children }: ContainerProps) => {
     return (

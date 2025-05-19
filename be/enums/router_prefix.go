@@ -9,6 +9,7 @@ const (
 	CafePrefix       RouterPrefix = `/cafes`
 	ReviewPrefix     RouterPrefix = `/reviews`
 	ProductPrefix    RouterPrefix = `/products`
+	CartPrefix       RouterPrefix = `/carts`
 )
 
 func (r RouterPrefix) ToString() string {

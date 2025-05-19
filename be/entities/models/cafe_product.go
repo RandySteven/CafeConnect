@@ -13,6 +13,6 @@ type CafeProduct struct {
 	UpdatedAt time.Time
 	DeletedAt *time.Time
 
-	Cafe    *Cafe
-	Product *Product
+	//Cafe    *Cafe
+	//Product *Product
 }

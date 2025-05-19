@@ -13,6 +13,7 @@ type Usecases struct {
 	CafeUsecase       usecase_interfaces.CafeUsecase
 	ProductUsecase    usecase_interfaces.ProductUsecase
 	ReviewUsecase     usecase_interfaces.ReviewUsecase
+	CartUsecase       usecase_interfaces.CartUsecase
 }
 
 func NewUsecases(repo *repositories.Repositories,
@@ -24,5 +25,6 @@ func NewUsecases(repo *repositories.Repositories,
 		CafeUsecase:       newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, googleStorage, aws, cache.CafeCache),
 		ProductUsecase:    newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, aws, repo.Transaction),
 		ReviewUsecase:     newReviewUsecase(repo.ReviewRepository, repo.CafeRepository, repo.UserRepository),
+		CartUsecase:       newCartUsecase(repo.CafeRepository, repo.CafeProductRepository, repo.CartRepository, repo.ProductRepository, repo.UserRepository, repo.Transaction),
 	}
 }

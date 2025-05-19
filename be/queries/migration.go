@@ -171,4 +171,18 @@ const (
 		    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 		)
 	`
+
+	CreateCartTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS carts (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    user_id BIGINT NOT NULL,
+		    cafe_product_id BIGINT NOT NULL,
+		    qty INT NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL,
+		    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+		    FOREIGN KEY (cafe_product_id) REFERENCES cafe_products (id) ON DELETE CASCADE
+		)
+	`
 )

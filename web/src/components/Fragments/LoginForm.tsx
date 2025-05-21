@@ -1,18 +1,66 @@
-import {Fragment} from "react";
+"use client";
+
+import { useRouter } from "next/navigation";
 import {FormContainer} from "@/components/Elements/FormContainer";
-import {FormHelperText, Input, InputLabel} from "@mui/material";
+import {InputLabel} from "@/components/Elements/InputLable";
+import React, {Fragment, useState} from "react";
+import {LoginRequest} from "@/api/requests/OnboardingRequest";
+import {Box, Button} from "@mui/material";
+import {useLogin} from "@/hooks/useOnboardingHook";
 
 export const LoginForm = () => {
-    return <Fragment>
-        <FormContainer title={`Login`}>
-            <InputLabel htmlFor="my-input">Email address</InputLabel>
-            <Input id="my-input" aria-describedby="my-helper-text" />
-            <FormHelperText id="my-helper-text">We'll never share your email.</FormHelperText>
+    const router = useRouter()
+    const [loginRequest, setLoginRequest] = useState<LoginRequest>({
+        email: "",
+        password: ""
+    });
 
-            <InputLabel htmlFor="my-input-2">Password</InputLabel>
-            <Input id="my-input-2" aria-describedby="my-helper-text-2" />
-            <FormHelperText id="my-helper-text-2">We'll never share your password.</FormHelperText>
+    const handleChange = (field: keyof LoginRequest) =>
+        (event: React.ChangeEvent<HTMLInputElement>) => {
+            setLoginRequest({
+                ...loginRequest,
+                [field]: event.target.value
+            });
+        };
 
-        </FormContainer>
-    </Fragment>
-}
+    const handleSubmit = async () => {
+        try {
+            const result = await useLogin(loginRequest)
+            router.push(`/`)
+        } catch (error) {
+            console.error("Login failed", error);
+        }
+    };
+
+    return (
+        <Fragment>
+            <FormContainer title="Login">
+                <Box display="flex" flexDirection="column" gap={2} mt={2}>
+                    <InputLabel
+                        id="email"
+                        label="Email"
+                        inputType="email"
+                        placeholder="Enter your email"
+                        value={loginRequest.email}
+                        onChange={handleChange("email")}
+                    />
+                    <InputLabel
+                        id="password"
+                        label="Password"
+                        inputType="password"
+                        placeholder="Enter your password"
+                        value={loginRequest.password}
+                        onChange={handleChange("password")}
+                    />
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSubmit}
+                    >
+                        Login
+                    </Button>
+                </Box>
+            </FormContainer>
+        </Fragment>
+    );
+};

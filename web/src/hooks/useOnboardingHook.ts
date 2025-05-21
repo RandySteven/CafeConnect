@@ -3,6 +3,7 @@ import {useEffect, useState} from "react";
 import {GET, POST} from "@/api/api";
 import {LOGIN_ENDPOINT, ONBOARD_ENDPOINT} from "@/api/endpoint";
 import {LoginRequest} from "@/api/requests/OnboardingRequest";
+import {setToken} from "@/utils/common";
 
 export const useOnboarding = () : OnboardUserResponse => {
     const [onboardingUserResponse, setOnboardingUserResponse] = useState<OnboardUserResponse>({
@@ -19,31 +20,22 @@ export const useOnboarding = () : OnboardUserResponse => {
     })
 
     useEffect(() => {
-        let result = GET(ONBOARD_ENDPOINT, true)
-            .then((data) => setOnboardingUserResponse(data))
-            .catch(error => {
-                return error
-            })
+        let fetchResult = async () => {
+            let result = await GET(ONBOARD_ENDPOINT, true)
+            setOnboardingUserResponse(result.data.result)
+        }
+
+        fetchResult()
+
+
     }, []);
 
     return onboardingUserResponse
 }
 
-export const useLogin = (request : LoginRequest) : LoginResponse => {
-    const [loginResponse, setLoginResponse] = useState<LoginResponse>({
-        access_token: "",
-        refresh_token: "",
-        login_time: ""
-    })
 
-    useEffect(() => {
-        const fetchLogin = async () => {
-            const result = await POST(LOGIN_ENDPOINT, false, request)
-            setLoginResponse(result.data.token)
-        }
-
-        fetchLogin()
-    }, [])
-
-    return loginResponse
-}
+export const useLogin = async (request: LoginRequest): Promise<LoginResponse> => {
+    const result = await POST(LOGIN_ENDPOINT, false, request);
+    setToken(result.data.token.access_token);
+    return result.data.token;
+};

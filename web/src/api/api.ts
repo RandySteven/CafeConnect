@@ -1,5 +1,6 @@
 "use client";
 import { redirect } from "next/navigation";
+import {getToken} from "@/utils/common";
 
 export const GET = async (url:string, requiredJwt: boolean) => {
     const headers: Record<string, string> = {
@@ -7,8 +8,12 @@ export const GET = async (url:string, requiredJwt: boolean) => {
     };
 
     if (requiredJwt) {
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        // const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+        // const token = await getTokenCookie()
+        const token = getToken()
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+        }
     }
 
     try {
@@ -17,6 +22,7 @@ export const GET = async (url:string, requiredJwt: boolean) => {
             method: `GET`,
             headers: headers
         })
+
         const end = performance.now()
         const responseTime = end - start;
 
@@ -39,8 +45,9 @@ export const POST = async (url: string, requiredJwt: boolean, body: any) => {
     };
 
     if (requiredJwt) {
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        // const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+        // const token = await getTokenCookie()
+        // if (token) headers['Authorization'] = `Bearer ${token}`;
     }
 
     try {

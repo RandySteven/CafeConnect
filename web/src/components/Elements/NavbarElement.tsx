@@ -1,6 +1,8 @@
 import {Fragment} from "react";
 import {NavbarProp} from "@/interfaces/props/NavbarProp";
 import {Box, Button} from "@mui/material";
+import {getToken} from "@/utils/common";
+import {useOnboarding} from "@/hooks/useOnboardingHook";
 
 export const NavbarElementContent = (props : NavbarProp) => {
     return <Fragment>
@@ -10,11 +12,32 @@ export const NavbarElementContent = (props : NavbarProp) => {
                     {item.title}
                 </Button>
             ))}
-            <Button sx={{
-                color: '#fff'
-            }}>
-                Login
-            </Button>
+           <UserAccountMenu />
         </Box>
+    </Fragment>
+}
+
+export const getOnboardUser = () => {
+}
+
+export const UserAccountMenu = () => {
+    let user = useOnboarding()
+    console.log(user.name)
+    return <Fragment>
+        <Button sx={{
+            color: '#fff'
+        }}>
+            {
+                user.name !== "" ? (
+                    <>
+                        {user.username}
+                    </>
+                ) : (
+                    <>
+                        Login
+                    </>
+                )
+            }
+        </Button>
     </Fragment>
 }

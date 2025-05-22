@@ -6,6 +6,8 @@ import (
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	"github.com/RandySteven/CafeConnect/be/queries"
+	"github.com/RandySteven/CafeConnect/be/utils"
+	"log"
 )
 
 type cafeProductRepository struct {
@@ -50,6 +52,26 @@ func (c *cafeProductRepository) FindByCafeID(ctx context.Context, cafeID uint64)
 		result = append(result, res)
 	}
 
+	return result, nil
+}
+
+func (c *cafeProductRepository) FindByCafeIDs(ctx context.Context, cafeIDs []uint64) (result []*models.CafeProduct, err error) {
+	query := queries.SelectCafeProductsInCafeIDs.String() + utils.InQuery(cafeIDs)
+	log.Println(query)
+	rows, err := c.dbx(ctx).QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		res := &models.CafeProduct{}
+		err = rows.Scan(&res.ID, &res.CafeID, &res.ProductID, &res.Price, &res.Stock, &res.Status,
+			&res.CreatedAt, &res.UpdatedAt, &res.DeletedAt)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, res)
+	}
 	return result, nil
 }
 

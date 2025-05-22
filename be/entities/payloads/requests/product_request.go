@@ -12,10 +12,6 @@ type (
 	}
 
 	GetProductListByCafeIDRequest struct {
-		CafeID uint64 `json:"cafe_id"`
-	}
-
-	GetListOfProductsByListOfCafes struct {
-		CafeIDs []uint64 `json:"cafe_ids"`
+		CafeID []uint64 `json:"cafe_ids"`
 	}
 )

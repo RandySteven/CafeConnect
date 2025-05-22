@@ -98,7 +98,7 @@ func (p *productUsecase) GetProductByCafe(ctx context.Context, request *requests
 		return result, nil
 	}
 
-	cafeProducts, err = p.cafeProductRepo.FindByCafeID(ctx, request.CafeID)
+	cafeProducts, err = p.cafeProductRepo.FindByCafeIDs(ctx, request.CafeID)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe products`, err)
 	}

@@ -28,4 +28,12 @@ const (
 		WHERE
 		    cafe_id = ?
 	`
+
+	SelectCafeProductsInCafeIDs GoQuery = `
+		SELECT id, cafe_id, product_id, price, stock, status, created_at, updated_at, deleted_at
+		FROM
+		    cafe_products
+		WHERE
+		    cafe_id IN 
+	`
 )

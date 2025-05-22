@@ -9,4 +9,5 @@ type CafeProductRepository interface {
 	Saver[models.CafeProduct]
 	Finder[models.CafeProduct]
 	FindByCafeID(ctx context.Context, cafeID uint64) (result []*models.CafeProduct, err error)
+	FindByCafeIDs(ctx context.Context, cafeIDs []uint64) (result []*models.CafeProduct, err error)
 }

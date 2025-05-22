@@ -200,3 +200,15 @@ func GetCafeOpenCloseStatus(startTime string, endTime string) string {
 func ImageStorage(imgUri string) string {
 	return imgUri
 }
+
+func InQuery(ids []uint64) string {
+	query := `(`
+	for index, id := range ids {
+		query += fmt.Sprintf("%d", id)
+		if index != len(ids)-1 {
+			query += `,`
+		}
+	}
+	query += `)`
+	return query
+}

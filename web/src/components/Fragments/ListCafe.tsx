@@ -4,9 +4,17 @@ import {Fragment} from "react";
 import {useListCafeWithRadius} from "@/hooks/useCafeHook";
 import {ListCard} from "@/components/Elements/Card";
 import {Box} from "@mui/material";
+import {setItem} from "@/utils/common";
 
 export const ListCafe = () => {
     const listCafes = useListCafeWithRadius(109.34695696792511, -0.03646908129222186, 2500)
+    let cafeIds : number[] = []
+    for(let i = 0 ; i < listCafes.length ; i++) {
+        cafeIds[i] = listCafes[i].id
+    }
+
+    setItem("cafeIds", cafeIds)
+
     return <Fragment>
         <Box
             sx={{

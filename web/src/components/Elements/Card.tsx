@@ -24,7 +24,7 @@ interface CafeDataProp {
 }
 
 interface ProductDataProp {
-    title: string
+    name: string
     description: string
 }
 
@@ -43,7 +43,7 @@ export const ListCard = (prop : CardProp) => {
                     <Box ml={2} display="flex" flexDirection="column" justifyContent="center">
                         {prop.type === "product" && (
                             <ProductCard
-                                title={prop.title}
+                                name={prop.name}
                                 description={prop.description} />
                         )}
 
@@ -114,7 +114,7 @@ const CafeCard = (prop : CafeDataProp) => {
 const ProductCard = (prop : ProductDataProp) => {
     return <>
         <>
-            <Typography variant="h6">{prop.title}</Typography>
+            <Typography variant="h6">{prop.name}</Typography>
             <Typography variant="body2" color="text.secondary">
                 {prop.description}
             </Typography>

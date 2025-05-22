@@ -3,12 +3,16 @@
 import {Fragment} from "react";
 import {useProductByCafe} from "@/hooks/useProduct";
 import {Grid} from "@mui/system";
-import {GridCard} from "@/components/Elements/Card";
+import {GridCard, ListCard} from "@/components/Elements/Card";
+import {useListCafeWithRadius} from "@/hooks/useCafeHook";
+import {Box} from "@mui/material";
+import {wait} from "next/dist/lib/wait";
+import {getItem} from "@/utils/common";
 
 export const ProductList = (prop : {
     id : number
 }) => {
-    const products = useProductByCafe(prop.id)
+    const products = useProductByCafe([Number(prop.id)])
 
     return <Fragment>
         <Grid container spacing={3}>
@@ -19,5 +23,33 @@ export const ProductList = (prop : {
                 </Grid>
             ))}
         </Grid>
+    </Fragment>
+}
+
+export const MenuList = () => {
+    let cafeIds : number[] = []
+    let cafeIdStorages = getItem("cafeIds")?.split(",")
+    for(let i = 0 ; i < cafeIdStorages?.length; i++) {
+        cafeIds[i] = Number(cafeIdStorages[i])
+    }
+    const products = useProductByCafe(cafeIds)
+    return <Fragment>
+        <Box
+            sx={{
+                py: 2
+            }}
+        >
+            {
+                products.map((product, index) => (
+                    <ListCard
+                        link={`/products/${product.id}`}
+                        key={index}
+                        type="product"
+                        img={product.photo}
+                        name={product.name}
+                    />
+                ))
+            }
+        </Box>
     </Fragment>
 }

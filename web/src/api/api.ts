@@ -49,7 +49,7 @@ export const POST = async (url: string, requiredJwt: boolean, body: any) => {
         // const token = await getTokenCookie()
         // if (token) headers['Authorization'] = `Bearer ${token}`;
     }
-
+    console.log(`request boduy `, JSON.stringify(body))
     try {
 
         console.log(`masuk post harusnya`)

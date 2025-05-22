@@ -1,6 +1,6 @@
 import {Fragment} from "react";
 import {NavbarProp} from "@/interfaces/props/NavbarProp";
-import {Box, Button} from "@mui/material";
+import {Box, Button, Link} from "@mui/material";
 import {getToken} from "@/utils/common";
 import {useOnboarding} from "@/hooks/useOnboardingHook";
 
@@ -8,9 +8,11 @@ export const NavbarElementContent = (props : NavbarProp) => {
     return <Fragment>
         <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
             {props.navbarContents.contents.map((item) => (
-                <Button key={item.href} sx={{ color: '#fff' }}>
-                    {item.title}
-                </Button>
+                    <Button key={item.href}>
+                        <Link href={item.href}  sx={{ color: '#fff' }}>
+                            {item.title}
+                        </Link>
+                    </Button>
             ))}
            <UserAccountMenu />
         </Box>

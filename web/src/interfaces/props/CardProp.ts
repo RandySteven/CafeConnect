@@ -5,7 +5,7 @@ export type BaseCardProp = {
 
 export type ProductCardProp = BaseCardProp & {
     type: 'product';
-    title: string;
+    name: string;
     description: string;
 };
 

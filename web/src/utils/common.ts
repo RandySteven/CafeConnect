@@ -16,6 +16,19 @@ export const clearToken = () => {
     localStorage.removeItem("access_token");
 };
 
+export const setItem = (key : string, value : any) => {
+    if(typeof window !== 'undefined') {
+        localStorage.setItem(key, value)
+    }
+}
+
+export const getItem = (key : string) : any | null => {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem(key)
+    }
+    return null
+}
+
 // export const setTokenCookie = async (token: string) => {
 //     const cookieStore = await cookies()
 //     cookieStore.set({

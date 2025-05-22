@@ -70,5 +70,4 @@ func (a *App) RefreshRedis(ctx context.Context) error {
 }
 
 func (a *App) PrepareJobScheduler(ctx context.Context) {
-
 }

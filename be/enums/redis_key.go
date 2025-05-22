@@ -5,4 +5,6 @@ const (
 	FranchisesListCacheKey = `franchises_key`
 	CafeCacheKey           = `cafe_detail.%s`
 	ListCafeRadiusKey      = `list_cafe_of_address.%f.%f.of_radius.%s`
+	CafeProductsKey        = `cafe_products_of.%d`
+	ProductKey             = `product.%d`
 )

@@ -16,6 +16,11 @@ type (
 		Items []midtrans.ItemDetails
 	}
 
+	MidtransResponse struct {
+		Token       string
+		RedirectURL string
+	}
+
 	Midtrans interface {
 		CreateTransaction(ctx context.Context, request *MidtransRequest)
 	}

@@ -15,6 +15,6 @@ type SingleDataCache[T any] interface {
 }
 
 type MultiDataCache[T any] interface {
-	SetMultiData(ctx context.Context, values []*T) (err error)
-	GetMultiData(ctx context.Context) (values []*T, err error)
+	SetMultiData(ctx context.Context, key string, values []*T) (err error)
+	GetMultiData(ctx context.Context, key string) (values []*T, err error)
 }

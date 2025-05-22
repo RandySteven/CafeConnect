@@ -8,6 +8,7 @@ import (
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 )
@@ -76,6 +77,19 @@ func (p *ProductApi) GetListOfProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *ProductApi) GetProductDetail(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		vars    = mux.Vars(r)
+		dataKey = `product`
+	)
+	id, _ := strconv.Atoi(vars[`id`])
+	result, customErr := p.usecase.GetProductDetail(ctx, uint64(id))
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success get product`, &dataKey, result, nil)
 }
 
 var _ api_interfaces.ProductApi = &ProductApi{}

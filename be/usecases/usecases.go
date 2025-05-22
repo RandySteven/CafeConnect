@@ -23,7 +23,7 @@ func NewUsecases(repo *repositories.Repositories,
 	return &Usecases{
 		OnboardingUsecase: newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, cache.OnboardCache, aws),
 		CafeUsecase:       newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, googleStorage, aws, cache.CafeCache),
-		ProductUsecase:    newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, aws, repo.Transaction),
+		ProductUsecase:    newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, aws, repo.Transaction, cache.ProductCache),
 		ReviewUsecase:     newReviewUsecase(repo.ReviewRepository, repo.CafeRepository, repo.UserRepository),
 		CartUsecase:       newCartUsecase(repo.CafeRepository, repo.CafeProductRepository, repo.CartRepository, repo.ProductRepository, repo.UserRepository, repo.Transaction),
 	}

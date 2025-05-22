@@ -2,15 +2,19 @@ package usecases
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
+	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"mime/multipart"
 	"time"
 )
@@ -23,6 +27,7 @@ type productUsecase struct {
 	productCategoryRepository repository_interfaces.ProductCategoryRepository
 	aws                       aws_client.AWS
 	transaction               repository_interfaces.Transaction
+	cache                     cache_interfaces.ProductCache
 }
 
 func (p *productUsecase) AddProduct(ctx context.Context, request *requests.AddProductRequest) (result *responses.AddProductResponse, customErr *apperror.CustomError) {
@@ -78,16 +83,20 @@ func (p *productUsecase) AddProduct(ctx context.Context, request *requests.AddPr
 
 func (p *productUsecase) GetProductByCafe(ctx context.Context, request *requests.GetProductListByCafeIDRequest) (result []*responses.ListProductResponse, customErr *apperror.CustomError) {
 	var (
-		//cafe         = &models.Cafe{}
 		cafeProducts = []*models.CafeProduct{}
 		err          error
 		product      = &models.Product{}
+		key          = fmt.Sprintf(enums.CafeProductsKey, request.CafeID)
 	)
 
-	//cafe, err = p.cafeRepo.FindByID(ctx, request.CafeID)
-	//if err != nil {
-	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
-	//}
+	result, err = p.cache.GetMultiData(ctx, key)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get redis cafe product`, err)
+	}
+
+	if result != nil {
+		return result, nil
+	}
 
 	cafeProducts, err = p.cafeProductRepo.FindByCafeID(ctx, request.CafeID)
 	if err != nil {
@@ -112,6 +121,8 @@ func (p *productUsecase) GetProductByCafe(ctx context.Context, request *requests
 		})
 	}
 
+	_ = p.cache.SetMultiData(ctx, key, result)
+
 	return result, nil
 }
 
@@ -121,7 +132,18 @@ func (p *productUsecase) GetProductDetail(ctx context.Context, id uint64) (resul
 		product     = &models.Product{}
 		err         error
 		category    = &models.ProductCategory{}
+		key         = fmt.Sprintf(enums.ProductKey, id)
 	)
+
+	result, err = p.cache.Get(ctx, key)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get redis result`, err)
+	}
+
+	if result != nil {
+		return result, nil
+	}
+
 	cafeProduct, err = p.cafeProductRepo.FindByID(ctx, id)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
@@ -155,6 +177,8 @@ func (p *productUsecase) GetProductDetail(ctx context.Context, id uint64) (resul
 		DeletedAt: cafeProduct.DeletedAt,
 	}
 
+	_ = p.cache.Set(ctx, key, result)
+
 	return result, nil
 }
 
@@ -168,6 +192,7 @@ func newProductUsecase(
 	productCategoryRepository repository_interfaces.ProductCategoryRepository,
 	aws aws_client.AWS,
 	transaction repository_interfaces.Transaction,
+	cache cache_interfaces.ProductCache,
 ) *productUsecase {
 	return &productUsecase{
 		cafeRepo:                  cafeRepo,
@@ -177,5 +202,6 @@ func newProductUsecase(
 		aws:                       aws,
 		productCategoryRepository: productCategoryRepository,
 		transaction:               transaction,
+		cache:                     cache,
 	}
 }

@@ -14,6 +14,14 @@ import (
 )
 
 type (
+	ImageUploadRequest struct {
+		FileRequest io.Reader
+		FilePath    string
+		FileHeader  *multipart.FileHeader
+		Width       uint
+		Height      uint
+	}
+
 	AWS interface {
 		ListBucket() (result *s3.ListBucketsOutput, err error)
 		UploadImageFile(ctx context.Context, fileRequest io.Reader, filePath string, fileHeader *multipart.FileHeader, width, height uint) (resultLocation *string, err error)

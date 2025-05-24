@@ -40,4 +40,9 @@ type (
 	Transaction interface {
 		RunInTx(ctx context.Context, txFunc func(ctx context.Context) (customErr *apperror.CustomError)) (customErr *apperror.CustomError)
 	}
+
+	Index interface {
+		CreateIndex(ctx context.Context) (err error)
+		DropIndex(ctx context.Context) (err error)
+	}
 )

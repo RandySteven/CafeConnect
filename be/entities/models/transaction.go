@@ -16,12 +16,12 @@ type (
 	}
 
 	TransactionDetail struct {
-		ID              uint64
-		TransactionID   uint64
-		ProductOutletID uint64
-		Qty             uint64
-		CreatedAt       time.Time
-		UpdatedAt       time.Time
-		DeletedAt       *time.Time
+		ID            uint64
+		TransactionID uint64
+		CafeProductID uint64
+		Qty           uint64
+		CreatedAt     time.Time
+		UpdatedAt     time.Time
+		DeletedAt     *time.Time
 	}
 )

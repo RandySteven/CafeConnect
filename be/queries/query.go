@@ -3,6 +3,7 @@ package queries
 type (
 	GoQuery        string
 	MigrationQuery string
+	IndexQuery     string
 )
 
 func (q GoQuery) String() string {
@@ -11,4 +12,8 @@ func (q GoQuery) String() string {
 
 func (m MigrationQuery) String() string {
 	return string(m)
+}
+
+func (i IndexQuery) String() string {
+	return string(i)
 }

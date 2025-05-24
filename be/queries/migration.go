@@ -185,4 +185,34 @@ const (
 		    FOREIGN KEY (cafe_product_id) REFERENCES cafe_products (id) ON DELETE CASCADE
 		)
 	`
+
+	CreateTransactionHeaderTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS transaction_headers (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    user_id BIGINT NOT NULL,
+		    cafe_id BIGINT NOT NULL,
+		    transaction_code CHAR(24) NOT NULL,
+		    status VARCHAR(16) NOT NULL,
+		    transaction_at TIMESTAMP NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL,
+		    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		    FOREIGN KEY (cafe_id) REFERENCES cafes(id) ON DELETE CASCADE
+		)	
+	`
+
+	CreateTransactionDetailTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS transaction_details (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    transaction_id BIGINT NOT NULL,
+		    cafe_product_id BIGINT NOT NULL,
+		    qty BIGINT NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL,
+		    FOREIGN KEY (transaction_id) REFERENCES transaction_headers (id) ON DELETE CASCADE,
+		    FOREIGN KEY (cafe_product_id) REFERENCES cafe_products(id) ON DELETE CASCADE
+		)
+	`
 )

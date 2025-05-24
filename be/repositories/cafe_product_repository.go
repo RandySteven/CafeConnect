@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
@@ -12,6 +13,24 @@ import (
 
 type cafeProductRepository struct {
 	dbx repository_interfaces.DBX
+}
+
+func (c *cafeProductRepository) Update(ctx context.Context, entity *models.CafeProduct) (result *models.CafeProduct, err error) {
+	err = mysql_client.Update[models.CafeProduct](ctx, c.dbx(ctx), queries.UpdateCafeProductByID,
+		&entity.CafeID,
+		&entity.ProductID,
+		&entity.Price,
+		&entity.Stock,
+		&entity.Status,
+		&entity.CreatedAt,
+		&entity.UpdatedAt,
+		&entity.DeletedAt,
+		&entity.ID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return entity, nil
 }
 
 func (c *cafeProductRepository) Save(ctx context.Context, entity *models.CafeProduct) (result *models.CafeProduct, err error) {
@@ -73,6 +92,15 @@ func (c *cafeProductRepository) FindByCafeIDs(ctx context.Context, cafeIDs []uin
 		result = append(result, res)
 	}
 	return result, nil
+}
+
+func (c *cafeProductRepository) FindCafeIDByCafeProductIDs(ctx context.Context, cafeProductIDs []uint64) (cafeId uint64, err error) {
+	query := fmt.Sprintf(queries.SelectCafeIdByCafeProductIDs.String(), utils.InQuery(cafeProductIDs))
+	err = c.dbx(ctx).QueryRowContext(ctx, query).Scan(cafeId)
+	if err != nil {
+		return cafeId, err
+	}
+	return cafeId, nil
 }
 
 var _ repository_interfaces.CafeProductRepository = &cafeProductRepository{}

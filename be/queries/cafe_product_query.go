@@ -36,4 +36,23 @@ const (
 		WHERE
 		    cafe_id IN 
 	`
+
+	SelectCafeIdByCafeProductIDs GoQuery = `
+		SELECT cafe_id FROM cafe_products WHERE id IN %s GROUP BY cafe_id;
+	`
+
+	UpdateCafeProductByID GoQuery = `
+		UPDATE cafe_products
+		SET
+		    cafe_id = ?,
+		    product_id = ?,
+		    price = ?,
+		    stock = ?,
+		    status = ?,
+		    created_at = ?,
+		    updated_at = ?,
+		    deleted_at = ?
+		WHERE
+		    id = ?
+	`
 )

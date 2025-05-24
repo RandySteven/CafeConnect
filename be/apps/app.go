@@ -7,6 +7,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	cron_client "github.com/RandySteven/CafeConnect/be/pkg/cron"
+	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
@@ -20,6 +21,7 @@ type App struct {
 	GoogleStorage storage_client.GoogleStorage
 	Scheduler     cron_client.Scheduler
 	AWS           aws_client.AWS
+	Midtrans      midtrans_client.Midtrans
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -49,19 +51,25 @@ func NewApps(config *configs.Config) (*App, error) {
 		return nil, err
 	}
 
+	midtrans, err := midtrans_client.NewMidtrans(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		MySQL:         mysql,
 		Redis:         redis,
 		GoogleStorage: googleStorage,
 		Scheduler:     scheduler,
 		AWS:           aws,
+		Midtrans:      midtrans,
 	}, nil
 }
 
 func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
 	caches := caches2.NewCaches(a.Redis.Client())
-	usecases := usecases2.NewUsecases(repositories, caches, a.GoogleStorage, a.AWS)
+	usecases := usecases2.NewUsecases(repositories, caches, a.GoogleStorage, a.AWS, a.Midtrans)
 	return apis.NewAPIs(usecases)
 }
 

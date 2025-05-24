@@ -21,6 +21,8 @@ func initMigrations() []queries.MigrationQuery {
 		queries.CreateCafeProductTable,
 		queries.CreateReviewTable,
 		queries.CreateCartTable,
+		queries.CreateTransactionHeaderTable,
+		queries.CreateTransactionDetailTable,
 	}
 }
 

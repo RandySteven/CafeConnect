@@ -70,7 +70,7 @@ func SeparateStringIntoUint64Arr(str string, sep string) []uint64 {
 	return resArr
 }
 
-func GenerateBorrowReference(length uint64) string {
+func GenerateCode(length uint64) string {
 	charset := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, length)

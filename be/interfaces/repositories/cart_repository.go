@@ -10,4 +10,5 @@ type CartRepository interface {
 	Updater[models.Cart]
 	FindByUserID(ctx context.Context, userId uint64) (result []*models.Cart, err error)
 	FindByUserIDAndCafeProductID(ctx context.Context, userId uint64, cafeProductId uint64) (result *models.Cart, err error)
+	DeleteByUserID(ctx context.Context, userId uint64) (err error)
 }

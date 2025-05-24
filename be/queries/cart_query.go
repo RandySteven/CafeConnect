@@ -33,4 +33,8 @@ const (
 		WHERE
 		    id = ?
 	`
+
+	DeleteCartByUserID GoQuery = `
+		DELETE FROM carts WHERE user_id = ?
+	`
 )

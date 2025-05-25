@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/nfnt/resize"
@@ -211,4 +212,14 @@ func InQuery(ids []uint64) string {
 	}
 	query += `)`
 	return query
+}
+
+func ReadJSONObject[T any](jsonStr string) *T {
+	var result T
+	err := json.Unmarshal([]byte(jsonStr), &result)
+	if err != nil {
+		log.Printf("error unmarshaling JSON: %v", err)
+		return nil
+	}
+	return &result
 }

@@ -75,5 +75,13 @@ type Config struct {
 			SecretAccessKey string `yaml:"secretAccessKey"`
 			Region          string `yaml:"region"`
 		} `yaml:"aws"`
+
+		Kafka struct {
+			Dial      string `yaml:"dial"`
+			Host      string `yaml:"host"`
+			Port      string `yaml:"port"`
+			Topic     string `yaml:"topic"`
+			Partition int    `yaml:"partition"`
+		} `yaml:"kafka"`
 	} `yaml:"config"`
 }

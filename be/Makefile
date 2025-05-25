@@ -19,7 +19,7 @@ alter:
 	${gorun} ${cmd_folder}alter -config ${yaml_file}
 
 consumer:
-	${gorun} ${cmd_folder}consumers -config ${yaml_file}
+	${gorun} ${cmd_folder}consumer -config ${yaml_file}
 
 server: scheduler run consumer
 

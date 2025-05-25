@@ -4,15 +4,18 @@ import (
 	"context"
 	caches2 "github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
+	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	cron_client "github.com/RandySteven/CafeConnect/be/pkg/cron"
+	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
 	usecases2 "github.com/RandySteven/CafeConnect/be/usecases"
+	"log"
 )
 
 type App struct {
@@ -22,6 +25,7 @@ type App struct {
 	Scheduler     cron_client.Scheduler
 	AWS           aws_client.AWS
 	Midtrans      midtrans_client.Midtrans
+	Kafka         kafka_client.Kafka
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -56,6 +60,11 @@ func NewApps(config *configs.Config) (*App, error) {
 		return nil, err
 	}
 
+	kafka, err := kafka_client.NewKafkaClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		MySQL:         mysql,
 		Redis:         redis,
@@ -63,6 +72,7 @@ func NewApps(config *configs.Config) (*App, error) {
 		Scheduler:     scheduler,
 		AWS:           aws,
 		Midtrans:      midtrans,
+		Kafka:         kafka,
 	}, nil
 }
 
@@ -78,4 +88,19 @@ func (a *App) RefreshRedis(ctx context.Context) error {
 }
 
 func (a *App) PrepareJobScheduler(ctx context.Context) {
+}
+
+func (a *App) PrepareConsumer(ctx context.Context) {
+	err := a.Kafka.RegisterTopics(
+		enums.DummyTopic,
+		enums.TransactionTopic,
+		enums.ProductTopic,
+		enums.OnboardingTopic,
+	)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	a.Kafka.ReadTopics()
+	a.Kafka.ClearAllTopics()
 }

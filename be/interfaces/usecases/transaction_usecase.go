@@ -7,7 +7,8 @@ import (
 )
 
 type TransactionUsecase interface {
-	CreateTransaction(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError)
+	CreateTransactionV1(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError)
+	CreateTransactionV2(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError)
 	GetUserTransactions(ctx context.Context) (result []*responses.TransactionListResponse, customErr *apperror.CustomError)
 	GetTransactionByCode(ctx context.Context, transactionCode string) (result *responses.TransactionDetailResponse, customErr *apperror.CustomError)
 }

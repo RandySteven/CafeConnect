@@ -1,6 +1,8 @@
 package enums
 
+type ReferralStatus string
+
 const (
-	ReferralActive = `ACTIVE`
-	ReferralClosed = `CLOSED`
+	ReferralActive ReferralStatus = `ACTIVE`
+	ReferralClosed ReferralStatus = `CLOSED`
 )

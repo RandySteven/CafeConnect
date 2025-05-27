@@ -4,7 +4,6 @@ import (
 	"context"
 	caches2 "github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
-	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	cron_client "github.com/RandySteven/CafeConnect/be/pkg/cron"
@@ -15,7 +14,6 @@ import (
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
 	usecases2 "github.com/RandySteven/CafeConnect/be/usecases"
-	"log"
 )
 
 type App struct {
@@ -26,6 +24,8 @@ type App struct {
 	AWS           aws_client.AWS
 	Midtrans      midtrans_client.Midtrans
 	Kafka         kafka_client.Kafka
+	Pub           kafka_client.Publisher
+	Sub           kafka_client.Consumer
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -65,6 +65,16 @@ func NewApps(config *configs.Config) (*App, error) {
 		return nil, err
 	}
 
+	pub, err := kafka_client.NewPublisher(config)
+	if err != nil {
+		return nil, err
+	}
+
+	sub, err := kafka_client.NewConsumer(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		MySQL:         mysql,
 		Redis:         redis,
@@ -73,13 +83,15 @@ func NewApps(config *configs.Config) (*App, error) {
 		AWS:           aws,
 		Midtrans:      midtrans,
 		Kafka:         kafka,
+		Pub:           pub,
+		Sub:           sub,
 	}, nil
 }
 
 func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
 	caches := caches2.NewCaches(a.Redis.Client())
-	usecases := usecases2.NewUsecases(repositories, caches, a.GoogleStorage, a.AWS, a.Midtrans)
+	usecases := usecases2.NewUsecases(repositories, caches, a.GoogleStorage, a.AWS, a.Pub, a.Sub, a.Midtrans)
 	return apis.NewAPIs(usecases)
 }
 
@@ -91,16 +103,4 @@ func (a *App) PrepareJobScheduler(ctx context.Context) {
 }
 
 func (a *App) PrepareConsumer(ctx context.Context) {
-	err := a.Kafka.RegisterTopics(
-		enums.DummyTopic,
-		enums.TransactionTopic,
-		enums.ProductTopic,
-		enums.OnboardingTopic,
-	)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	a.Kafka.ReadTopics()
-	a.Kafka.ClearAllTopics()
 }

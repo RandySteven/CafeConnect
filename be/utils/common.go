@@ -223,3 +223,11 @@ func ReadJSONObject[T any](jsonStr string) *T {
 	}
 	return &result
 }
+
+func WriteJSONObject[T any](obj *T) string {
+	bytes, err := json.Marshal(obj)
+	if err != nil {
+		return ""
+	}
+	return string(bytes)
+}

@@ -21,6 +21,9 @@ alter:
 consumer:
 	${gorun} ${cmd_folder}consumer -config ${yaml_file}
 
+topic:
+	${gorun} ${cmd_folder}topic -config ${yaml_file}
+
 server: scheduler run consumer
 
 build:

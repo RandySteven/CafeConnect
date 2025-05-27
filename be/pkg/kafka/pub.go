@@ -17,7 +17,7 @@ type (
 	}
 )
 
-func NewPublisher(config *configs.Config) *pub {
+func NewPublisher(config *configs.Config) (*pub, error) {
 	kafkaConf := config.Config.Kafka
 	w := &kafka.Writer{
 		Addr: kafka.TCP(
@@ -27,7 +27,7 @@ func NewPublisher(config *configs.Config) *pub {
 
 	return &pub{
 		w: w,
-	}
+	}, nil
 }
 
 func (p *pub) WriteMessage(ctx context.Context, topic string, key string, value string) (err error) {

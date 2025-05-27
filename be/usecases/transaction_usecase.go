@@ -11,6 +11,7 @@ import (
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
+	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/redis/go-redis/v9"
@@ -27,11 +28,12 @@ type transactionUsecase struct {
 	productRepository           repository_interfaces.ProductRepository
 	cafeProductRepository       repository_interfaces.CafeProductRepository
 	transaction                 repository_interfaces.Transaction
+	pub                         kafka_client.Publisher
 	midtrans                    midtrans_client.Midtrans
 	cache                       cache_interfaces.TransactionCache
 }
 
-func (t *transactionUsecase) CreateTransaction(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
+func (t *transactionUsecase) CreateTransactionV1(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
 	userId := ctx.Value(enums.UserID).(uint64)
 	var (
 		carts             []*models.Cart
@@ -123,6 +125,48 @@ func (t *transactionUsecase) CreateTransaction(ctx context.Context) (result *res
 		TransactionAt:   transactionHeader.TransactionAt,
 		Status:          transactionHeader.Status,
 	}
+
+	return
+}
+
+func (t *transactionUsecase) CreateTransactionV2(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
+	userId := ctx.Value(enums.UserID).(uint64)
+
+	var (
+		carts             []*models.Cart
+		err               error
+		transactionHeader *models.TransactionHeader
+		cafeId            uint64 = 0
+		ids               []uint64
+	)
+
+	carts, err = t.cartRepository.FindByUserID(ctx, userId)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user cart`, err)
+	}
+	for _, cart := range carts {
+		ids = append(ids, cart.ID)
+	}
+
+	transactionHeader = &models.TransactionHeader{
+		UserID:          userId,
+		CafeID:          cafeId,
+		TransactionCode: utils.GenerateCode(24),
+		Status:          enums.TransactionPENDING.String(),
+		TransactionAt:   time.Now(),
+	}
+
+	transactionHeader, err = t.transactionHeaderRepository.Save(ctx, transactionHeader)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create transaction header`, err)
+	}
+
+	midtransRequest := &midtrans_client.MidtransRequest{
+
+	}
+
+	t.pub.WriteMessage(ctx, enums.TransactionTopic, `midtrans-request`, utils.WriteJSONObject[midtrans_client.MidtransRequest](midtransRequest))
+	t.pub.WriteMessage(ctx, enums.TransactionTopic, `detail-transaction-request`, "")
 
 	return
 }

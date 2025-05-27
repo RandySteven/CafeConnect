@@ -96,7 +96,9 @@ func (c *cafeProductRepository) FindByCafeIDs(ctx context.Context, cafeIDs []uin
 
 func (c *cafeProductRepository) FindCafeIDByCafeProductIDs(ctx context.Context, cafeProductIDs []uint64) (cafeId uint64, err error) {
 	query := fmt.Sprintf(queries.SelectCafeIdByCafeProductIDs.String(), utils.InQuery(cafeProductIDs))
-	err = c.dbx(ctx).QueryRowContext(ctx, query).Scan(cafeId)
+	log.Println(query)
+	cafeId = 0
+	err = c.dbx(ctx).QueryRowContext(ctx, query).Scan(&cafeId)
 	if err != nil {
 		return cafeId, err
 	}

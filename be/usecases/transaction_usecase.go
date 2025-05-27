@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
+	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
@@ -15,6 +16,7 @@ import (
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/redis/go-redis/v9"
+	"log"
 	"sync"
 	"time"
 )
@@ -51,7 +53,7 @@ func (t *transactionUsecase) CreateTransactionV1(ctx context.Context) (result *r
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user cart`, err)
 	}
 	for _, cart := range carts {
-		ids = append(ids, cart.ID)
+		ids = append(ids, cart.CafeProductID)
 	}
 
 	if customErr = t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
@@ -140,12 +142,17 @@ func (t *transactionUsecase) CreateTransactionV2(ctx context.Context) (result *r
 		ids               []uint64
 	)
 
+	user, err := t.userRepository.FindByID(ctx, userId)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user`, err)
+	}
+
 	carts, err = t.cartRepository.FindByUserID(ctx, userId)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user cart`, err)
 	}
 	for _, cart := range carts {
-		ids = append(ids, cart.ID)
+		ids = append(ids, cart.CafeProductID)
 	}
 
 	transactionHeader = &models.TransactionHeader{
@@ -161,12 +168,15 @@ func (t *transactionUsecase) CreateTransactionV2(ctx context.Context) (result *r
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create transaction header`, err)
 	}
 
-	midtransRequest := &midtrans_client.MidtransRequest{
-
+	firstName, lastName := utils.FirstLastName(user.Name)
+	midtransRequest := &messages.TransactionMidtransMessage{
+		UserID:      userId,
+		FirstName:   firstName,
+		LastName:    lastName,
+		PhoneNumber: user.PhoneNumber,
 	}
 
-	t.pub.WriteMessage(ctx, enums.TransactionTopic, `midtrans-request`, utils.WriteJSONObject[midtrans_client.MidtransRequest](midtransRequest))
-	t.pub.WriteMessage(ctx, enums.TransactionTopic, `detail-transaction-request`, "")
+	t.pub.WriteMessage(ctx, enums.TransactionTopic, `midtrans-request`, utils.WriteJSONObject[messages.TransactionMidtransMessage](midtransRequest))
 
 	return
 }
@@ -186,7 +196,6 @@ func (t *transactionUsecase) GetTransactionByCode(ctx context.Context, transacti
 		product            *models.Product
 		item               *responses.TransactionDetailItem
 	)
-	result = &responses.TransactionDetailResponse{}
 
 	result, err = t.cache.Get(ctx, transactionCode)
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -197,20 +206,22 @@ func (t *transactionUsecase) GetTransactionByCode(ctx context.Context, transacti
 		return result, nil
 	}
 
-	err = t.transactionHeaderRepository.CreateIndex(ctx)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create index`, err)
-	}
+	//err = t.transactionHeaderRepository.CreateIndex(ctx)
+	//if err != nil {
+	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create index`, err)
+	//}
 
 	transactionHeader, err = t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionCode)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
 	}
-
-	result.ID = transactionHeader.ID
-	result.TransactionCode = transactionHeader.TransactionCode
-	result.TransactionTime = transactionHeader.TransactionAt
-	result.Status = transactionHeader.Status
+	log.Println(`transaction header`, transactionHeader)
+	result = &responses.TransactionDetailResponse{
+		ID:              transactionHeader.ID,
+		TransactionCode: transactionHeader.TransactionCode,
+		TransactionTime: transactionHeader.TransactionAt,
+		Status:          transactionHeader.Status,
+	}
 
 	transactionDetails, err = t.transactionDetailRepository.FindByTransactionId(ctx, transactionHeader.ID)
 	if err != nil {
@@ -239,10 +250,10 @@ func (t *transactionUsecase) GetTransactionByCode(ctx context.Context, transacti
 		result.Items = append(result.Items, item)
 	}
 
-	err = t.transactionHeaderRepository.DropIndex(ctx)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to drop index`, err)
-	}
+	//err = t.transactionHeaderRepository.DropIndex(ctx)
+	//if err != nil {
+	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to drop index`, err)
+	//}
 
 	_ = t.cache.Set(ctx, transactionCode, result)
 

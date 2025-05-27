@@ -231,3 +231,8 @@ func WriteJSONObject[T any](obj *T) string {
 	}
 	return string(bytes)
 }
+
+func FirstLastName(name string) (firstName, lastName string) {
+	userName := strings.Split(name, " ")
+	return userName[0], userName[1]
+}

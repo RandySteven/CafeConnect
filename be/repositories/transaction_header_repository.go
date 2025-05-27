@@ -30,7 +30,7 @@ func (t *transactionHeaderRepository) DropIndex(ctx context.Context) (err error)
 }
 
 func (t *transactionHeaderRepository) Save(ctx context.Context, entity *models.TransactionHeader) (result *models.TransactionHeader, err error) {
-	id, err := mysql_client.Save[models.TransactionHeader](ctx, t.dbx(ctx), queries.InsertTransactionHeader, &entity.UserID, &entity.CafeID, &entity.TransactionCode, &entity.TransactionAt)
+	id, err := mysql_client.Save[models.TransactionHeader](ctx, t.dbx(ctx), queries.InsertTransactionHeader, &entity.UserID, &entity.CafeID, &entity.TransactionCode, &entity.Status, &entity.TransactionAt)
 	if err != nil {
 		return nil, err
 	}

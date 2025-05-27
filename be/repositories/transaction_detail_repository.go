@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
+	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	"github.com/RandySteven/CafeConnect/be/queries"
 )
 
@@ -38,8 +39,12 @@ func (t *transactionDetailRepository) FindByTransactionId(ctx context.Context, t
 }
 
 func (t *transactionDetailRepository) Save(ctx context.Context, entity *models.TransactionDetail) (result *models.TransactionDetail, err error) {
-	//TODO implement me
-	panic("implement me")
+	id, err := mysql_client.Save[models.TransactionDetail](ctx, t.dbx(ctx), queries.InsertTransactionDetail, &entity.TransactionID, &entity.CafeProductID, &entity.Qty)
+	if err != nil {
+		return nil, err
+	}
+	entity.ID = *id
+	return entity, nil
 }
 
 func (t *transactionDetailRepository) FindByID(ctx context.Context, id uint64) (result *models.TransactionDetail, err error) {

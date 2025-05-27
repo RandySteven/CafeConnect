@@ -3,13 +3,14 @@ package enums
 type RouterPrefix string
 
 const (
-	DevPrefix        RouterPrefix = `/dev`
-	OnboardingPrefix RouterPrefix = `/onboarding`
-	UserPrefix       RouterPrefix = `/users`
-	CafePrefix       RouterPrefix = `/cafes`
-	ReviewPrefix     RouterPrefix = `/reviews`
-	ProductPrefix    RouterPrefix = `/products`
-	CartPrefix       RouterPrefix = `/carts`
+	DevPrefix         RouterPrefix = `/dev`
+	OnboardingPrefix  RouterPrefix = `/onboarding`
+	UserPrefix        RouterPrefix = `/users`
+	CafePrefix        RouterPrefix = `/cafes`
+	ReviewPrefix      RouterPrefix = `/reviews`
+	ProductPrefix     RouterPrefix = `/products`
+	CartPrefix        RouterPrefix = `/carts`
+	TransactionPrefix RouterPrefix = `/transactions`
 )
 
 func (r RouterPrefix) ToString() string {

@@ -52,6 +52,11 @@ func (t *transactionUsecase) CreateTransactionV1(ctx context.Context) (result *r
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user cart`, err)
 	}
+
+	if len(carts) == 0 {
+		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `cart still empty`, fmt.Errorf(`cart still empty`))
+	}
+
 	for _, cart := range carts {
 		ids = append(ids, cart.CafeProductID)
 	}
@@ -151,6 +156,10 @@ func (t *transactionUsecase) CreateTransactionV2(ctx context.Context) (result *r
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user cart`, err)
 	}
+	if len(carts) == 0 {
+		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `cart still empty`, fmt.Errorf(`cart still empty`))
+	}
+
 	for _, cart := range carts {
 		ids = append(ids, cart.CafeProductID)
 	}

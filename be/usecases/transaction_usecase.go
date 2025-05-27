@@ -223,6 +223,10 @@ func (t *transactionUsecase) GetTransactionByCode(ctx context.Context, transacti
 		Status:          transactionHeader.Status,
 	}
 
+	if result.Status == enums.TransactionPENDING.String() {
+		return result, nil
+	}
+
 	transactionDetails, err = t.transactionDetailRepository.FindByTransactionId(ctx, transactionHeader.ID)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction details`, err)

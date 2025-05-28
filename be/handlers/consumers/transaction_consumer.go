@@ -12,20 +12,21 @@ type TransactionConsumer struct {
 	consumer kafka_client.Consumer
 }
 
-func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) (err error) {
+func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 	//1. get midtrans request
-	result, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, ``)
-	if err != nil {
-		return err
+	for {
+		result, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, ``)
+		if err != nil {
+			return
+		}
+		log.Println(result)
+		//2. hit midtrans api
+
+		//3. if midtrans == SUCCESS
+		// 3.1. update transaction status from PENDING to SUCCESS
+		// 3.2 else try retry mechanism TODO
+
 	}
-	log.Println(result)
-	//2. hit midtrans api
-
-	//3. if midtrans == SUCCESS
-	// 3.1. update transaction status from PENDING to SUCCESS
-	// 3.2 else try retry mechanism TODO
-
-	return nil
 }
 
 var _ consumer_interfaces.TransactionConsumer = &TransactionConsumer{}

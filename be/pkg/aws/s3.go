@@ -60,9 +60,11 @@ func (a *awsClient) UploadImageFile(ctx context.Context, fileRequest io.Reader, 
 		return nil, fmt.Errorf("operation canceled before resizing image: %w", err)
 	}
 
-	err = utils.ResizeImage(tempFile.Name(), tempFile.Name(), width, height)
-	if err != nil {
-		return nil, err
+	if width != 0 && height != 0 {
+		err = utils.ResizeImage(tempFile.Name(), tempFile.Name(), width, height)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	fileExt := filepath.Ext(fileHeader.Filename)

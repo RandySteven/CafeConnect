@@ -40,7 +40,7 @@ func (p *productUsecase) AddProduct(ctx context.Context, request *requests.AddPr
 		cafes []*models.Cafe
 	)
 
-	resultPath, err := p.aws.UploadImageFile(ctx, request.Photo, enums.ProductsStorage, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 40, 40)
+	resultPath, err := p.aws.UploadImageFile(ctx, request.Photo, enums.ProductsStorage, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 0, 0)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to upload product`, err)
 	}

@@ -43,9 +43,8 @@ export const CafeTitle = (prop : CafeTitleProp) => {
                     src={prop.img}
                     alt={prop.name}
                     style={{
-                        height: 80,
-                        width: 80,
-                        borderRadius: "50%", // full circle
+                        height: 240,
+                        width: 240,
                         objectFit: "cover",
                         marginBottom: 8,
                     }}

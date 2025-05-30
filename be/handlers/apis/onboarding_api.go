@@ -38,16 +38,17 @@ func (o *OnboardingApi) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		dataKey = `data`
 	)
 
-	imageFile, fileHeader, err := r.FormFile("profile_picture")
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	defer imageFile.Close()
+	imageFile, fileHeader, _ := r.FormFile("profile_picture")
+	//if _ != nil {
+	//	log.Println(imageFile)
+	//	w.WriteHeader(http.StatusBadRequest)
+	//	return
+	//}
+	//defer imageFile.Close()
 
 	request.ProfilePicture = imageFile
 
-	if err = utils.BindRequest(r, request); err != nil {
+	if err := utils.BindRequest(r, request); err != nil {
 		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
 		return
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"log"
 	"mime/multipart"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -39,11 +40,19 @@ type onboardingUsecase struct {
 }
 
 func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.RegisterUserRequest) (result *responses.RegisterUserResponse, customErr *apperror.CustomError) {
-	var err error
-	fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
-	resultPath, err := o.aws.UploadImageFile(ctx, request.ProfilePicture, enums.UsersStorage, fileHeader, 0, 0)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `failed to upload image `, err)
+	var (
+		err        error
+		dummyImg   = os.Getenv(`DEFAULT_DUMMY_IMG`)
+		resultPath = &dummyImg
+	)
+	log.Println(`check profile_picture == nil : `, request.ProfilePicture == nil)
+
+	if request.ProfilePicture != nil {
+		fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
+		resultPath, err = o.aws.UploadImageFile(ctx, request.ProfilePicture, enums.UsersStorage, fileHeader, 0, 0)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrBadRequest, `failed to upload image `, err)
+		}
 	}
 	timeDoB, err := utils.ConvertDateString(request.DoB)
 	if err != nil {

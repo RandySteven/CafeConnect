@@ -7,6 +7,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
+	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
@@ -33,6 +34,48 @@ type transactionUsecase struct {
 	pub                         kafka_client.Publisher
 	midtrans                    midtrans_client.Midtrans
 	cache                       cache_interfaces.TransactionCache
+}
+
+func (t *transactionUsecase) CheckoutTransactionV1(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
+	//process read the request
+	var (
+		userId             = ctx.Value(enums.UserID).(uint64)
+		transactionDetails = make([]*models.TransactionDetail, len(request.Checkouts))
+		transactionHeader  = &models.TransactionHeader{
+			UserID:          userId,
+			TransactionCode: utils.GenerateCode(24),
+			CafeID:          0,
+			Status:          enums.TransactionSUCCESS.String(),
+			TransactionAt:   time.Now(),
+		}
+		err error
+	)
+
+	if customErr = t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
+		transactionHeader, err = t.transactionHeaderRepository.Save(ctx, transactionHeader)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create header transaction`, err)
+		}
+
+		for _, item := range request.Checkouts {
+			transactionDetails = append(transactionDetails, &models.TransactionDetail{
+				TransactionID: transactionHeader.ID,
+				CafeProductID: item.CafeProductID,
+				Qty:           item.Qty,
+			})
+		}
+
+		return nil
+	}); customErr != nil {
+		return nil, customErr
+	}
+
+	return
 }
 
 func (t *transactionUsecase) CreateTransactionV1(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {

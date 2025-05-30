@@ -31,7 +31,7 @@ func NewUsecases(repo *repositories.Repositories,
 		CafeUsecase:        newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, googleStorage, aws, cache.CafeCache),
 		ProductUsecase:     newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, aws, repo.Transaction, cache.ProductCache),
 		ReviewUsecase:      newReviewUsecase(repo.ReviewRepository, repo.CafeRepository, repo.UserRepository),
-		CartUsecase:        newCartUsecase(repo.CafeRepository, repo.CafeProductRepository, repo.CartRepository, repo.ProductRepository, repo.UserRepository, repo.Transaction),
+		CartUsecase:        newCartUsecase(repo.CafeRepository, repo.CafeProductRepository, repo.CartRepository, repo.ProductRepository, repo.UserRepository, repo.CafeFranchiseRepository, repo.Transaction),
 		TransactionUsecase: newTransactionUsecase(repo.TransactionHeaderRepository, repo.TransactionDetailRepository, repo.CartRepository, repo.UserRepository, repo.CafeRepository, repo.ProductRepository, repo.CafeProductRepository, repo.Transaction, cache.TransactionCache, midtrans),
 	}
 }

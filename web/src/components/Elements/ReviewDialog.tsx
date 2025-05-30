@@ -1,10 +1,18 @@
-import React, {Fragment} from "react";
+import React, { Fragment, useState } from "react";
 import { TransitionProps } from '@mui/material/transitions';
 import Dialog from '@mui/material/Dialog';
 import Slide from '@mui/material/Slide';
-import {Button, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField} from "@mui/material";
-
-
+import {
+    Button,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    TextField,
+    Box,
+    Stack,
+} from "@mui/material";
+import {POST} from "@/api/api";
+import {GET_CARTS} from "@/api/endpoint";
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
@@ -15,46 +23,87 @@ const Transition = React.forwardRef(function Transition(
     return <Slide direction="up" ref={ref} {...props} />;
 });
 
-export const ReviewDialog = () => {
-    const [open, setOpen] = React.useState(false);
+export const ReviewDialog = (
+    props: {
+        open: boolean;
+        handleClose: () => void;
+        product: {
+            id: number
+            name: string;
+            imageURL: string;
+        };
+    }
+) => {
+    console.log(`item id `, props.product.id)
+    const [qty, setQty] = useState<number>(0);
 
-    const handleClickOpen = () => {
-        setOpen(true);
+    const handleIncrease = () => {
+        setQty(qty + 1);
     };
 
-    const handleClose = () => {
-        setOpen(false);
+    const handleDecrease = () => {
+        setQty(prev => (prev <= 0 ? 0 : prev - 1));
     };
 
-    return <Fragment>
-        <Dialog
-            open={open}
-            slots={{
-                transition: Transition,
-            }}
-            keepMounted
-            onClose={handleClose}
-            aria-describedby="alert-dialog-slide-description"
-        >
-            <DialogTitle>{"Add review?"}</DialogTitle>
-            <DialogContent>
-                <DialogContentText id="alert-dialog-slide-description">
-                    Add Review
-                </DialogContentText>
-                <TextField
-                    autoFocus
-                    required
-                    id="review"
-                    name="review"
-                    label="review"
-                    fullWidth
-                    variant="standard"
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={handleClose}>Disagree</Button>
-                <Button onClick={handleClose}>Agree</Button>
-            </DialogActions>
-        </Dialog>
-    </Fragment>
-}
+    const handleConfirm = async () => {
+        try {
+            let request = {
+                cafe_product_id: props.product.id,
+                qty: qty
+            }
+            const response = await POST(GET_CARTS, true, request)
+
+            console.log(request)
+
+            const result = await response.json();
+            console.log("Cart updated:", result);
+            props.handleClose();
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    return (
+        <Fragment>
+            <Dialog
+                open={props.open}
+                TransitionComponent={Transition}
+                keepMounted
+                onClose={props.handleClose}
+                aria-describedby="alert-dialog-slide-description"
+            >
+                <DialogTitle>{props.product.name}</DialogTitle>
+                <DialogContent>
+                    <Box display="flex" flexDirection="column" alignItems="center">
+                        <img
+                            src={props.product.imageURL}
+                            alt={props.product.name}
+                            style={{
+                                height: 240,
+                                width: 240,
+                                objectFit: "cover",
+                                marginBottom: 16,
+                                borderRadius: 8,
+                            }}
+                        />
+                        <Stack direction="row" spacing={2} alignItems="center">
+                            <Button variant="outlined" onClick={handleDecrease}>-</Button>
+                            <TextField
+                                type="number"
+                                value={qty}
+                                inputProps={{ readOnly: true, style: { textAlign: 'center' } }}
+                                size="small"
+                                style={{ width: 60 }}
+                            />
+                            <Button variant="outlined" onClick={handleIncrease}>+</Button>
+                        </Stack>
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={props.handleClose} color="primary">Close</Button>
+                    <Button onClick={handleConfirm} color="primary" variant="contained">Confirm</Button>
+                </DialogActions>
+            </Dialog>
+        </Fragment>
+    );
+};

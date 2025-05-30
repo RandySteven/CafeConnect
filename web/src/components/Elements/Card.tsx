@@ -1,4 +1,4 @@
-import {Fragment} from "react";
+import {Fragment, useState} from "react";
 import {
     Avatar,
     Box, Button,
@@ -14,6 +14,7 @@ import {
 import {CardProp, CommentProp} from "@/interfaces/props/CardProp";
 import {MenuProp} from "@/interfaces/props/MenuProp";
 import Image from "next/image";
+import {ReviewDialog} from "@/components/Elements/ReviewDialog";
 
 interface CafeDataProp {
     name : string,
@@ -25,7 +26,7 @@ interface CafeDataProp {
 
 interface ProductDataProp {
     name: string
-    description: string
+    stock: number
 }
 
 export const ListCard = (prop : CardProp) => {
@@ -44,7 +45,7 @@ export const ListCard = (prop : CardProp) => {
                         {prop.type === "product" && (
                             <ProductCard
                                 name={prop.name}
-                                description={prop.description} />
+                                stock={prop.stock} />
                         )}
 
                         {prop.type === "cafe" && (
@@ -116,7 +117,7 @@ const ProductCard = (prop : ProductDataProp) => {
         <>
             <Typography variant="h6">{prop.name}</Typography>
             <Typography variant="body2" color="text.secondary">
-                {prop.description}
+                {prop.stock}
             </Typography>
         </>
     </>
@@ -159,11 +160,22 @@ const Hour = (prop : {
 }
 
 export const GridCard = (item : {
+    id: string
     image: string
     name: string
     price: number
     stock: number
 }) => {
+    console.log(`item id `, item.id)
+    const [open, setOpen] = useState<boolean>(false)
+
+    const handleClickOpen = () => {
+        setOpen(true);
+    };
+    const handleClose = () => {
+        setOpen(false);
+    };
+
     return <Fragment>
         <Card sx={{ height: '100%' }}>
             <CardMedia
@@ -194,9 +206,17 @@ export const GridCard = (item : {
                     variant="contained"
                     color="primary"
                     disabled={item.stock === 0}
+                    onClick={handleClickOpen}
                 >
                     See Detail
                 </Button>
+                <ReviewDialog open={open} handleClose={handleClose}  product={
+                    {
+                        id: Number(item.id),
+                        imageURL: item.image,
+                        name: item.name
+                    }
+                }/>
             </CardActions>
         </Card>
     </Fragment>

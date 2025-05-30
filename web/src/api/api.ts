@@ -48,6 +48,10 @@ export const POST = async (url: string, requiredJwt: boolean, body: any) => {
         // const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
         // const token = await getTokenCookie()
         // if (token) headers['Authorization'] = `Bearer ${token}`;
+        const token = getToken()
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+        }
     }
     console.log(`request boduy `, JSON.stringify(body))
     try {

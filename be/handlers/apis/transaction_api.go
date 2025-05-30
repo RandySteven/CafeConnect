@@ -15,7 +15,7 @@ type TransactionApi struct {
 	usecase usecase_interfaces.TransactionUsecase
 }
 
-func (t *TransactionApi) CheckoutTransaction(w http.ResponseWriter, r *http.Request) {
+func (t *TransactionApi) CheckoutTransactionV1(w http.ResponseWriter, r *http.Request) {
 	var (
 		rID     = uuid.NewString()
 		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)

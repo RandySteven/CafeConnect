@@ -2,6 +2,8 @@ package usecases
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
@@ -15,12 +17,13 @@ import (
 )
 
 type cartUsecase struct {
-	cafeRepository        repository_interfaces.CafeRepository
-	cafeProductRepository repository_interfaces.CafeProductRepository
-	cartRepository        repository_interfaces.CartRepository
-	productRepository     repository_interfaces.ProductRepository
-	userRepository        repository_interfaces.UserRepository
-	transaction           repository_interfaces.Transaction
+	cafeRepository          repository_interfaces.CafeRepository
+	cafeProductRepository   repository_interfaces.CafeProductRepository
+	cartRepository          repository_interfaces.CartRepository
+	productRepository       repository_interfaces.ProductRepository
+	cafeFranchiseRepository repository_interfaces.CafeFranchiseRepository
+	userRepository          repository_interfaces.UserRepository
+	transaction             repository_interfaces.Transaction
 }
 
 func (c *cartUsecase) AddToCart(ctx context.Context, request *requests.AddToCartRequest) (result *responses.AddCartResponse, customErr *apperror.CustomError) {
@@ -35,7 +38,7 @@ func (c *cartUsecase) AddToCart(ctx context.Context, request *requests.AddToCart
 		//pre cond check duplicate
 		//if it duplicate or cafe_product already exists on cart then the qty will update
 		cart, err = c.cartRepository.FindByUserIDAndCafeProductID(ctx, userId, request.CafeProductID)
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cart`, err)
 		}
 		if cart != nil {
@@ -59,8 +62,11 @@ func (c *cartUsecase) AddToCart(ctx context.Context, request *requests.AddToCart
 		}
 
 		//2. insert to cart
-		cart.CafeProductID = request.CafeProductID
-		cart.Qty = request.Qty
+		cart = &models.Cart{
+			UserID:        userId,
+			CafeProductID: request.CafeProductID,
+			Qty:           request.Qty,
+		}
 		cart, err = c.cartRepository.Save(ctx, cart)
 		if err != nil {
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create cart`, err)
@@ -87,11 +93,31 @@ func (c *cartUsecase) GetUserCart(ctx context.Context) (result *responses.ListCa
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get carts`, err)
 	}
 
-	items := make([]*responses.CartItem, len(carts))
-	for index, cart := range carts {
-		cafeProduct, err := c.cafeProductRepository.FindByID(ctx, cart.ID)
+	checkoutList := []*responses.CheckoutList{}
+	filterMap := map[struct {
+		CafeID   uint64
+		CafeName string
+	}][]*responses.CafeCartItems{}
+
+	for _, cart := range carts {
+		cafeProduct, err := c.cafeProductRepository.FindByID(ctx, cart.CafeProductID)
 		if err != nil {
 			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+		}
+
+		cafe, err := c.cafeRepository.FindByID(ctx, cafeProduct.CafeID)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe list`, err)
+		}
+
+		franchiseName, err := c.cafeFranchiseRepository.FindByID(ctx, cafe.CafeFranchiseID)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise name`, err)
+		}
+
+		checkoutItem := &responses.CheckoutList{
+			CafeID:   cafe.ID,
+			CafeName: franchiseName.Name,
 		}
 
 		product, err := c.productRepository.FindByID(ctx, cafeProduct.ProductID)
@@ -99,22 +125,45 @@ func (c *cartUsecase) GetUserCart(ctx context.Context) (result *responses.ListCa
 			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get product`, err)
 		}
 
-		items[index] = &responses.CartItem{
+		c.addCheckoutItems(filterMap, checkoutItem.CafeID, checkoutItem.CafeName, &responses.CafeCartItems{
 			ProductID:    cafeProduct.ID,
 			ProductName:  product.Name,
+			ProductImage: product.PhotoURL,
 			ProductPrice: cafeProduct.Price,
 			Qty:          cart.Qty,
 			CreatedAt:    cart.CreatedAt,
 			UpdatedAt:    cart.UpdatedAt,
 			DeletedAt:    cart.DeletedAt,
-		}
+		})
+
+	}
+
+	for key, value := range filterMap {
+		checkoutList = append(checkoutList, &responses.CheckoutList{
+			CafeID:   key.CafeID,
+			CafeName: key.CafeName,
+			Items:    value,
+		})
 	}
 
 	result = &responses.ListCartResponse{
-		UserID: userId,
-		Items:  items,
+		UserID:       userId,
+		CheckoutList: checkoutList,
 	}
 	return result, nil
+}
+
+func (c *cartUsecase) addCheckoutItems(filterMap map[struct {
+	CafeID   uint64
+	CafeName string
+}][]*responses.CafeCartItems, cafeId uint64, cafeName string, cartItem *responses.CafeCartItems) {
+	filterMap[struct {
+		CafeID   uint64
+		CafeName string
+	}{CafeID: cafeId, CafeName: cafeName}] = append(filterMap[struct {
+		CafeID   uint64
+		CafeName string
+	}{CafeID: cafeId, CafeName: cafeName}], cartItem)
 }
 
 var _ usecase_interfaces.CartUsecase = &cartUsecase{}
@@ -125,14 +174,16 @@ func newCartUsecase(
 	cartRepository repository_interfaces.CartRepository,
 	productRepository repository_interfaces.ProductRepository,
 	userRepository repository_interfaces.UserRepository,
+	cafeFranchiseRepository repository_interfaces.CafeFranchiseRepository,
 	transaction repository_interfaces.Transaction,
 ) *cartUsecase {
 	return &cartUsecase{
-		cartRepository:        cartRepository,
-		cafeRepository:        cafeRepository,
-		cafeProductRepository: cafeProductRepository,
-		productRepository:     productRepository,
-		userRepository:        userRepository,
-		transaction:           transaction,
+		cartRepository:          cartRepository,
+		cafeRepository:          cafeRepository,
+		cafeProductRepository:   cafeProductRepository,
+		productRepository:       productRepository,
+		cafeFranchiseRepository: cafeFranchiseRepository,
+		userRepository:          userRepository,
+		transaction:             transaction,
 	}
 }

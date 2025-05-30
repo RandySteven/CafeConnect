@@ -45,7 +45,6 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 		dummyImg   = os.Getenv(`DEFAULT_DUMMY_IMG`)
 		resultPath = &dummyImg
 	)
-	log.Println(`check profile_picture == nil : `, request.ProfilePicture == nil)
 
 	if request.ProfilePicture != nil {
 		fileHeader := ctx.Value(enums.FileHeader).(*multipart.FileHeader)
@@ -58,7 +57,6 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `failed to convert dob `, err)
 	}
-	log.Println("time dob ", *timeDoB)
 
 	var (
 		password = utils.HashPassword(request.Password)
@@ -68,7 +66,7 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 			Username:       request.Username,
 			Email:          request.Email,
 			PhoneNumber:    request.PhoneNumber,
-			DoB:            time.DateOnly,
+			DoB:            timeDoB.String(),
 			Password:       password,
 			ProfilePicture: *resultPath,
 		}

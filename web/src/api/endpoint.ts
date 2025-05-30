@@ -4,3 +4,5 @@ export const ONBOARD_ENDPOINT = `onboarding`
 
 export const GET_CAFE_RADIUS = `cafes`
 export const GET_CAFE_REVIEWS = `reviews/cafe-review`
+
+export const GET_CARTS = `carts`

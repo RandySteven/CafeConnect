@@ -7,6 +7,7 @@ type (
 	}
 
 	CreateTransactionRequest struct {
+		CafeID    uint64          `json:"cafe_id"`
 		Checkouts []*CheckoutList `json:"checkouts"`
 	}
 )

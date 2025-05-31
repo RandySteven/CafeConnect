@@ -2,6 +2,7 @@ package apis
 
 import (
 	"context"
+	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	api_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/apis"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
@@ -50,6 +51,28 @@ func (t *TransactionApi) GetTransactionByTransactionCode(w http.ResponseWriter, 
 	}
 
 	utils.ResponseHandler(w, http.StatusOK, `success get transaction`, &dataKey, result, nil)
+}
+
+func (t *TransactionApi) CheckoutTransactionV2(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		request = &requests.CreateTransactionRequest{}
+		dataKey = `result`
+	)
+
+	if err := utils.BindJSON(r, &request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
+		return
+	}
+
+	result, customErr := t.usecase.CheckoutTransactionV2(ctx, request)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+
+	utils.ResponseHandler(w, http.StatusOK, `success create transaction`, &dataKey, result, nil)
 }
 
 var _ api_interfaces.TransactionApi = &TransactionApi{}

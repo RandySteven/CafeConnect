@@ -61,6 +61,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 
 	endpoint[enums.TransactionPrefix] = []*Router{
 		Get(`/v1/check-out`, api.TransactionApi.CheckoutTransactionV1, enums.AuthenticationMiddleware),
+		Post(`/v2/check-out`, api.TransactionApi.CheckoutTransactionV2, enums.AuthenticationMiddleware),
 		Get(`/{transactionCode}`, api.TransactionApi.GetTransactionByTransactionCode, enums.AuthenticationMiddleware),
 	}
 

@@ -10,6 +10,7 @@ type (
 		Saver[models.TransactionHeader]
 		FindByTransactionCode(ctx context.Context, transactionCode string) (result *models.TransactionHeader, err error)
 		FindByUserID(ctx context.Context, userId uint64) (result []*models.TransactionHeader, err error)
+		Updater[models.TransactionHeader]
 		Index
 	}
 

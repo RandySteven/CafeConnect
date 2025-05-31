@@ -36,4 +36,17 @@ const (
 		WHERE 
 		    transaction_id = ?
 	`
+
+	UpdateTransactionHeader GoQuery = `
+		UPDATE transaction_headers SET
+			user_id = ?,
+			cafe_id = ?,
+			transaction_code = ?,
+			status = ?,
+			transaction_at = ?,
+		    created_at = ?,
+			updated_at = ?,
+			deleted_at = ?
+		WHERE id = ?
+	`
 )

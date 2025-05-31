@@ -13,6 +13,24 @@ type transactionHeaderRepository struct {
 	dbx repository_interfaces.DBX
 }
 
+func (t *transactionHeaderRepository) Update(ctx context.Context, entity *models.TransactionHeader) (result *models.TransactionHeader, err error) {
+	err = mysql_client.Update[models.TransactionHeader](ctx, t.dbx(ctx), queries.UpdateTransactionHeader,
+		&entity.UserID,
+		&entity.CafeID,
+		&entity.TransactionCode,
+		&entity.Status,
+		&entity.TransactionAt,
+		&entity.CreatedAt,
+		&entity.UpdatedAt,
+		&entity.DeletedAt,
+		&entity.ID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return entity, nil
+}
+
 func (t *transactionHeaderRepository) CreateIndex(ctx context.Context) (err error) {
 	_, err = t.dbx(ctx).ExecContext(ctx, queries.TransactionCodeIndex.String())
 	if err != nil {

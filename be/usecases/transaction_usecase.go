@@ -44,16 +44,16 @@ func (t *transactionUsecase) CheckoutTransactionV1(ctx context.Context) (result 
 func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
 	//process read the request
 	var (
-		userId             = ctx.Value(enums.UserID).(uint64)
-		transactionDetails = make([]*models.TransactionDetail, len(request.Checkouts))
-		transactionHeader  = &models.TransactionHeader{
+		userId            = ctx.Value(enums.UserID).(uint64)
+		transactionHeader = &models.TransactionHeader{
 			UserID:          userId,
 			TransactionCode: utils.GenerateCode(24),
-			CafeID:          0,
-			Status:          enums.TransactionSUCCESS.String(),
+			CafeID:          request.CafeID,
+			Status:          enums.TransactionPENDING.String(),
 			TransactionAt:   time.Now(),
 		}
-		err error
+		transactionDetail *models.TransactionDetail
+		err               error
 	)
 
 	if customErr = t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
@@ -63,19 +63,45 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 		}
 
 		for _, item := range request.Checkouts {
-			transactionDetails = append(transactionDetails, &models.TransactionDetail{
+			transactionDetail = &models.TransactionDetail{
 				TransactionID: transactionHeader.ID,
 				CafeProductID: item.CafeProductID,
 				Qty:           item.Qty,
-			})
+			}
+
+			transactionDetail, err = t.transactionDetailRepository.Save(ctx, transactionDetail)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create detail transaction`, err)
+			}
+
+		}
+		err = t.cartRepository.DeleteByUserID(ctx, userId)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
 		}
 
+		transactionHeader, err = t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionHeader.TransactionCode)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
+		}
+
+		transactionHeader.TransactionCode = enums.TransactionSUCCESS.String()
+		transactionHeader.UpdatedAt = time.Now()
+		transactionHeader, err = t.transactionHeaderRepository.Update(ctx, transactionHeader)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update trans status`, err)
+		}
 		return nil
 	}); customErr != nil {
 		return nil, customErr
 	}
 
-	return
+	return &responses.TransactionReceiptResponse{
+		ID:              transactionHeader.ID,
+		TransactionCode: transactionHeader.TransactionCode,
+		Status:          transactionHeader.Status,
+		TransactionAt:   transactionHeader.TransactionAt,
+	}, nil
 }
 
 func (t *transactionUsecase) CreateTransactionV1(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {

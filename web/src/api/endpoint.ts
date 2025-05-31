@@ -6,3 +6,5 @@ export const GET_CAFE_RADIUS = `cafes`
 export const GET_CAFE_REVIEWS = `reviews/cafe-review`
 
 export const GET_CARTS = `carts`
+
+export const TRANSACTION_V2_CHECKOUT = `transactions/v2/check-out`

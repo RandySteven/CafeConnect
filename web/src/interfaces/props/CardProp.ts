@@ -1,15 +1,15 @@
 export type BaseCardProp = {
-    link: string;
     img: string;
 };
 
-export type ProductCardProp = BaseCardProp & {
-    type: 'product';
+export type CartCardProp = BaseCardProp & {
+    type: 'cart';
     name: string;
     stock: number;
 };
 
 export type CafeCardProp = BaseCardProp & {
+    link: string;
     type: 'cafe';
     name: string;
     status: string;
@@ -18,7 +18,7 @@ export type CafeCardProp = BaseCardProp & {
     address: string;
 };
 
-export type CardProp = ProductCardProp | CafeCardProp;
+export type CardProp = CartCardProp | CafeCardProp;
 
 export interface CommentProp {
     avatar: string

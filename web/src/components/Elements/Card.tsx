@@ -1,22 +1,19 @@
-import {Fragment, useState} from "react";
+import React, {Fragment, useState} from "react";
 import {
     Avatar,
     Box, Button,
-    Card, CardActionArea, CardActions, CardContent,
+    Card, CardActions, CardContent,
     CardMedia,
-    CardProps,
     Link,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText, Rating,
+    Rating,
     Typography
 } from "@mui/material";
 import {CardProp, CommentProp} from "@/interfaces/props/CardProp";
 import {MenuProp} from "@/interfaces/props/MenuProp";
-import Image from "next/image";
 import {ReviewDialog} from "@/components/Elements/ReviewDialog";
 
 interface CafeDataProp {
+    link : string,
     name : string,
     status : string,
     openHour : string
@@ -32,7 +29,6 @@ interface ProductDataProp {
 export const ListCard = (prop : CardProp) => {
     return (
         <Fragment>
-            <Link href={prop.link}>
                 <Card sx={{ display: "flex", p: 2, my: 2}}>
                     <CardMedia
                         component="img"
@@ -42,14 +38,15 @@ export const ListCard = (prop : CardProp) => {
                     />
 
                     <Box ml={2} display="flex" flexDirection="column" justifyContent="center">
-                        {prop.type === "product" && (
-                            <ProductCard
+                        {prop.type === "cart" && (
+                            <CartCard
                                 name={prop.name}
                                 stock={prop.stock} />
                         )}
 
                         {prop.type === "cafe" && (
                             <CafeCard
+                                link={prop.link}
                                 name={prop.name}
                                 status={prop.status}
                                 openHour={prop.openHour}
@@ -59,8 +56,6 @@ export const ListCard = (prop : CardProp) => {
                         )}
                     </Box>
                 </Card>
-            </Link>
-
         </Fragment>
     );
 }
@@ -101,26 +96,58 @@ export const CommentCard = (prop : CommentProp) => {
 const CafeCard = (prop : CafeDataProp) => {
     return <Fragment>
         <>
-            <Typography variant="h6">{prop.name}</Typography>
-            <Status status={prop.status} />
-            <Hour openHour={prop.openHour} closeHour={prop.closeHour} />
-            <Typography variant="body2">
-                Address: {prop.address}
-            </Typography>
-
+            <Link href={prop.link} sx={{
+                color: `black`,
+            }} underline={`none`}>
+                <Typography variant="h6">{prop.name}</Typography>
+                <Status status={prop.status} />
+                <Hour openHour={prop.openHour} closeHour={prop.closeHour} />
+                <Typography variant="body2">
+                    Address: {prop.address}
+                </Typography>
+            </Link>
         </>
     </Fragment>
 }
 
-const ProductCard = (prop : ProductDataProp) => {
-    return <>
-        <>
+const CartCard = (prop : ProductDataProp) => {
+    const [qty, setQty] = useState<number>(prop.stock);
+
+    const handleIncrease = () => {
+        setQty(qty + 1);
+    };
+
+    const handleDecrease = () => {
+        if (qty > 0) setQty(qty - 1);
+    };
+
+    return (
+        <Box
+        >
             <Typography variant="h6">{prop.name}</Typography>
             <Typography variant="body2" color="text.secondary">
-                {prop.stock}
+                Quantity: {qty}
             </Typography>
-        </>
-    </>
+
+            <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleDecrease}
+                    disabled={qty <= 0}
+                >
+                    -
+                </Button>
+                <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleIncrease}
+                >
+                    +
+                </Button>
+            </Box>
+        </Box>
+    );
 }
 
 const Status = (prop : {

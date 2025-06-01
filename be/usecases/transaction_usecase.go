@@ -63,6 +63,22 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 		}
 
 		for _, item := range request.Checkouts {
+			cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+			}
+
+			if cafeProduct.Stock < item.Qty {
+				return apperror.NewCustomError(apperror.ErrBadRequest, `insufficient stock`, fmt.Errorf(`insufficient stock`))
+			}
+
+			cafeProduct.Stock -= item.Qty
+			cafeProduct.UpdatedAt = time.Now()
+			cafeProduct, err = t.cafeProductRepository.Update(ctx, cafeProduct)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+			}
+
 			transactionDetail = &models.TransactionDetail{
 				TransactionID: transactionHeader.ID,
 				CafeProductID: item.CafeProductID,

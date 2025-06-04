@@ -249,6 +249,12 @@ export const GridCard = (item : {
     </Fragment>
 }
 
+export const TransactionHistoryCard = () => {
+    return <Fragment>
+        
+    </Fragment>
+}
+
 export const MenuCard = (prop : MenuProp) => {
     return <Fragment>
         <Link href={prop.link}>

@@ -32,8 +32,18 @@ func (t *TransactionApi) CheckoutTransactionV1(w http.ResponseWriter, r *http.Re
 }
 
 func (t *TransactionApi) GetUserTransactions(w http.ResponseWriter, r *http.Request) {
-	//TODO implement me
-	panic("implement me")
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		dataKey = `transactions`
+	)
+	result, customErr := t.usecase.GetUserTransactions(ctx)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+
+	utils.ResponseHandler(w, http.StatusOK, `success get transactions`, &dataKey, result, nil)
 }
 
 func (t *TransactionApi) GetTransactionByTransactionCode(w http.ResponseWriter, r *http.Request) {

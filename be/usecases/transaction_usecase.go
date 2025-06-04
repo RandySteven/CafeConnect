@@ -101,7 +101,7 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
 		}
 
-		transactionHeader.TransactionCode = enums.TransactionSUCCESS.String()
+		transactionHeader.Status = enums.TransactionSUCCESS.String()
 		transactionHeader.UpdatedAt = time.Now()
 		transactionHeader, err = t.transactionHeaderRepository.Update(ctx, transactionHeader)
 		if err != nil {
@@ -276,8 +276,29 @@ func (t *transactionUsecase) CreateTransactionV2(ctx context.Context) (result *r
 }
 
 func (t *transactionUsecase) GetUserTransactions(ctx context.Context) (result []*responses.TransactionListResponse, customErr *apperror.CustomError) {
-	//TODO implement me
-	panic("implement me")
+	var (
+		userId = ctx.Value(enums.UserID).(uint64)
+	)
+
+	transactionHeaders, err := t.transactionHeaderRepository.FindByUserID(ctx, userId)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get headers`, err)
+	}
+	result = make([]*responses.TransactionListResponse, len(transactionHeaders))
+
+	for index, transactionHeader := range transactionHeaders {
+		result[index] = &responses.TransactionListResponse{
+			ID:              transactionHeader.ID,
+			TransactionAt:   transactionHeader.TransactionAt,
+			TransactionCode: transactionHeader.TransactionCode,
+			Status:          transactionHeader.Status,
+			CreatedAt:       transactionHeader.CreatedAt,
+			UpdatedAt:       transactionHeader.UpdatedAt,
+			DeletedAt:       transactionHeader.DeletedAt,
+		}
+	}
+
+	return result, nil
 }
 
 func (t *transactionUsecase) GetTransactionByCode(ctx context.Context, transactionCode string) (result *responses.TransactionDetailResponse, customErr *apperror.CustomError) {

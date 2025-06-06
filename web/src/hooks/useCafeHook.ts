@@ -19,7 +19,6 @@ export const useListCafeWithRadius = (longitude, latitude, radius : number) : Li
 
     useEffect( () => {
 
-        console.log(listCafeRequest)
         const fetchCafes = async () => {
             try {
                 const result = await POST(GET_CAFE_RADIUS, false, listCafeRequest)

@@ -62,17 +62,17 @@ func NewApps(config *configs.Config) (*App, error) {
 
 	kafka, err := kafka_client.NewKafkaClient(config)
 	if err != nil {
-		return nil, err
+		kafka = nil
 	}
 
 	pub, err := kafka_client.NewPublisher(config)
 	if err != nil {
-		return nil, err
+		pub = nil
 	}
 
 	sub, err := kafka_client.NewConsumer(config)
 	if err != nil {
-		return nil, err
+		sub = nil
 	}
 
 	return &App{

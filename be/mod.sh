@@ -21,3 +21,6 @@ go get github.com/aws/aws-sdk-go-v2
 go get github.com/rs/cors
 go get github.com/aws/aws-sdk-go/aws/awsutil@v1.55.7
 go get github.com/segmentio/kafka-go
+go get github.com/aws/aws-sdk-go-v2/feature/rds/auth
+go get github.com/aws/aws-sdk-go-v2/config
+go get github.com/aws/aws-sdk-go-v2/service/secretsmanager

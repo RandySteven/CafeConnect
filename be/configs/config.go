@@ -27,11 +27,13 @@ type Config struct {
 		} `yaml:"ws"`
 
 		MySQL struct {
+			Env      string `yaml:"env"`
 			Host     string `yaml:"host"`
 			Port     string `yaml:"port"`
 			Username string `yaml:"username"`
 			Password string `yaml:"password"`
 			Database string `yaml:"database"`
+			Region   string `yaml:"region"`
 			ConnPool struct {
 				MaxIdle   int `yaml:"maxIdle"`
 				ConnLimit int `yaml:"connLimit"`

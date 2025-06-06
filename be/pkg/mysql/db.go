@@ -39,9 +39,24 @@ var _ MySQL = &mysqlClient{}
 
 func NewMySQLClient(config *configs.Config) (*mysqlClient, error) {
 	mysql := config.Config.MySQL
-	url := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", mysql.Username, mysql.Password, mysql.Host, mysql.Port, mysql.Database)
-	log.Println(url)
-	db, err := sql.Open("mysql", url)
+	var (
+		db  *sql.DB
+		err error
+		dsn string
+	)
+
+	switch mysql.Env {
+	case `localhost`:
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", mysql.Username, mysql.Password, mysql.Host, mysql.Port, mysql.Database)
+	case `aws`:
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+			mysql.Username, mysql.Password, mysql.Host, mysql.Port, mysql.Database,
+		)
+	}
+
+	log.Println(dsn)
+
+	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
 	}

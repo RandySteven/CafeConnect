@@ -20,9 +20,10 @@ type userRepository struct {
 }
 
 func (u *userRepository) Save(ctx context.Context, entity *models.User) (result *models.User, err error) {
+	dob := entity.DoB[0:10]
 	id, err := mysql_client.Save[models.User](ctx, u.dbx(ctx), queries.InsertUser,
 		&entity.Name, &entity.Username, &entity.Email, &entity.Password, &entity.PhoneNumber,
-		&entity.ProfilePicture, &entity.DoB)
+		&entity.ProfilePicture, dob)
 	if err != nil {
 		log.Println("err query ", err)
 		return nil, err

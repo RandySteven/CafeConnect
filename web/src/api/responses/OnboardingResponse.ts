@@ -13,7 +13,7 @@ export interface RegisterResponse {
     register_time : String
 }
 
-interface OnboardAddressUser {
+export interface OnboardAddressUser {
     id : Number
     address : String
     longitude : Float

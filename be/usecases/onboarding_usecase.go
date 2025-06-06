@@ -167,15 +167,16 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 }
 
 func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.LoginUserRequest) (result *responses.LoginUserResponse, customErr *apperror.CustomError) {
-	err := o.pub.WriteMessage(ctx, enums.DummyTopic, `test-message`, request.Email)
-	if err != nil {
-		log.Println(`error send `, err)
-	}
+	//err := o.pub.WriteMessage(ctx, enums.DummyTopic, `test-message`, request.Email)
+	//if err != nil {
+	//	log.Println(`error send `, err)
+	//}
 	user, err := o.userRepo.FindByEmail(ctx, request.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, apperror.NewCustomError(apperror.ErrNotFound, `failed to login consumers not found`, err)
 		}
+		log.Println(err)
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to connect db`, err)
 	}
 	isPassExists := utils.ComparePassword(request.Password, user.Password)

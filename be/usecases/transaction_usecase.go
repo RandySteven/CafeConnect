@@ -25,9 +25,11 @@ import (
 type transactionUsecase struct {
 	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository
 	transactionDetailRepository repository_interfaces.TransactionDetailRepository
+	addressRepository           repository_interfaces.AddressRepository
 	cartRepository              repository_interfaces.CartRepository
 	userRepository              repository_interfaces.UserRepository
 	cafeRepository              repository_interfaces.CafeRepository
+	cafeFranchiseRepository     repository_interfaces.CafeFranchiseRepository
 	productRepository           repository_interfaces.ProductRepository
 	cafeProductRepository       repository_interfaces.CafeProductRepository
 	transaction                 repository_interfaces.Transaction
@@ -290,14 +292,69 @@ func (t *transactionUsecase) GetUserTransactions(ctx context.Context) (result []
 	result = make([]*responses.TransactionListResponse, len(transactionHeaders))
 
 	for index, transactionHeader := range transactionHeaders {
-		result[index] = &responses.TransactionListResponse{
-			ID:              transactionHeader.ID,
-			TransactionAt:   transactionHeader.TransactionAt,
-			TransactionCode: transactionHeader.TransactionCode,
-			Status:          transactionHeader.Status,
-			CreatedAt:       transactionHeader.CreatedAt,
-			UpdatedAt:       transactionHeader.UpdatedAt,
-			DeletedAt:       transactionHeader.DeletedAt,
+		var (
+			wg          sync.WaitGroup
+			customErrCh = make(chan *apperror.CustomError)
+			addressCh   = make(chan *models.Address)
+			franchiseCh = make(chan *models.CafeFranchise)
+		)
+		wg.Add(2)
+		cafe, err := t.cafeRepository.FindByID(ctx, transactionHeader.CafeID)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
+		}
+
+		go func() {
+			defer wg.Done()
+			franchise, err := t.cafeFranchiseRepository.FindByID(ctx, cafe.CafeFranchiseID)
+			if err != nil {
+				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
+				return
+			}
+			franchiseCh <- franchise
+		}()
+
+		go func() {
+			defer wg.Done()
+			address, err := t.addressRepository.FindByID(ctx, cafe.AddressID)
+			if err != nil {
+				customErrCh <- apperror.NewCustomError(apperror.ErrInternalServer, `failed to get address`, err)
+				return
+			}
+			addressCh <- address
+		}()
+
+		go func() {
+			wg.Wait()
+			close(customErrCh)
+			close(franchiseCh)
+			close(addressCh)
+		}()
+
+		select {
+		case customErr = <-customErrCh:
+			return nil, customErr
+		default:
+			franchise := <-franchiseCh
+			address := <-addressCh
+
+			cafeResponse := &responses.CafeResponse{
+				ID:       cafe.ID,
+				Name:     franchise.Name,
+				Address:  address.Address,
+				ImageURL: franchise.LogoURL,
+			}
+
+			result[index] = &responses.TransactionListResponse{
+				ID:              transactionHeader.ID,
+				TransactionAt:   transactionHeader.TransactionAt,
+				TransactionCode: transactionHeader.TransactionCode,
+				Cafe:            cafeResponse,
+				Status:          transactionHeader.Status,
+				CreatedAt:       transactionHeader.CreatedAt,
+				UpdatedAt:       transactionHeader.UpdatedAt,
+				DeletedAt:       transactionHeader.DeletedAt,
+			}
 		}
 	}
 
@@ -387,9 +444,11 @@ var _ usecase_interfaces.TransactionUsecase = &transactionUsecase{}
 func newTransactionUsecase(
 	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository,
 	transactionDetailRepository repository_interfaces.TransactionDetailRepository,
+	addressRepository repository_interfaces.AddressRepository,
 	cartRepository repository_interfaces.CartRepository,
 	userRepository repository_interfaces.UserRepository,
 	cafeRepository repository_interfaces.CafeRepository,
+	cafeFranchiseRepository repository_interfaces.CafeFranchiseRepository,
 	productRepository repository_interfaces.ProductRepository,
 	cafeProductRepository repository_interfaces.CafeProductRepository,
 	transaction repository_interfaces.Transaction,
@@ -399,9 +458,11 @@ func newTransactionUsecase(
 	return &transactionUsecase{
 		transactionHeaderRepository: transactionHeaderRepository,
 		transactionDetailRepository: transactionDetailRepository,
+		addressRepository:           addressRepository,
 		cartRepository:              cartRepository,
 		userRepository:              userRepository,
 		cafeRepository:              cafeRepository,
+		cafeFranchiseRepository:     cafeFranchiseRepository,
 		productRepository:           productRepository,
 		cafeProductRepository:       cafeProductRepository,
 		transaction:                 transaction,

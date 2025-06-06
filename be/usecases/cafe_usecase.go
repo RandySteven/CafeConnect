@@ -205,8 +205,8 @@ func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *r
 			Name:      cafeFranchise.Name,
 			Status:    utils.GetCafeOpenCloseStatus(cafe.OpenHour, cafe.CloseHour),
 			LogoURL:   utils.ImageStorage(cafeFranchise.LogoURL),
-			OpenHour:  cafe.OpenHour,
-			CloseHour: cafe.CloseHour,
+			OpenHour:  cafe.OpenHour[0:5],
+			CloseHour: cafe.CloseHour[0:5],
 			Address:   address.Address,
 		})
 	}

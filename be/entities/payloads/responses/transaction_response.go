@@ -28,13 +28,21 @@ type (
 		Items           []*TransactionDetailItem `json:"items"`
 	}
 
+	CafeResponse struct {
+		ID       uint64 `json:"id"`
+		Name     string `json:"name"`
+		Address  string `json:"address"`
+		ImageURL string `json:"image_url"`
+	}
+
 	TransactionListResponse struct {
-		ID              uint64     `json:"id"`
-		TransactionCode string     `json:"transaction_code"`
-		Status          string     `json:"status"`
-		TransactionAt   time.Time  `json:"transaction_at"`
-		CreatedAt       time.Time  `json:"created_at"`
-		UpdatedAt       time.Time  `json:"updated_at"`
-		DeletedAt       *time.Time `json:"deleted_at"`
+		ID              uint64        `json:"id"`
+		Cafe            *CafeResponse `json:"cafe"`
+		TransactionCode string        `json:"transaction_code"`
+		Status          string        `json:"status"`
+		TransactionAt   time.Time     `json:"transaction_at"`
+		CreatedAt       time.Time     `json:"created_at"`
+		UpdatedAt       time.Time     `json:"updated_at"`
+		DeletedAt       *time.Time    `json:"deleted_at"`
 	}
 )

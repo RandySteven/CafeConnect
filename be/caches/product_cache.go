@@ -47,14 +47,23 @@ func (p *productCache) DecreaseProductStock(ctx context.Context, key string, pro
 			case enums.QtyCart:
 				qty = ctx.Value(enums.QtyCart).(uint64)
 				_ = redis_client.Set[uint64](ctx, p.redis, `qty_cart`, &qty)
-			case enums.QtyTrx:
-				cartQty, _ := redis_client.Get[uint64](ctx, p.redis, `qty_cart`)
-				qty = ctx.Value(enums.QtyTrx).(uint64) - *cartQty
-			}
-			if product.Stock >= qty {
+
 				product.Stock -= qty
-			} else {
-				product.Stock = 0
+			case enums.QtyTrx:
+				abs := 1
+				cartQty, _ := redis_client.Get[uint64](ctx, p.redis, `qty_cart`)
+				temp := int(ctx.Value(enums.QtyTrx).(uint64)) - int(*cartQty)
+				if ctx.Value(enums.QtyTrx).(uint64) < *cartQty {
+					abs *= -1
+				}
+				temp *= abs
+				qty = uint64(temp)
+				if abs == -1 {
+					product.Stock += qty
+				} else {
+					product.Stock -= qty
+				}
+				_ = redis_client.Del[uint64](ctx, p.redis, `qty_cart`)
 			}
 			updated = true
 			break

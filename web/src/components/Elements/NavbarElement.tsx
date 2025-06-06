@@ -1,8 +1,9 @@
-import {Fragment} from "react";
+import React, {Fragment, use} from "react";
 import {NavbarProp} from "@/interfaces/props/NavbarProp";
-import {Box, Button, Link} from "@mui/material";
+import {Avatar, Box, Button, IconButton, Link, Menu, MenuItem} from "@mui/material";
 import {getToken} from "@/utils/common";
 import {useOnboarding} from "@/hooks/useOnboardingHook";
+import {redirect} from "next/navigation";
 
 export const NavbarElementContent = (props : NavbarProp) => {
     return <Fragment>
@@ -23,23 +24,50 @@ export const getOnboardUser = () => {
 }
 
 export const UserAccountMenu = () => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
+    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleProfile = () => {
+        redirect(`profile`)
+    }
+
     let user = useOnboarding()
-    console.log(user.name)
     return <Fragment>
-        <Button sx={{
-            color: '#fff'
-        }}>
-            {
-                user.name !== "" ? (
-                    <>
-                        {user.username}
-                    </>
-                ) : (
-                    <>
-                        Login
-                    </>
-                )
-            }
-        </Button>
+        <IconButton
+            size="large"
+            aria-label="account of current user"
+            aria-controls="menu-appbar"
+            aria-haspopup="true"
+            onClick={handleMenu}
+            color="inherit"
+        >
+            <Avatar src={user.profile_picture} alt={user.name} />
+        </IconButton>
+        <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+            }}
+            open={Boolean(anchorEl)}
+            onClose={handleClose}
+        >
+            <MenuItem onClick={handleProfile}>Profile</MenuItem>
+            <MenuItem onClick={handleClose}>My account</MenuItem>
+            <MenuItem onClick={handleMenu}>Logout</MenuItem>
+        </Menu>
     </Fragment>
 }

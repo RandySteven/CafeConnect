@@ -1,5 +1,6 @@
 export interface ProfileImageProp {
     imageURL: string
+    name: string
 }
 
 export interface ProfileNameProp {

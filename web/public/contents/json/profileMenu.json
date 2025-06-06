@@ -1,0 +1,14 @@
+[
+  {
+    "menu": "Update Profile"
+  },
+  {
+    "menu": "Change Address"
+  },
+  {
+    "menu": "Delete Profile"
+  },
+  {
+    "menu": "Logout"
+  }
+]

@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import {POST} from "@/api/api";
 import {GET_CARTS} from "@/api/endpoint";
+import {redirect} from "next/navigation";
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
@@ -53,10 +54,6 @@ export const ReviewDialog = (
             }
             const response = await POST(GET_CARTS, true, request)
 
-            console.log(request)
-
-            const result = await response.json();
-            console.log("Cart updated:", result);
             props.handleClose();
         } catch (error) {
             console.log(error)

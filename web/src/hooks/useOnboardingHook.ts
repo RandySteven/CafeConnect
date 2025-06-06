@@ -4,6 +4,7 @@ import {GET, POST} from "@/api/api";
 import {LOGIN_ENDPOINT, ONBOARD_ENDPOINT} from "@/api/endpoint";
 import {LoginRequest} from "@/api/requests/OnboardingRequest";
 import {setToken} from "@/utils/common";
+import {ProfileMenuContent} from "@/interfaces/contents/ProfileMenuContent";
 
 const setAddress = (addresses : OnboardAddressUser[]) => {
     addresses.forEach((address) => {
@@ -48,3 +49,19 @@ export const useLogin = async (request: LoginRequest): Promise<LoginResponse> =>
     setAddress(onboardUser.data.result.addresses)
     return result.data.token;
 };
+
+export const useProfileMenu = () : ProfileMenuContent[] => {
+    const [profileMenuContent, setProfileMenuContent] = useState<ProfileMenuContent[]>([])
+
+    useEffect(() => {
+        fetch(`/contents/json/profileMenu.json`)
+            .then((response) => {return response.json()})
+            .then((data) => setProfileMenuContent(data))
+            .catch((error) => {
+                console.log(error)
+                return error
+            })
+    }, []);
+
+    return profileMenuContent
+}

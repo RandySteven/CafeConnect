@@ -98,7 +98,7 @@ export const CartList = () => {
 
             try {
                 const res = await POST(TRANSACTION_V2_CHECKOUT, true, body);
-                redirect(``);
+                redirect(`histories`);
             } catch (err) {
                 console.error("Checkout error:", err);
             }

@@ -20,7 +20,15 @@ export type CafeCardProp = BaseCardProp & {
     address: string;
 };
 
-export type CardProp = CartCardProp | CafeCardProp;
+export type TransactionCardProp = BaseCardProp & {
+    link: string
+    type: 'transaction'
+    name: string
+    status: string
+    address: string
+}
+
+export type CardProp = CartCardProp | CafeCardProp | TransactionCardProp;
 
 export interface CommentProp {
     avatar: string

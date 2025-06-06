@@ -4,6 +4,7 @@ import {Avatar, Box, Button, IconButton, Link, Menu, MenuItem} from "@mui/materi
 import {getToken} from "@/utils/common";
 import {useOnboarding} from "@/hooks/useOnboardingHook";
 import {redirect} from "next/navigation";
+import {red} from "@mui/material/colors";
 
 export const NavbarElementContent = (props : NavbarProp) => {
     return <Fragment>
@@ -35,7 +36,11 @@ export const UserAccountMenu = () => {
     };
 
     const handleProfile = () => {
-        redirect(`profile`)
+        redirect(`/profile`)
+    }
+
+    const handleHistory = () => {
+        redirect(`/histories`)
     }
 
     let user = useOnboarding()
@@ -66,7 +71,7 @@ export const UserAccountMenu = () => {
             onClose={handleClose}
         >
             <MenuItem onClick={handleProfile}>Profile</MenuItem>
-            <MenuItem onClick={handleClose}>My account</MenuItem>
+            <MenuItem onClick={handleHistory}>History</MenuItem>
             <MenuItem onClick={handleMenu}>Logout</MenuItem>
         </Menu>
     </Fragment>

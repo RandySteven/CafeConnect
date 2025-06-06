@@ -57,9 +57,17 @@ export interface TransactionDetailResponse {
     items: TransactionDetailItem[]
 }
 
+interface CafeResponse {
+    id: number
+    name: string
+    address: string
+    image_url: string
+}
+
 export interface TransactionListResponse {
     id: number
     transaction_code: string
+    cafe: CafeResponse
     transaction_time: string
     status: string
     transaction_at: string

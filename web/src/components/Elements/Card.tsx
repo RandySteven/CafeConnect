@@ -21,6 +21,13 @@ interface CafeDataProp {
     address : string
 }
 
+interface CafeTransactionProp {
+    link : string
+    name : string
+    status : string
+    address : string
+}
+
 interface ProductDataProp {
     name: string
     stock: number
@@ -64,6 +71,14 @@ export const ListCard = (prop : CardProp) => {
                                 closeHour={prop.closeHour}
                                 address={prop.address}
                             />
+                        )}
+
+                        {prop.type === "transaction" && (
+                            <TransactionCard
+                                link={prop.link}
+                                name={prop.name}
+                                status={prop.status}
+                                address={prop.address} />
                         )}
                     </Box>
                 </Card>
@@ -113,6 +128,22 @@ const CafeCard = (prop : CafeDataProp) => {
                 <Typography variant="h6">{prop.name}</Typography>
                 <Status status={prop.status} />
                 <Hour openHour={prop.openHour} closeHour={prop.closeHour} />
+                <Typography variant="body2">
+                    Address: {prop.address}
+                </Typography>
+            </Link>
+        </>
+    </Fragment>
+}
+
+const TransactionCard = (prop : CafeTransactionProp) => {
+    return <Fragment>
+        <>
+            <Link href={prop.link} sx={{
+                color: `black`,
+            }} underline={`none`}>
+                <Typography variant="h6">{prop.name}</Typography>
+                <Status status={prop.status} />
                 <Typography variant="body2">
                     Address: {prop.address}
                 </Typography>
@@ -176,7 +207,7 @@ const Hour = (prop : {
     closeHour: string
 }) => {
     let result = ``
-    if (prop.openHour === "00:00:00" && prop.closeHour === "00:00:00") {
+    if (prop.openHour === "00:00" && prop.closeHour === "00:00") {
         result = "24 Hours"
     }else {
         result = `${prop.openHour} - ${prop.closeHour}`

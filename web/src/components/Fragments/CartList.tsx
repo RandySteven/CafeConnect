@@ -5,7 +5,7 @@ import {
     FormControlLabel,
     Button,
 } from "@mui/material";
-import { Fragment, useState } from "react";
+import {Fragment, useEffect, useMemo, useState} from "react";
 import { useCart } from "@/hooks/useCart";
 import { ListCard } from "@/components/Elements/Card";
 import {POST} from "@/api/api";
@@ -15,6 +15,7 @@ import {redirect} from "next/navigation";
 export const CartList = () => {
     const carts = useCart();
     const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+    const [productQuantities, setProductQuantities] = useState<Record<number, number>>({});
 
     const toggleProduct = (productId: number) => {
         setSelectedProducts((prev) => {
@@ -23,6 +24,21 @@ export const CartList = () => {
             return newSet;
         });
     };
+
+    const initialQuantities = useMemo(() => {
+        const quantities: Record<number, number> = {};
+        carts.checkout_list.forEach((checkout) => {
+            checkout.items.forEach((item) => {
+                quantities[item.product_id] = item.qty;
+            });
+        });
+        return quantities;
+    }, [carts.checkout_list]);
+
+    useEffect(() => {
+        setProductQuantities(initialQuantities);
+    }, [initialQuantities]);
+
 
     const toggleCafe = (cafeItemIds: number[]) => {
         const allSelected = cafeItemIds.every((id) => selectedProducts.has(id));
@@ -35,6 +51,31 @@ export const CartList = () => {
         });
     };
 
+    const increaseQty = (productId: number) => {
+        setProductQuantities((prev) => ({
+            ...prev,
+            [productId]: (prev[productId] || 0) + 1,
+        }));
+    };
+
+    const decreaseQty = (productId: number) => {
+        setProductQuantities((prev) => ({
+            ...prev,
+            [productId]: Math.max(0, (prev[productId] || 0) - 1),
+        }));
+    };
+
+    useEffect(() => {
+        const initialQuantities: Record<number, number> = {};
+        carts.checkout_list.forEach((checkout) => {
+            checkout.items.forEach((item) => {
+                initialQuantities[item.product_id] = item.qty;
+            });
+        });
+        setProductQuantities(initialQuantities);
+    }, [carts.checkout_list]);
+
+
     const handleCheckout = async () => {
         const groupedByCafe: Record<number, { cafe_product_id: number; qty: number }[]> = {};
 
@@ -46,27 +87,24 @@ export const CartList = () => {
             if (selectedItems.length > 0) {
                 groupedByCafe[checkout.cafe_id] = selectedItems.map((item) => ({
                     cafe_product_id: item.product_id,
-                    qty: item.qty, // using existing qty in cart
+                    qty: productQuantities[item.product_id] ?? item.qty,
                 }));
             }
         });
 
         for (const [cafe_id_str, checkouts] of Object.entries(groupedByCafe)) {
             const cafe_id = parseInt(cafe_id_str, 10);
-
-            const body = {
-                cafe_id,
-                checkouts,
-            };
+            const body = { cafe_id, checkouts };
 
             try {
-                const res = await POST(TRANSACTION_V2_CHECKOUT, true, body)
-                redirect(``)
+                const res = await POST(TRANSACTION_V2_CHECKOUT, true, body);
+                redirect(``);
             } catch (err) {
                 console.error("Checkout error:", err);
             }
         }
     };
+
 
     return (
         <Fragment>
@@ -100,7 +138,9 @@ export const CartList = () => {
                                         type="cart"
                                         name={product.product_name}
                                         img={product.product_image}
-                                        stock={product.qty}
+                                        stock={productQuantities[product.product_id] || product.qty}
+                                        onIncrease={() => increaseQty(product.product_id)}
+                                        onDecrease={() => decreaseQty(product.product_id)}
                                     />
                                 </Box>
                             ))}

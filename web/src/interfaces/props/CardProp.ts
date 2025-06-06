@@ -6,6 +6,8 @@ export type CartCardProp = BaseCardProp & {
     type: 'cart';
     name: string;
     stock: number;
+    onIncrease: () => void;
+    onDecrease: () => void;
 };
 
 export type CafeCardProp = BaseCardProp & {

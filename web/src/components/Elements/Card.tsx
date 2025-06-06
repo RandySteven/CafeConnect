@@ -26,6 +26,14 @@ interface ProductDataProp {
     stock: number
 }
 
+interface CartCardProps {
+    name: string;
+    stock: number;
+    onIncrease: () => void;
+    onDecrease: () => void;
+}
+
+
 export const ListCard = (prop : CardProp) => {
     return (
         <Fragment>
@@ -41,7 +49,10 @@ export const ListCard = (prop : CardProp) => {
                         {prop.type === "cart" && (
                             <CartCard
                                 name={prop.name}
-                                stock={prop.stock} />
+                                stock={prop.stock}
+                                onIncrease={prop.onIncrease}
+                                onDecrease={prop.onDecrease}
+                            />
                         )}
 
                         {prop.type === "cafe" && (
@@ -110,45 +121,35 @@ const CafeCard = (prop : CafeDataProp) => {
     </Fragment>
 }
 
-const CartCard = (prop : ProductDataProp) => {
-    const [qty, setQty] = useState<number>(prop.stock);
-
-    const handleIncrease = () => {
-        setQty(qty + 1);
-    };
-
-    const handleDecrease = () => {
-        if (qty > 0) setQty(qty - 1);
-    };
-
+export const CartCard = (props : CartCardProps) => {
     return (
-        <Box
-        >
-            <Typography variant="h6">{prop.name}</Typography>
+        <Box>
+            <Typography variant="h6">{name}</Typography>
             <Typography variant="body2" color="text.secondary">
-                Quantity: {qty}
+                Quantity: {props.stock}
             </Typography>
 
             <Box sx={{ display: "flex", gap: 1 }}>
                 <Button
                     variant="outlined"
                     size="small"
-                    onClick={handleDecrease}
-                    disabled={qty <= 0}
+                    onClick={props.onDecrease}
+                    disabled={props.stock <= 0}
                 >
                     -
                 </Button>
                 <Button
                     variant="outlined"
                     size="small"
-                    onClick={handleIncrease}
+                    onClick={props.onIncrease}
                 >
                     +
                 </Button>
             </Box>
         </Box>
     );
-}
+};
+
 
 const Status = (prop : {
     status: string

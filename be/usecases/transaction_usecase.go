@@ -33,7 +33,8 @@ type transactionUsecase struct {
 	transaction                 repository_interfaces.Transaction
 	pub                         kafka_client.Publisher
 	midtrans                    midtrans_client.Midtrans
-	cache                       cache_interfaces.TransactionCache
+	transactionCache            cache_interfaces.TransactionCache
+	productCache                cache_interfaces.ProductCache
 }
 
 func (t *transactionUsecase) CheckoutTransactionV1(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
@@ -90,10 +91,12 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create detail transaction`, err)
 			}
 
-		}
-		err = t.cartRepository.DeleteByUserID(ctx, userId)
-		if err != nil {
-			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
+			err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, userId, item.CafeProductID)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
+			}
+			ctx = context.WithValue(ctx, enums.QtyTrx, item.Qty)
+			_ = t.productCache.DecreaseProductStock(ctx, fmt.Sprintf(enums.CafeProductsKey, []uint64{request.CafeID}), item.CafeProductID, enums.QtyTrx)
 		}
 
 		transactionHeader, err = t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionHeader.TransactionCode)
@@ -312,7 +315,7 @@ func (t *transactionUsecase) GetTransactionByCode(ctx context.Context, transacti
 		item               *responses.TransactionDetailItem
 	)
 
-	result, err = t.cache.Get(ctx, transactionCode)
+	result, err = t.transactionCache.Get(ctx, transactionCode)
 	if err != nil && !errors.Is(err, redis.Nil) {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction detail by redis`, err)
 	}
@@ -374,7 +377,7 @@ func (t *transactionUsecase) GetTransactionByCode(ctx context.Context, transacti
 	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to drop index`, err)
 	//}
 
-	_ = t.cache.Set(ctx, transactionCode, result)
+	_ = t.transactionCache.Set(ctx, transactionCode, result)
 
 	return result, nil
 }
@@ -390,7 +393,8 @@ func newTransactionUsecase(
 	productRepository repository_interfaces.ProductRepository,
 	cafeProductRepository repository_interfaces.CafeProductRepository,
 	transaction repository_interfaces.Transaction,
-	cache cache_interfaces.TransactionCache,
+	transactionCache cache_interfaces.TransactionCache,
+	productCache cache_interfaces.ProductCache,
 	midtrans midtrans_client.Midtrans) *transactionUsecase {
 	return &transactionUsecase{
 		transactionHeaderRepository: transactionHeaderRepository,
@@ -401,7 +405,8 @@ func newTransactionUsecase(
 		productRepository:           productRepository,
 		cafeProductRepository:       cafeProductRepository,
 		transaction:                 transaction,
-		cache:                       cache,
+		transactionCache:            transactionCache,
+		productCache:                productCache,
 		midtrans:                    midtrans,
 	}
 }

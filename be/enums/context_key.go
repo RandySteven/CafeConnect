@@ -10,6 +10,8 @@ const (
 	ClientIP              = `client_ip`
 	FileHeader            = `file_header`
 	FileObject            = `file_object`
+	QtyCart               = `qty_cart`
+	QtyTrx                = `qty_trx`
 )
 
 func (c ContextKey) ToString() string {

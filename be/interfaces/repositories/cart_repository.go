@@ -11,4 +11,5 @@ type CartRepository interface {
 	FindByUserID(ctx context.Context, userId uint64) (result []*models.Cart, err error)
 	FindByUserIDAndCafeProductID(ctx context.Context, userId uint64, cafeProductId uint64) (result *models.Cart, err error)
 	DeleteByUserID(ctx context.Context, userId uint64) (err error)
+	DeleteByUserIDAndCafeProductID(ctx context.Context, userId uint64, cafeProductId uint64) (err error)
 }

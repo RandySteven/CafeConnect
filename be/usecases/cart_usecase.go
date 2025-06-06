@@ -10,6 +10,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
+	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	"github.com/google/uuid"
@@ -23,6 +24,7 @@ type cartUsecase struct {
 	productRepository       repository_interfaces.ProductRepository
 	cafeFranchiseRepository repository_interfaces.CafeFranchiseRepository
 	userRepository          repository_interfaces.UserRepository
+	productCache            cache_interfaces.ProductCache
 	transaction             repository_interfaces.Transaction
 }
 
@@ -71,6 +73,8 @@ func (c *cartUsecase) AddToCart(ctx context.Context, request *requests.AddToCart
 		if err != nil {
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create cart`, err)
 		}
+		ctx = context.WithValue(ctx, enums.QtyCart, request.Qty)
+		_ = c.productCache.DecreaseProductStock(ctx, fmt.Sprintf(enums.CafeProductsKey, []uint64{cafeProduct.CafeID}), request.CafeProductID, enums.QtyCart)
 
 		return nil
 	}); customErr != nil {
@@ -175,6 +179,7 @@ func newCartUsecase(
 	productRepository repository_interfaces.ProductRepository,
 	userRepository repository_interfaces.UserRepository,
 	cafeFranchiseRepository repository_interfaces.CafeFranchiseRepository,
+	productCache cache_interfaces.ProductCache,
 	transaction repository_interfaces.Transaction,
 ) *cartUsecase {
 	return &cartUsecase{
@@ -184,6 +189,7 @@ func newCartUsecase(
 		productRepository:       productRepository,
 		cafeFranchiseRepository: cafeFranchiseRepository,
 		userRepository:          userRepository,
+		productCache:            productCache,
 		transaction:             transaction,
 	}
 }

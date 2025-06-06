@@ -15,6 +15,7 @@ import (
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"log"
 	"mime/multipart"
 	"time"
 )
@@ -120,7 +121,7 @@ func (p *productUsecase) GetProductByCafe(ctx context.Context, request *requests
 			DeletedAt: cafeProduct.DeletedAt,
 		})
 	}
-
+	log.Println(key)
 	_ = p.cache.SetMultiData(ctx, key, result)
 
 	return result, nil

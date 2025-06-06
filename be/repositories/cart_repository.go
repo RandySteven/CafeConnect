@@ -81,6 +81,14 @@ func (c *cartRepository) DeleteByUserID(ctx context.Context, userId uint64) (err
 	return nil
 }
 
+func (c *cartRepository) DeleteByUserIDAndCafeProductID(ctx context.Context, userId uint64, cafeProductId uint64) (err error) {
+	_, err = c.dbx(ctx).ExecContext(ctx, queries.DeleteCartByUserIDAndCafeProductID.String(), userId, cafeProductId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 var _ repository_interfaces.CartRepository = &cartRepository{}
 
 func newCartRepository(dbx repository_interfaces.DBX) *cartRepository {

@@ -79,3 +79,18 @@ nearby Cafes and also can get filtered Cafes based on theme, atmosphere, and pri
         </b>
     </li>
 </ul>
+
+Run at local :
+```bash
+make run
+```
+
+Run at docker:
+```bash
+docker compose up --build
+```
+
+Run migration
+```bash
+make migration
+```

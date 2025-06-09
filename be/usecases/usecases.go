@@ -11,6 +11,7 @@ import (
 )
 
 type Usecases struct {
+	AddressUsecase     usecase_interfaces.AddressUsecase
 	OnboardingUsecase  usecase_interfaces.OnboardingUsecase
 	CafeUsecase        usecase_interfaces.CafeUsecase
 	ProductUsecase     usecase_interfaces.ProductUsecase
@@ -27,6 +28,7 @@ func NewUsecases(repo *repositories.Repositories,
 	sub kafka_client.Consumer,
 	midtrans midtrans_client.Midtrans) *Usecases {
 	return &Usecases{
+		AddressUsecase:     newAddressUsecase(repo.AddressRepository, repo.AddressUserRepository, repo.UserRepository, cache.AddressCache),
 		OnboardingUsecase:  newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, cache.OnboardCache, pub, aws),
 		CafeUsecase:        newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, googleStorage, aws, cache.CafeCache),
 		ProductUsecase:     newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, aws, repo.Transaction, cache.ProductCache),

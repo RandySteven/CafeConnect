@@ -7,6 +7,7 @@ import (
 
 type APIs struct {
 	DevApi         api_interfaces.DevApi
+	AddressApi     api_interfaces.AddressApi
 	OnboardingApi  api_interfaces.OnboardingApi
 	CafeApi        api_interfaces.CafeApi
 	ProductApi     api_interfaces.ProductApi

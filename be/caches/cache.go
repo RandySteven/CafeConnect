@@ -6,6 +6,7 @@ import (
 )
 
 type Caches struct {
+	AddressCache     cache_interfaces.AddressCache
 	OnboardCache     cache_interfaces.OnboardingCache
 	CafeCache        cache_interfaces.CafeCache
 	ProductCache     cache_interfaces.ProductCache
@@ -14,6 +15,7 @@ type Caches struct {
 
 func NewCaches(redis *redis.Client) *Caches {
 	return &Caches{
+		AddressCache:     newAddressCache(redis),
 		OnboardCache:     newOnboardingCache(redis),
 		CafeCache:        newCafeCache(redis),
 		ProductCache:     newProductCache(redis),

@@ -17,6 +17,7 @@ type Usecases struct {
 	ProductUsecase     usecase_interfaces.ProductUsecase
 	ReviewUsecase      usecase_interfaces.ReviewUsecase
 	CartUsecase        usecase_interfaces.CartUsecase
+	RoleUsecase        usecase_interfaces.RoleUsecase
 	TransactionUsecase usecase_interfaces.TransactionUsecase
 }
 
@@ -30,6 +31,7 @@ func NewUsecases(repo *repositories.Repositories,
 	return &Usecases{
 		AddressUsecase:     newAddressUsecase(repo.AddressRepository, repo.AddressUserRepository, repo.UserRepository, cache.AddressCache),
 		OnboardingUsecase:  newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, cache.OnboardCache, pub, aws),
+		RoleUsecase:        newRoleUsecase(repo.RoleRepository),
 		CafeUsecase:        newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, googleStorage, aws, cache.CafeCache),
 		ProductUsecase:     newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, aws, repo.Transaction, cache.ProductCache),
 		ReviewUsecase:      newReviewUsecase(repo.ReviewRepository, repo.CafeRepository, repo.UserRepository),

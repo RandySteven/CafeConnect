@@ -18,6 +18,7 @@ type Repositories struct {
 	CafeProductRepository       repository_interfaces.CafeProductRepository
 	ReviewRepository            repository_interfaces.ReviewRepository
 	CartRepository              repository_interfaces.CartRepository
+	RoleRepository              repository_interfaces.RoleRepository
 	TransactionHeaderRepository repository_interfaces.TransactionHeaderRepository
 	TransactionDetailRepository repository_interfaces.TransactionDetailRepository
 	Transaction                 repository_interfaces.Transaction
@@ -38,6 +39,7 @@ func NewRepositories(db *sql.DB) *Repositories {
 		CafeProductRepository:       newCafeProductRepository(dbx),
 		ReviewRepository:            newReviewRepository(dbx),
 		CartRepository:              newCartRepository(dbx),
+		RoleRepository:              newRoleRepository(dbx),
 		TransactionHeaderRepository: newTransactionHeaderRepository(dbx),
 		TransactionDetailRepository: newTransactionDetailRepository(dbx),
 		Transaction:                 transaction,

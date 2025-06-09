@@ -90,6 +90,11 @@ Run at docker:
 docker compose up --build
 ```
 
+Refresh docker
+```bash
+docker compose up --build -d
+```
+
 Run migration
 ```bash
 make migration

@@ -35,6 +35,15 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 		Get(``, api.OnboardingApi.GetOnboardUser, enums.AuthenticationMiddleware),
 	}
 
+	endpoint[enums.RolePrefix] = []*Router{
+		Get(``, api.RoleApi.GetRoleList),
+	}
+
+	endpoint[enums.AddressPrefix] = []*Router{
+		Post(``, api.AddressApi.AddUserAddress, enums.AuthenticationMiddleware),
+		Get(``, api.AddressApi.GetUserAddresses, enums.AuthenticationMiddleware),
+	}
+
 	endpoint[enums.CafePrefix] = []*Router{
 		Get(`/franchises`, api.CafeApi.GetListCafeFranchise),
 		Post(`/franchises`, api.CafeApi.RegisterCafeAndFranchise),
@@ -129,6 +138,20 @@ func InitRouter(routers RouterPrefix, r *mux.Router) {
 		middleware.RegisterMiddleware(enums.TransactionPrefix, router.method, router.path, router.middlewares)
 		transactionRouter.HandleFunc(router.path, router.handler).Methods(router.method)
 		router.RouterLog(enums.TransactionPrefix.ToString())
+	}
+
+	roleRouter := r.PathPrefix(enums.RolePrefix.ToString()).Subrouter()
+	for _, router := range routers[enums.RolePrefix] {
+		middleware.RegisterMiddleware(enums.RolePrefix, router.method, router.path, router.middlewares)
+		roleRouter.HandleFunc(router.path, router.handler).Methods(router.method)
+		router.RouterLog(enums.RolePrefix.ToString())
+	}
+
+	addressRouter := r.PathPrefix(enums.AddressPrefix.ToString()).Subrouter()
+	for _, router := range routers[enums.AddressPrefix] {
+		middleware.RegisterMiddleware(enums.AddressPrefix, router.method, router.path, router.middlewares)
+		addressRouter.HandleFunc(router.path, router.handler).Methods(router.method)
+		router.RouterLog(enums.AddressPrefix.ToString())
 	}
 
 }

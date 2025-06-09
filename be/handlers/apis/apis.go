@@ -13,16 +13,19 @@ type APIs struct {
 	ProductApi     api_interfaces.ProductApi
 	ReviewApi      api_interfaces.ReviewApi
 	CartApi        api_interfaces.CartApi
+	RoleApi        api_interfaces.RoleApi
 	TransactionApi api_interfaces.TransactionApi
 }
 
 func NewAPIs(usecases *usecases.Usecases) *APIs {
 	return &APIs{
 		DevApi:         newDevApi(),
+		AddressApi: newAddressApi(usecases.AddressUsecase),
 		OnboardingApi:  newOnboardingApi(usecases.OnboardingUsecase),
 		CafeApi:        newCafeApi(usecases.CafeUsecase),
 		ProductApi:     newProductApi(usecases.ProductUsecase),
 		ReviewApi:      newReviewApi(usecases.ReviewUsecase),
+		RoleApi:        newRoleApi(usecases.RoleUsecase),
 		CartApi:        newCartApi(usecases.CartUsecase),
 		TransactionApi: newTransactionApi(usecases.TransactionUsecase),
 	}

@@ -11,6 +11,8 @@ const (
 	ProductPrefix     RouterPrefix = `/products`
 	CartPrefix        RouterPrefix = `/carts`
 	TransactionPrefix RouterPrefix = `/transactions`
+	AddressPrefix     RouterPrefix = `/addresses`
+	RolePrefix        RouterPrefix = `/roles`
 )
 
 func (r RouterPrefix) ToString() string {

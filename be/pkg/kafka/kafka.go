@@ -28,17 +28,22 @@ func NewKafkaClient(config *configs.Config) (*kafkaClient, error) {
 	log.Println(address)
 	conn, err := kafka.DialContext(context.Background(), kafkaConf.Dial, address)
 	if err != nil {
+		log.Println(`error during connect `, err)
 		return nil, err
 	}
 	defer conn.Close()
 	controller, err := conn.Controller()
 	if err != nil {
+		log.Println(`error during get controller `, err)
 		return nil, err
 	}
 	connLeader, err := kafka.DialContext(context.Background(), kafkaConf.Dial, net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
 	if err != nil {
+		log.Println(`error during conn leader `, err)
 		return nil, err
 	}
+
+	log.Println(`success to connect kafka`)
 	return &kafkaClient{
 		conn: connLeader,
 	}, nil

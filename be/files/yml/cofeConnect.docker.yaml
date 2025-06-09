@@ -60,7 +60,7 @@ config:
     bucketName: "cafe_connect"
   kafka:
     dial: "tcp"
-    host: "localhost"
-    port: "9093"
+    host: "broker"
+    port: "9092"
     topic: ""
     partition: 0

@@ -1,0 +1,66 @@
+config:
+  env: "local"
+  server:
+    host: "0.0.0.0"
+    port: "8081"
+    timeout:
+      server: 30
+      read: 15
+      write: 10
+      idle: 5
+  ws:
+    host: "localhost"
+    port: "8082"
+    timeout:
+      server: 30
+      read: 15
+      write: 10
+      idle: 5
+  mysql:
+    env: "localhost"
+    host: "mysql"
+    port: "3306"
+    username: "cafeConnect"
+    password: "cafeConnect123"
+    database: "cafeConnect"
+    region: "us-east-1"
+    connPool:
+      maxIdle: 15
+      connLimit: 100
+      idleTime: 600
+  redis:
+    host: "redis"
+    port: "6379"
+    minIddleConns: 200
+    poolSize: 12000
+    poolTimeout: 1400
+    password: ""
+    db: 0
+  cron:
+    time: "Asia/Jakarta"
+  google:
+    apiKey: "AIzaSyB4_n8O8j2Xf7Z-Cf84J34qbqqY2iKofGc"
+  oauth2:
+    googleClientID: "30234784929-7d8cbia9r1cp2afc2ni9sbgn4ksir776.apps.googleusercontent.com"
+    googleClientSecret: "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"
+    scopes:
+      - "https://www.googleapis.com/auth/userinfo.email"
+      - "https://www.googleapis.com/auth/userinfo.profile"
+    redirectEndpoint: "/google_callback"
+  aws:
+    accessKeyID: "AKIA5JMST6E6SAK6VN7G"
+    secretAccessKey: "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"
+    region: "us-east-1"
+  rds:
+    endpoint: "database-1.clgygmgyc71s.us-east-1.rds.amazonaws.com"
+    port: "3306"
+  storage:
+    projectId: "cafeConnect-456615"
+    #    serviceAccount: "service-672473577488@gs-project-accounts.iam.gserviceaccount.com"
+    bucketName: "cafe_connect"
+  kafka:
+    dial: "tcp"
+    host: "localhost"
+    port: "9093"
+    topic: ""
+    partition: 0

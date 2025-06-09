@@ -9,8 +9,6 @@ COPY . .
 
 COPY files/yml/cofeConnect.docker.yaml /files/yml/cofeConnect.docker.yaml
 
-RUN go build -o /bin/http ./cmd/main/http
+RUN go build -o /bin/migration ./cmd/main/migration
 
-EXPOSE 8081
-
-CMD ["/bin/http", "-config", "/files/yml/cofeConnect.docker.yaml"]
+CMD ["/bin/migration", "-config", "/files/yml/cofeConnect.docker.yaml"]

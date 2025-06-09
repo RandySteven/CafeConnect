@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "8081:8081"
+    networks:
+      - my-networks
+    depends_on:
+      - mysql
+      - redis
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cafeConnect
+      MYSQL_USER: cafeConnect
+      MYSQL_PASSWORD: cafeConnect123
+    ports:
+      - "3306:3306"
+    networks:
+      - my-networks
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:8.0
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrator
+    depends_on:
+      - mysql
+    networks:
+      - my-networks
+
+networks:
+  my-networks:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:

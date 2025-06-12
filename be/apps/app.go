@@ -7,6 +7,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	cron_client "github.com/RandySteven/CafeConnect/be/pkg/cron"
+	elastic_client "github.com/RandySteven/CafeConnect/be/pkg/elastic"
 	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
@@ -14,6 +15,7 @@ import (
 	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
 	usecases2 "github.com/RandySteven/CafeConnect/be/usecases"
+	"log"
 )
 
 type App struct {
@@ -26,6 +28,7 @@ type App struct {
 	Kafka         kafka_client.Kafka
 	Pub           kafka_client.Publisher
 	Sub           kafka_client.Consumer
+	Elastic       elastic_client.Elastic
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -75,6 +78,12 @@ func NewApps(config *configs.Config) (*App, error) {
 		sub = nil
 	}
 
+	es, err := elastic_client.NewElastic(config)
+	if err != nil {
+		log.Println(`error es : `, err)
+		es = nil
+	}
+
 	return &App{
 		MySQL:         mysql,
 		Redis:         redis,
@@ -85,6 +94,7 @@ func NewApps(config *configs.Config) (*App, error) {
 		Kafka:         kafka,
 		Pub:           pub,
 		Sub:           sub,
+		Elastic:       es,
 	}, nil
 }
 

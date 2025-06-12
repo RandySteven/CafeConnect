@@ -64,3 +64,11 @@ config:
     port: "9092"
     topic: ""
     partition: 0
+  elasticsearch:
+    host: "elastic"
+    port: "9200"
+    transport:
+      maxIdleConnsPerHost: 10
+      timeout: 5
+      keepAlive: 30
+    maxRetries: 3

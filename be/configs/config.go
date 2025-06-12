@@ -85,5 +85,16 @@ type Config struct {
 			Topic     string `yaml:"topic"`
 			Partition int    `yaml:"partition"`
 		} `yaml:"kafka"`
+
+		ElasticSearch struct {
+			Host      string `yaml:"host"`
+			Port      string `yaml:"port"`
+			Transport struct {
+				MaxIdleConnsPerHost int `yaml:"maxIdleConnsPerHost"`
+				Timeout             int `yaml:"timeout"`
+				KeepAlive           int `yaml:"keepAlive"`
+			} `yaml:"transport"`
+			MaxRetries int `yaml:"maxRetries"`
+		} `yaml:"elasticsearch"`
 	} `yaml:"config"`
 }

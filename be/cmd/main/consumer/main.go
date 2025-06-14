@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/apps"
+	"github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	consumers2 "github.com/RandySteven/CafeConnect/be/handlers/consumers"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
@@ -39,8 +40,9 @@ func main() {
 	}
 
 	repo := repositories2.NewRepositories(app.MySQL.Client())
+	cache := caches.NewCaches(app.Redis.Client())
 
-	consumers := consumers2.NewConsumers(repo, app.Sub, app.Pub, app.Midtrans)
+	consumers := consumers2.NewConsumers(repo, cache, app.Sub, app.Pub, app.Midtrans)
 
 	go consumers.DummyConsumer.CheckHealth(ctx)
 	go consumers.TransactionConsumer.MidtransTransactionRecord(ctx)

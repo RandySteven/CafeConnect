@@ -75,7 +75,6 @@ func (t *transactionUsecase) CheckoutTransactionV1(ctx context.Context) (result 
 }
 
 func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
-	//process read the request
 	var (
 		userId            = ctx.Value(enums.UserID).(uint64)
 		transactionHeader = &models.TransactionHeader{
@@ -85,7 +84,6 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 			Status:          enums.TransactionPENDING.String(),
 			TransactionAt:   time.Now(),
 		}
-		//transactionDetail *models.TransactionDetail
 		err error
 	)
 
@@ -108,10 +106,8 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create header transaction`, err)
 	}
-	//items := make([]midtrans.ItemDetails, len(request.Checkouts))
-
 	fname, lname := utils.FirstLastName(user.Name)
-	err = t.pub.WriteMessage(ctx, enums.TransactionTopic, `transaction`, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
+	err = t.pub.WriteMessage(ctx, `transaction`, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
 		UserID:            user.ID,
 		FName:             fname,
 		Email:             user.Email,

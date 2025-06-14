@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/configs"
+	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/segmentio/kafka-go"
 )
 
 type (
 	Publisher interface {
-		WriteMessage(ctx context.Context, topic string, key string, value string) (err error)
+		WriteMessage(ctx context.Context, topic string, value string) (err error)
 	}
 
 	pub struct {
@@ -23,6 +24,7 @@ func NewPublisher(config *configs.Config) (*pub, error) {
 		Addr: kafka.TCP(
 			fmt.Sprintf("%s:%s", kafkaConf.Host, kafkaConf.Port)),
 		Balancer: &kafka.LeastBytes{},
+		Topic:    enums.TransactionTopic,
 	}
 
 	return &pub{
@@ -30,10 +32,9 @@ func NewPublisher(config *configs.Config) (*pub, error) {
 	}, nil
 }
 
-func (p *pub) WriteMessage(ctx context.Context, topic string, key string, value string) (err error) {
+func (p *pub) WriteMessage(ctx context.Context, key string, value string) (err error) {
 	err = p.w.WriteMessages(ctx,
 		kafka.Message{
-			Topic: topic,
 			Key:   []byte(key),
 			Value: []byte(value),
 		},

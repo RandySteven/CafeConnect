@@ -37,7 +37,7 @@ type TransactionConsumer struct {
 
 func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 	for {
-		result, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, `transaction`)
+		result, err := t.consumer.ReadMessage(ctx, `transaction`)
 		if err != nil {
 			log.Println(`failed to consumer result`, err)
 			return
@@ -105,10 +105,6 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
 				}
 				ctx = context.WithValue(ctx, enums.QtyTrx, item.Qty)
-				//err = t.productCache.DecreaseProductStock(ctx, fmt.Sprintf(enums.CafeProductsKey, []uint64{uint64(transactionMessage.CafeID)}), item.CafeProductID, enums.QtyTrx)
-				//if err != nil {
-				//	return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update decrease redis`, err)
-				//}
 			}
 			return nil
 		})
@@ -151,7 +147,7 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			return
 		}
 
-		err = t.publisher.WriteMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-midtrans-response-%s`, transactionHeader.TransactionCode), utils.WriteJSONObject[midtrans_client.MidtransResponse](midtransResponse))
+		err = t.publisher.WriteMessage(ctx, fmt.Sprintf(`transaction-midtrans-response-%s`, transactionHeader.TransactionCode), utils.WriteJSONObject[midtrans_client.MidtransResponse](midtransResponse))
 		if err != nil {
 			log.Println(`error while try to publish transaction-midtrans-response`, err)
 			return

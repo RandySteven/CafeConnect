@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
@@ -46,20 +47,25 @@ func (t *transactionUsecase) CheckReceipt(ctx context.Context, trasnactionCode s
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, "failed to get header", err)
 	}
 
+	var midtransResponse *midtrans_client.MidtransResponse = nil
 	midtransTransaction, err := t.midtransTransactionRepository.FindByTransactionCode(ctx, trasnactionCode)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get midtrans`, err)
 	}
 
-	return &responses.TransactionReceiptResponse{
-		ID:              transactionHeader.ID,
-		TransactionCode: transactionHeader.TransactionCode,
-		Status:          transactionHeader.Status,
-		TransactionAt:   transactionHeader.TransactionAt,
-		MidtransResponse: &midtrans_client.MidtransResponse{
+	if midtransTransaction != nil {
+		midtransResponse = &midtrans_client.MidtransResponse{
 			Token:       midtransTransaction.Token,
 			RedirectURL: midtransTransaction.RedirectURL,
-		},
+		}
+	}
+
+	return &responses.TransactionReceiptResponse{
+		ID:               transactionHeader.ID,
+		TransactionCode:  transactionHeader.TransactionCode,
+		Status:           transactionHeader.Status,
+		TransactionAt:    transactionHeader.TransactionAt,
+		MidtransResponse: midtransResponse,
 	}, nil
 }
 
@@ -87,130 +93,35 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user`, err)
 	}
-	err = t.pub.WriteMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-cafe-user-%s`, transactionHeader.TransactionCode), fmt.Sprintf("%d", user.ID))
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to pub user`, err)
-	}
 
 	cafe, err := t.cafeRepository.FindByID(ctx, request.CafeID)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
-	}
-	err = t.pub.WriteMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-cafe-cafe-%s`, transactionHeader.TransactionCode), fmt.Sprintf("%d", cafe.ID))
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to pub user`, err)
 	}
 
 	cafeFranchise, err := t.cafeFranchiseRepository.FindByID(ctx, cafe.ID)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe franchise`, err)
 	}
-	err = t.pub.WriteMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-cafe-franchise-name-%s`, transactionHeader.TransactionCode), cafeFranchise.Name)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to pub cafe franchise`, err)
-	}
 
-	//var totalAmount int64 = 0
-
-	//if customErr = t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
 	transactionHeader, err = t.transactionHeaderRepository.Save(ctx, transactionHeader)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create header transaction`, err)
 	}
-	err = t.pub.WriteMessage(ctx, enums.TransactionTopic, `transaction-code`, transactionHeader.TransactionCode)
-
 	//items := make([]midtrans.ItemDetails, len(request.Checkouts))
-	var checkouts *[]*requests.CheckoutList
-	checkouts = &request.Checkouts
-	err = t.pub.WriteMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-detail-%s`, transactionHeader.TransactionCode), utils.WriteJSONObject[[]*requests.CheckoutList](checkouts))
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to write transaction-detail`, err)
-	}
 
-	//for index, item := range request.Checkouts {
-	//	cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
-	//	if err != nil {
-	//		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
-	//	}
-	//
-	//	product, err := t.productRepository.FindByID(ctx, cafeProduct.ProductID)
-	//	if err != nil {
-	//		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get product`, err)
-	//	}
-	//
-	//	if cafeProduct.Stock < item.Qty {
-	//		return apperror.NewCustomError(apperror.ErrBadRequest, `insufficient stock`, fmt.Errorf(`insufficient stock`))
-	//	}
-	//
-	//	cafeProduct.Stock -= item.Qty
-	//	cafeProduct.UpdatedAt = time.Now()
-	//	cafeProduct, err = t.cafeProductRepository.Update(ctx, cafeProduct)
-	//	if err != nil {
-	//		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
-	//	}
-	//
-	//	transactionDetail = &models.TransactionDetail{
-	//		TransactionID: transactionHeader.ID,
-	//		CafeProductID: item.CafeProductID,
-	//		Qty:           item.Qty,
-	//	}
-	//
-	//	transactionDetail, err = t.transactionDetailRepository.Save(ctx, transactionDetail)
-	//	if err != nil {
-	//		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create detail transaction`, err)
-	//	}
-	//
-	//	items[index] = midtrans.ItemDetails{
-	//		ID:           strconv.FormatUint(item.CafeProductID, 10),
-	//		Name:         product.Name,
-	//		Qty:          int32(item.Qty),
-	//		Price:        int64(cafeProduct.Price),
-	//		MerchantName: cafeFranchise.Name,
-	//	}
-	//
-	//	totalAmount += int64(cafeProduct.Price * item.Qty)
-	//
-	//	err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, userId, item.CafeProductID)
-	//	if err != nil {
-	//		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
-	//	}
-	//	ctx = context.WithValue(ctx, enums.QtyTrx, item.Qty)
-	//	_ = t.productCache.DecreaseProductStock(ctx, fmt.Sprintf(enums.CafeProductsKey, []uint64{request.CafeID}), item.CafeProductID, enums.QtyTrx)
-	//}
-
-	//transactionHeader, err = t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionHeader.TransactionCode)
-	//if err != nil {
-	//	return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
-	//}
-	//
-	//transactionHeader.Status = enums.TransactionPENDING.String()
-	//transactionHeader.UpdatedAt = time.Now()
-	//transactionHeader, err = t.transactionHeaderRepository.Update(ctx, transactionHeader)
-	//if err != nil {
-	//	return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update trans status`, err)
-	//}
-	//
-	//names := strings.Split(user.Name, " ")
-	//
-	//midtransRequest := &midtrans_client.MidtransRequest{
-	//	FName:           names[0],
-	//	LName:           names[1],
-	//	Email:           user.Email,
-	//	Phone:           user.PhoneNumber,
-	//	GrossAmt:        totalAmount,
-	//	TransactionCode: transactionHeader.TransactionCode,
-	//	Items:           items,
-	//}
-	//
-	//err = t.pub.WriteMessage(ctx, enums.TransactionTopic, `transaction-midtrans-request`, utils.WriteJSONObject[midtrans_client.MidtransRequest](midtransRequest))
-	//if err != nil {
-	//	return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create midtrans trx`, err)
-	//}
-
-	//	return nil
-	//}); customErr != nil {
-	//	return nil, customErr
-	//}
+	fname, lname := utils.FirstLastName(user.Name)
+	err = t.pub.WriteMessage(ctx, enums.TransactionTopic, `transaction`, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
+		UserID:            user.ID,
+		FName:             fname,
+		Email:             user.Email,
+		Phone:             user.PhoneNumber,
+		LName:             lname,
+		TransactionCode:   transactionHeader.TransactionCode,
+		CafeID:            cafe.ID,
+		CafeFranchiseName: cafeFranchise.Name,
+		CheckoutList:      request.Checkouts,
+	}))
 
 	return &responses.TransactionReceiptResponse{
 		ID:              transactionHeader.ID,
@@ -322,56 +233,53 @@ func (t *transactionUsecase) CreateTransactionV1(ctx context.Context) (result *r
 }
 
 func (t *transactionUsecase) CreateTransactionV2(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
-	userId := ctx.Value(enums.UserID).(uint64)
-
-	var (
-		carts             []*models.Cart
-		err               error
-		transactionHeader *models.TransactionHeader
-		cafeId            uint64 = 0
-		ids               []uint64
-	)
-
-	user, err := t.userRepository.FindByID(ctx, userId)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user`, err)
-	}
-
-	carts, err = t.cartRepository.FindByUserID(ctx, userId)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user cart`, err)
-	}
-	if len(carts) == 0 {
-		return nil, apperror.NewCustomError(apperror.ErrBadRequest, `cart still empty`, fmt.Errorf(`cart still empty`))
-	}
-
-	for _, cart := range carts {
-		ids = append(ids, cart.CafeProductID)
-	}
-
-	transactionHeader = &models.TransactionHeader{
-		UserID:          userId,
-		CafeID:          cafeId,
-		TransactionCode: utils.GenerateCode(24),
-		Status:          enums.TransactionPENDING.String(),
-		TransactionAt:   time.Now(),
-	}
-
-	transactionHeader, err = t.transactionHeaderRepository.Save(ctx, transactionHeader)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create transaction header`, err)
-	}
-
-	firstName, lastName := utils.FirstLastName(user.Name)
-	midtransRequest := &messages.TransactionMidtransMessage{
-		UserID:      userId,
-		FirstName:   firstName,
-		LastName:    lastName,
-		PhoneNumber: user.PhoneNumber,
-	}
-
-	t.pub.WriteMessage(ctx, enums.TransactionTopic, `midtrans-request`, utils.WriteJSONObject[messages.TransactionMidtransMessage](midtransRequest))
-
+	//userId := ctx.Value(enums.UserID).(uint64)
+	//
+	//var (
+	//	carts             []*models.Cart
+	//	err               error
+	//	transactionHeader *models.TransactionHeader
+	//	cafeId            uint64 = 0
+	//	ids               []uint64
+	//)
+	//
+	//user, err := t.userRepository.FindByID(ctx, userId)
+	//if err != nil {
+	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user`, err)
+	//}
+	//
+	//carts, err = t.cartRepository.FindByUserID(ctx, userId)
+	//if err != nil {
+	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user cart`, err)
+	//}
+	//if len(carts) == 0 {
+	//	return nil, apperror.NewCustomError(apperror.ErrBadRequest, `cart still empty`, fmt.Errorf(`cart still empty`))
+	//}
+	//
+	//for _, cart := range carts {
+	//	ids = append(ids, cart.CafeProductID)
+	//}
+	//
+	//transactionHeader = &models.TransactionHeader{
+	//	UserID:          userId,
+	//	CafeID:          cafeId,
+	//	TransactionCode: utils.GenerateCode(24),
+	//	Status:          enums.TransactionPENDING.String(),
+	//	TransactionAt:   time.Now(),
+	//}
+	//
+	//transactionHeader, err = t.transactionHeaderRepository.Save(ctx, transactionHeader)
+	//if err != nil {
+	//	return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create transaction header`, err)
+	//}
+	//
+	////firstName, lastName := utils.FirstLastName(user.Name)
+	////midtransRequest := &messages.TransactionMidtransMessage{
+	////	UserID:      userId,
+	////}
+	//
+	////t.pub.WriteMessage(ctx, enums.TransactionTopic, `midtrans-request`, utils.WriteJSONObject[messages.TransactionMidtransMessage](midtransRequest))
+	//
 	return
 }
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
+	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
-	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
@@ -16,7 +16,6 @@ import (
 	"github.com/midtrans/midtrans-go"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -38,20 +37,18 @@ type TransactionConsumer struct {
 
 func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 	for {
-		//1. get transactionCode
-		transactionCode, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, `transaction-code`)
+		result, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, `transaction`)
 		if err != nil {
-			log.Println(`failed to get transactionCode`)
+			log.Println(`failed to consumer result`, err)
+			return
 		}
 
-		//2. get items checkouts
-		itemCheckouts, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-detail-%s`, transactionCode))
-		if err != nil {
-			log.Println(`error while try to consume transaction-detail`, err)
-		}
-		checkoutLists := utils.ReadJSONObject[[]*requests.CheckoutList](itemCheckouts)
-		items := make([]midtrans.ItemDetails, len(*checkoutLists))
+		transactionMessage := utils.ReadJSONObject[messages.TransactionMidtransMessage](result)
 
+		transactionCode := transactionMessage.TransactionCode
+		checkoutList := transactionMessage.CheckoutList
+
+		items := make([]midtrans.ItemDetails, len(checkoutList))
 		var totalAmount int64 = 0
 		transactionHeader, err := t.transactionRepository.FindByTransactionCode(ctx, transactionCode)
 		if err != nil {
@@ -59,39 +56,8 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			return
 		}
 
-		cafeFranchise, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-cafe-franchise-name-%s`, transactionHeader.TransactionCode))
-		if err != nil {
-			log.Println(apperror.ErrInternalServer, `failed to consume cafeFranchiseName`, err)
-		}
-
-		userIdStr, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-cafe-user-%s`, transactionHeader.TransactionCode))
-		if err != nil {
-			log.Println(apperror.ErrInternalServer, `failed to consume userId`, err)
-		}
-
-		cafeIdStr, err := t.consumer.ReadMessage(ctx, enums.TransactionTopic, fmt.Sprintf(`transaction-cafe-cafe-%s`, transactionHeader.TransactionCode))
-		if err != nil {
-			log.Println(apperror.ErrInternalServer, `failed to consume cafeId`, err)
-		}
-
-		userId, err := strconv.Atoi(userIdStr)
-		if err != nil {
-			log.Println(`failed convert userId `, err)
-			return
-		}
-		cafeId, err := strconv.Atoi(cafeIdStr)
-		if err != nil {
-			log.Println(`failed convert cafeId `, err)
-			return
-		}
-
-		user, err := t.userRepository.FindByID(ctx, uint64(userId))
-		if err != nil {
-			log.Println(apperror.ErrInternalServer, `failed to get user id`, err)
-		}
-
 		customErr := t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
-			for index, item := range *checkoutLists {
+			for index, item := range checkoutList {
 				cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
 				if err != nil {
 					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
@@ -129,17 +95,20 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 					Name:         product.Name,
 					Qty:          int32(item.Qty),
 					Price:        int64(cafeProduct.Price),
-					MerchantName: cafeFranchise,
+					MerchantName: transactionMessage.CafeFranchiseName,
 				}
 
 				totalAmount += int64(cafeProduct.Price * item.Qty)
 
-				err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, uint64(userId), item.CafeProductID)
+				err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, uint64(transactionMessage.UserID), item.CafeProductID)
 				if err != nil {
 					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
 				}
 				ctx = context.WithValue(ctx, enums.QtyTrx, item.Qty)
-				_ = t.productCache.DecreaseProductStock(ctx, fmt.Sprintf(enums.CafeProductsKey, []uint64{uint64(cafeId)}), item.CafeProductID, enums.QtyTrx)
+				//err = t.productCache.DecreaseProductStock(ctx, fmt.Sprintf(enums.CafeProductsKey, []uint64{uint64(transactionMessage.CafeID)}), item.CafeProductID, enums.QtyTrx)
+				//if err != nil {
+				//	return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update decrease redis`, err)
+				//}
 			}
 			return nil
 		})
@@ -147,12 +116,11 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			log.Println(`error trx`, customErr)
 			return
 		}
-		names := strings.Split(user.Name, " ")
 		midtransRequest := &midtrans_client.MidtransRequest{
-			FName:           names[0],
-			LName:           names[1],
-			Email:           user.Email,
-			Phone:           user.PhoneNumber,
+			FName:           transactionMessage.FName,
+			LName:           transactionMessage.LName,
+			Email:           transactionMessage.Email,
+			Phone:           transactionMessage.Phone,
 			GrossAmt:        totalAmount,
 			TransactionCode: transactionHeader.TransactionCode,
 			Items:           items,

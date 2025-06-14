@@ -10,4 +10,8 @@ type (
 		CafeID    uint64          `json:"cafe_id"`
 		Checkouts []*CheckoutList `json:"checkouts"`
 	}
+
+	ReceiptRequest struct {
+		TransactionCode string `json:"transaction_code"`
+	}
 )

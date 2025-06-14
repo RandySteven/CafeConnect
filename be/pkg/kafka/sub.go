@@ -43,14 +43,12 @@ func (s *sub) ReadMessage(ctx context.Context, topic string, key string) (string
 		GroupID:  "your-group-id",
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
-		MaxWait:  500 * time.Millisecond,
 	})
-	defer r.Close()
 
 	for {
 		m, err := r.ReadMessage(ctx)
 		if err != nil {
-			// Context cancellation or read error
+			log.Println(err)
 			return "", err
 		}
 		log.Printf("got message: key=%s, value=%s", string(m.Key), string(m.Value))

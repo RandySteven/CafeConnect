@@ -23,6 +23,7 @@ func initMigrations() []queries.MigrationQuery {
 		queries.CreateCartTable,
 		queries.CreateTransactionHeaderTable,
 		queries.CreateTransactionDetailTable,
+		queries.CreateMidtransTransactionTable,
 	}
 }
 

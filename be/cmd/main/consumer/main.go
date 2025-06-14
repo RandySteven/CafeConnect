@@ -5,6 +5,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/apps"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	consumers2 "github.com/RandySteven/CafeConnect/be/handlers/consumers"
+	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -37,9 +38,12 @@ func main() {
 		log.Fatalln("Error initializing app:", err)
 	}
 
-	consumers := consumers2.NewConsumers(app.Sub, app.Pub)
+	repo := repositories2.NewRepositories(app.MySQL.Client())
+
+	consumers := consumers2.NewConsumers(repo, app.Sub, app.Pub, app.Midtrans)
 
 	go consumers.DummyConsumer.CheckHealth(ctx)
+	go consumers.TransactionConsumer.MidtransTransactionRecord(ctx)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

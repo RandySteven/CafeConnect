@@ -6,22 +6,23 @@ import (
 )
 
 type Repositories struct {
-	UserRepository              repository_interfaces.UserRepository
-	PointRepository             repository_interfaces.PointRepository
-	AddressRepository           repository_interfaces.AddressRepository
-	AddressUserRepository       repository_interfaces.AddressUserRepository
-	ReferralRepository          repository_interfaces.ReferralRepository
-	CafeRepository              repository_interfaces.CafeRepository
-	CafeFranchiseRepository     repository_interfaces.CafeFranchiseRepository
-	ProductRepository           repository_interfaces.ProductRepository
-	ProductCategoryRepository   repository_interfaces.ProductCategoryRepository
-	CafeProductRepository       repository_interfaces.CafeProductRepository
-	ReviewRepository            repository_interfaces.ReviewRepository
-	CartRepository              repository_interfaces.CartRepository
-	RoleRepository              repository_interfaces.RoleRepository
-	TransactionHeaderRepository repository_interfaces.TransactionHeaderRepository
-	TransactionDetailRepository repository_interfaces.TransactionDetailRepository
-	Transaction                 repository_interfaces.Transaction
+	UserRepository                repository_interfaces.UserRepository
+	PointRepository               repository_interfaces.PointRepository
+	AddressRepository             repository_interfaces.AddressRepository
+	AddressUserRepository         repository_interfaces.AddressUserRepository
+	ReferralRepository            repository_interfaces.ReferralRepository
+	CafeRepository                repository_interfaces.CafeRepository
+	CafeFranchiseRepository       repository_interfaces.CafeFranchiseRepository
+	ProductRepository             repository_interfaces.ProductRepository
+	ProductCategoryRepository     repository_interfaces.ProductCategoryRepository
+	CafeProductRepository         repository_interfaces.CafeProductRepository
+	ReviewRepository              repository_interfaces.ReviewRepository
+	CartRepository                repository_interfaces.CartRepository
+	RoleRepository                repository_interfaces.RoleRepository
+	TransactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
+	TransactionDetailRepository   repository_interfaces.TransactionDetailRepository
+	MidtransTransactionRepository repository_interfaces.MidtransTransactionRepository
+	Transaction                   repository_interfaces.Transaction
 }
 
 func NewRepositories(db *sql.DB) *Repositories {
@@ -42,6 +43,7 @@ func NewRepositories(db *sql.DB) *Repositories {
 		RoleRepository:              newRoleRepository(dbx),
 		TransactionHeaderRepository: newTransactionHeaderRepository(dbx),
 		TransactionDetailRepository: newTransactionDetailRepository(dbx),
+		MidtransTransactionRepository: newMidtransTransactionRepository(dbx),
 		Transaction:                 transaction,
 	}
 }

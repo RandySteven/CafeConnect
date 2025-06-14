@@ -26,20 +26,44 @@ import (
 )
 
 type transactionUsecase struct {
-	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository
-	transactionDetailRepository repository_interfaces.TransactionDetailRepository
-	addressRepository           repository_interfaces.AddressRepository
-	cartRepository              repository_interfaces.CartRepository
-	userRepository              repository_interfaces.UserRepository
-	cafeRepository              repository_interfaces.CafeRepository
-	cafeFranchiseRepository     repository_interfaces.CafeFranchiseRepository
-	productRepository           repository_interfaces.ProductRepository
-	cafeProductRepository       repository_interfaces.CafeProductRepository
-	transaction                 repository_interfaces.Transaction
-	pub                         kafka_client.Publisher
-	midtrans                    midtrans_client.Midtrans
-	transactionCache            cache_interfaces.TransactionCache
-	productCache                cache_interfaces.ProductCache
+	transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
+	transactionDetailRepository   repository_interfaces.TransactionDetailRepository
+	addressRepository             repository_interfaces.AddressRepository
+	cartRepository                repository_interfaces.CartRepository
+	userRepository                repository_interfaces.UserRepository
+	cafeRepository                repository_interfaces.CafeRepository
+	cafeFranchiseRepository       repository_interfaces.CafeFranchiseRepository
+	productRepository             repository_interfaces.ProductRepository
+	cafeProductRepository         repository_interfaces.CafeProductRepository
+	transaction                   repository_interfaces.Transaction
+	pub                           kafka_client.Publisher
+	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository
+	midtrans                      midtrans_client.Midtrans
+	transactionCache              cache_interfaces.TransactionCache
+	productCache                  cache_interfaces.ProductCache
+}
+
+func (t *transactionUsecase) CheckReceipt(ctx context.Context, trasnactionCode string) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
+	transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, trasnactionCode)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, "failed to get header", err)
+	}
+
+	midtransTransaction, err := t.midtransTransactionRepository.FindByTransactionCode(ctx, trasnactionCode)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get midtrans`, err)
+	}
+
+	return &responses.TransactionReceiptResponse{
+		ID:              transactionHeader.ID,
+		TransactionCode: transactionHeader.TransactionCode,
+		Status:          transactionHeader.Status,
+		TransactionAt:   transactionHeader.TransactionAt,
+		MidtransResponse: &midtrans_client.MidtransResponse{
+			Token:       midtransTransaction.Token,
+			RedirectURL: midtransTransaction.RedirectURL,
+		},
+	}, nil
 }
 
 func (t *transactionUsecase) CheckoutTransactionV1(ctx context.Context) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
@@ -60,7 +84,6 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 		}
 		transactionDetail *models.TransactionDetail
 		err               error
-		midtransResponse  *midtrans_client.MidtransResponse
 	)
 
 	user, err := t.userRepository.FindByID(ctx, userId)
@@ -144,7 +167,7 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
 		}
 
-		transactionHeader.Status = enums.TransactionSUCCESS.String()
+		transactionHeader.Status = enums.TransactionPENDING.String()
 		transactionHeader.UpdatedAt = time.Now()
 		transactionHeader, err = t.transactionHeaderRepository.Update(ctx, transactionHeader)
 		if err != nil {
@@ -152,7 +175,8 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 		}
 
 		names := strings.Split(user.Name, " ")
-		midtransResponse, err = t.midtrans.CreateTransaction(ctx, &midtrans_client.MidtransRequest{
+
+		midtransRequest := &midtrans_client.MidtransRequest{
 			FName:           names[0],
 			LName:           names[1],
 			Email:           user.Email,
@@ -160,7 +184,9 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 			GrossAmt:        totalAmount,
 			TransactionCode: transactionHeader.TransactionCode,
 			Items:           items,
-		})
+		}
+
+		err = t.pub.WriteMessage(ctx, enums.TransactionTopic, `transaction-midtrans-request`, utils.WriteJSONObject[midtrans_client.MidtransRequest](midtransRequest))
 		if err != nil {
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create midtrans trx`, err)
 		}
@@ -171,11 +197,10 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 	}
 
 	return &responses.TransactionReceiptResponse{
-		ID:               transactionHeader.ID,
-		TransactionCode:  transactionHeader.TransactionCode,
-		Status:           transactionHeader.Status,
-		TransactionAt:    transactionHeader.TransactionAt,
-		MidtransResponse: midtransResponse,
+		ID:              transactionHeader.ID,
+		TransactionCode: transactionHeader.TransactionCode,
+		Status:          transactionHeader.Status,
+		TransactionAt:   transactionHeader.TransactionAt.Local(),
 	}, nil
 }
 
@@ -504,24 +529,28 @@ func newTransactionUsecase(
 	cafeRepository repository_interfaces.CafeRepository,
 	cafeFranchiseRepository repository_interfaces.CafeFranchiseRepository,
 	productRepository repository_interfaces.ProductRepository,
+	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository,
 	cafeProductRepository repository_interfaces.CafeProductRepository,
 	transaction repository_interfaces.Transaction,
 	transactionCache cache_interfaces.TransactionCache,
 	productCache cache_interfaces.ProductCache,
+	publisher kafka_client.Publisher,
 	midtrans midtrans_client.Midtrans) *transactionUsecase {
 	return &transactionUsecase{
-		transactionHeaderRepository: transactionHeaderRepository,
-		transactionDetailRepository: transactionDetailRepository,
-		addressRepository:           addressRepository,
-		cartRepository:              cartRepository,
-		userRepository:              userRepository,
-		cafeRepository:              cafeRepository,
-		cafeFranchiseRepository:     cafeFranchiseRepository,
-		productRepository:           productRepository,
-		cafeProductRepository:       cafeProductRepository,
-		transaction:                 transaction,
-		transactionCache:            transactionCache,
-		productCache:                productCache,
-		midtrans:                    midtrans,
+		transactionHeaderRepository:   transactionHeaderRepository,
+		transactionDetailRepository:   transactionDetailRepository,
+		addressRepository:             addressRepository,
+		cartRepository:                cartRepository,
+		userRepository:                userRepository,
+		cafeRepository:                cafeRepository,
+		cafeFranchiseRepository:       cafeFranchiseRepository,
+		productRepository:             productRepository,
+		cafeProductRepository:         cafeProductRepository,
+		transaction:                   transaction,
+		transactionCache:              transactionCache,
+		midtransTransactionRepository: midtransTransactionRepository,
+		productCache:                  productCache,
+		pub:                           publisher,
+		midtrans:                      midtrans,
 	}
 }

@@ -7,4 +7,5 @@ type TransactionApi interface {
 	CheckoutTransactionV2(w http.ResponseWriter, r *http.Request)
 	GetUserTransactions(w http.ResponseWriter, r *http.Request)
 	GetTransactionByTransactionCode(w http.ResponseWriter, r *http.Request)
+	CheckReceipt(w http.ResponseWriter, r *http.Request)
 }

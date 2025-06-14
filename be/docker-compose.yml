@@ -99,6 +99,32 @@ services:
     profiles:
       - scheduler
 
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    depends_on:
+      - mysql
+      - redis
+      - broker
+    networks:
+      - my-networks
+#    profiles:
+#      - consumer
+
+  topic:
+    build:
+      context: .
+      dockerfile: Dockerfile.topic
+    depends_on:
+      - mysql
+      - redis
+      - broker
+    networks:
+      - my-networks
+    profiles:
+      - topic
+
 networks:
   my-networks:
     driver: bridge

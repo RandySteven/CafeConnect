@@ -215,4 +215,17 @@ const (
 		    FOREIGN KEY (cafe_product_id) REFERENCES cafe_products(id) ON DELETE CASCADE
 		)
 	`
+
+	CreateMidtransTransactionTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS midtrans_transactions (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    transaction_code CHAR(24) NOT NULL,
+		    token VARCHAR(64) NOT NULL,
+		    total_amt BIGINT NOT NULL,
+		    redirect_url VARCHAR(144) NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+		    deleted_at TIMESTAMP DEFAULT NULL
+		)
+	`
 )

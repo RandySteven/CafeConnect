@@ -16,6 +16,28 @@ type TransactionApi struct {
 	usecase usecase_interfaces.TransactionUsecase
 }
 
+func (t *TransactionApi) CheckReceipt(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		request = &requests.ReceiptRequest{}
+		dataKey = `result`
+	)
+
+	if err := utils.BindJSON(r, &request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
+		return
+	}
+
+	result, customErr := t.usecase.CheckReceipt(ctx, request.TransactionCode)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+
+	utils.ResponseHandler(w, http.StatusOK, `success get receipt`, &dataKey, result, nil)
+}
+
 func (t *TransactionApi) CheckoutTransactionV1(w http.ResponseWriter, r *http.Request) {
 	var (
 		rID     = uuid.NewString()

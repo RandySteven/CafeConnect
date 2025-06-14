@@ -19,7 +19,7 @@ type (
 		TransactionCode  string                            `json:"transaction_code"`
 		Status           string                            `json:"status"`
 		TransactionAt    time.Time                         `json:"transaction_at"`
-		MidtransResponse *midtrans_client.MidtransResponse `json:"midtrans_response"`
+		MidtransResponse *midtrans_client.MidtransResponse `json:"midtrans_response,omitempty"`
 	}
 
 	TransactionDetailResponse struct {

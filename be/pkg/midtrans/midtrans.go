@@ -2,6 +2,7 @@ package midtrans_client
 
 import (
 	"context"
+
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/snap"
@@ -9,20 +10,22 @@ import (
 
 type (
 	MidtransRequest struct {
-		FName string
-		LName string
-		Phone string
-
-		Items []midtrans.ItemDetails
+		FName           string
+		LName           string
+		Email           string
+		Phone           string
+		TransactionCode string
+		GrossAmt        int64
+		Items           []midtrans.ItemDetails
 	}
 
 	MidtransResponse struct {
-		Token       string
-		RedirectURL string
+		Token       string `json:"token"`
+		RedirectURL string `json:"redirect_url"`
 	}
 
 	Midtrans interface {
-		CreateTransaction(ctx context.Context, request *MidtransRequest)
+		CreateTransaction(ctx context.Context, request *MidtransRequest) (result *MidtransResponse, err error)
 	}
 
 	midtransClient struct {
@@ -40,10 +43,8 @@ func NewMidtrans(config *configs.Config) (*midtransClient, error) {
 		midtransEnv = midtrans.Production
 	}
 
-	sc := &snap.Client{
-		ServerKey: midtransConf.ServerKey,
-		Env:       midtransEnv,
-	}
+	sc := &snap.Client{}
+	sc.New(midtransConf.ServerKey, midtransEnv)
 
 	return &midtransClient{
 		snapClient: sc,

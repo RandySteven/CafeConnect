@@ -1,6 +1,9 @@
 package responses
 
-import "time"
+import (
+	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
+	"time"
+)
 
 type (
 	TransactionDetailItem struct {
@@ -12,10 +15,11 @@ type (
 	}
 
 	TransactionReceiptResponse struct {
-		ID              uint64    `json:"id"`
-		TransactionCode string    `json:"transaction_code"`
-		Status          string    `json:"status"`
-		TransactionAt   time.Time `json:"transaction_at"`
+		ID               uint64                            `json:"id"`
+		TransactionCode  string                            `json:"transaction_code"`
+		Status           string                            `json:"status"`
+		TransactionAt    time.Time                         `json:"transaction_at"`
+		MidtransResponse *midtrans_client.MidtransResponse `json:"midtrans_response"`
 	}
 
 	TransactionDetailResponse struct {

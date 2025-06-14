@@ -44,6 +44,8 @@ services:
       - mysql
     networks:
       - my-networks
+    profiles:
+      - migration
 
   broker:
     image: apache/kafka:3.9.1
@@ -94,6 +96,8 @@ services:
       - broker
     networks:
       - my-networks
+    profiles:
+      - scheduler
 
 networks:
   my-networks:

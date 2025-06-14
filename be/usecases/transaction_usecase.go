@@ -16,8 +16,11 @@ import (
 	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/RandySteven/CafeConnect/be/utils"
+	"github.com/midtrans/midtrans-go"
 	"github.com/redis/go-redis/v9"
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -57,7 +60,25 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 		}
 		transactionDetail *models.TransactionDetail
 		err               error
+		midtransResponse  *midtrans_client.MidtransResponse
 	)
+
+	user, err := t.userRepository.FindByID(ctx, userId)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user`, err)
+	}
+
+	cafe, err := t.cafeRepository.FindByID(ctx, request.CafeID)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe`, err)
+	}
+
+	cafeFranchise, err := t.cafeFranchiseRepository.FindByID(ctx, cafe.ID)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe franchise`, err)
+	}
+
+	var totalAmount int64 = 0
 
 	if customErr = t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
 		transactionHeader, err = t.transactionHeaderRepository.Save(ctx, transactionHeader)
@@ -65,10 +86,17 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create header transaction`, err)
 		}
 
-		for _, item := range request.Checkouts {
+		items := make([]midtrans.ItemDetails, len(request.Checkouts))
+
+		for index, item := range request.Checkouts {
 			cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
 			if err != nil {
 				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+			}
+
+			product, err := t.productRepository.FindByID(ctx, cafeProduct.ProductID)
+			if err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get product`, err)
 			}
 
 			if cafeProduct.Stock < item.Qty {
@@ -93,6 +121,16 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create detail transaction`, err)
 			}
 
+			items[index] = midtrans.ItemDetails{
+				ID:           strconv.FormatUint(item.CafeProductID, 10),
+				Name:         product.Name,
+				Qty:          int32(item.Qty),
+				Price:        int64(cafeProduct.Price),
+				MerchantName: cafeFranchise.Name,
+			}
+
+			totalAmount += int64(cafeProduct.Price * item.Qty)
+
 			err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, userId, item.CafeProductID)
 			if err != nil {
 				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
@@ -112,16 +150,32 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 		if err != nil {
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update trans status`, err)
 		}
+
+		names := strings.Split(user.Name, " ")
+		midtransResponse, err = t.midtrans.CreateTransaction(ctx, &midtrans_client.MidtransRequest{
+			FName:           names[0],
+			LName:           names[1],
+			Email:           user.Email,
+			Phone:           user.PhoneNumber,
+			GrossAmt:        totalAmount,
+			TransactionCode: transactionHeader.TransactionCode,
+			Items:           items,
+		})
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create midtrans trx`, err)
+		}
+
 		return nil
 	}); customErr != nil {
 		return nil, customErr
 	}
 
 	return &responses.TransactionReceiptResponse{
-		ID:              transactionHeader.ID,
-		TransactionCode: transactionHeader.TransactionCode,
-		Status:          transactionHeader.Status,
-		TransactionAt:   transactionHeader.TransactionAt,
+		ID:               transactionHeader.ID,
+		TransactionCode:  transactionHeader.TransactionCode,
+		Status:           transactionHeader.Status,
+		TransactionAt:    transactionHeader.TransactionAt,
+		MidtransResponse: midtransResponse,
 	}, nil
 }
 

@@ -64,6 +64,9 @@ config:
     port: "9092"
     topic: ""
     partition: 0
+  midtrans:
+    serverKey: "SB-Mid-server-TKIGu6GiGO83oJ_1Ih-y9cUX"
+    environment: "SANDBOX"
   elasticsearch:
     host: "elastic"
     port: "9200"

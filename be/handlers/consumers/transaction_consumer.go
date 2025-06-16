@@ -44,7 +44,7 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 		}
 
 		transactionMessage := utils.ReadJSONObject[messages.TransactionMidtransMessage](result)
-
+		log.Println(`transaction message : `, transactionMessage)
 		transactionCode := transactionMessage.TransactionCode
 		checkoutList := transactionMessage.CheckoutList
 
@@ -55,8 +55,15 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			log.Println(`failed to get transaction header`, err)
 			return
 		}
+		log.Println(`success get transaction header `, transactionHeader)
 
 		customErr := t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("panic in transaction block: %v", r)
+					customErr = apperror.NewCustomError(apperror.ErrInternalServer, "panic occurred", fmt.Errorf("%v", r))
+				}
+			}()
 			for index, item := range checkoutList {
 				cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
 				if err != nil {
@@ -100,18 +107,18 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 
 				totalAmount += int64(cafeProduct.Price * item.Qty)
 
-				err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, uint64(transactionMessage.UserID), item.CafeProductID)
+				err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, transactionMessage.UserID, item.CafeProductID)
 				if err != nil {
 					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
 				}
-				ctx = context.WithValue(ctx, enums.QtyTrx, item.Qty)
 			}
-			return nil
+			return customErr
 		})
 		if customErr != nil {
-			log.Println(`error trx`, customErr)
+			log.Println(`error trx`, customErr.Error())
 			return
 		}
+
 		midtransRequest := &midtrans_client.MidtransRequest{
 			FName:           transactionMessage.FName,
 			LName:           transactionMessage.LName,
@@ -121,7 +128,7 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			TransactionCode: transactionHeader.TransactionCode,
 			Items:           items,
 		}
-
+		log.Println(`midtrans request : `, midtransRequest)
 		midtransResponse, err := t.midtrans.CreateTransaction(ctx, midtransRequest)
 		if err != nil {
 			log.Println(`error midtrans trans`, err)

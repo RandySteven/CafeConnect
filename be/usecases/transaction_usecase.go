@@ -106,6 +106,7 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to create header transaction`, err)
 	}
+
 	fname, lname := utils.FirstLastName(user.Name)
 	err = t.pub.WriteMessage(ctx, `transaction`, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
 		UserID:            user.ID,

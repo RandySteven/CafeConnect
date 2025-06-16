@@ -6,7 +6,6 @@ import (
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
-	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/repositories"
 )
 
@@ -23,7 +22,6 @@ type Usecases struct {
 
 func NewUsecases(repo *repositories.Repositories,
 	cache *caches.Caches,
-	googleStorage storage_client.GoogleStorage,
 	aws aws_client.AWS,
 	pub kafka_client.Publisher,
 	sub kafka_client.Consumer,

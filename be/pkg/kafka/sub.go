@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/configs"
+	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/segmentio/kafka-go"
 	"log"
 	"time"
@@ -12,12 +13,13 @@ import (
 
 type (
 	Consumer interface {
-		ReadMessage(ctx context.Context, topic string, key string) (result string, err error)
+		ReadMessage(ctx context.Context, key string) (result string, err error)
 	}
 
 	sub struct {
-		addr string
-		d    *kafka.Dialer
+		addr   string
+		d      *kafka.Dialer
+		reader *kafka.Reader
 	}
 )
 
@@ -27,26 +29,28 @@ func NewConsumer(config *configs.Config) (*sub, error) {
 		DualStack: true,
 		TLS:       &tls.Config{},
 	}
-
 	kafkaConf := config.Config.Kafka
 
-	return &sub{
-		addr: fmt.Sprintf("%s:%s", kafkaConf.Host, kafkaConf.Port),
-		d:    dialer,
-	}, nil
-}
+	addr := fmt.Sprintf("%s:%s", kafkaConf.Host, kafkaConf.Port)
 
-func (s *sub) ReadMessage(ctx context.Context, topic string, key string) (string, error) {
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{s.addr},
-		Topic:    topic,
-		GroupID:  "your-group-id",
+		Brokers:  []string{addr},
+		Topic:    enums.TransactionTopic,
+		GroupID:  fmt.Sprintf("test-group-%d", time.Now().UnixNano()),
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
 	})
+	return &sub{
+		addr:   addr,
+		d:      dialer,
+		reader: r,
+	}, nil
+}
+
+func (s *sub) ReadMessage(ctx context.Context, key string) (string, error) {
 
 	for {
-		m, err := r.ReadMessage(ctx)
+		m, err := s.reader.ReadMessage(ctx)
 		if err != nil {
 			log.Println(err)
 			return "", err

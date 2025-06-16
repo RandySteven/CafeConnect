@@ -12,23 +12,21 @@ import (
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
-	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
 	usecases2 "github.com/RandySteven/CafeConnect/be/usecases"
 	"log"
 )
 
 type App struct {
-	MySQL         mysql_client.MySQL
-	Redis         redis_client.Redis
-	GoogleStorage storage_client.GoogleStorage
-	Scheduler     cron_client.Scheduler
-	AWS           aws_client.AWS
-	Midtrans      midtrans_client.Midtrans
-	Kafka         kafka_client.Kafka
-	Pub           kafka_client.Publisher
-	Sub           kafka_client.Consumer
-	Elastic       elastic_client.Elastic
+	MySQL     mysql_client.MySQL
+	Redis     redis_client.Redis
+	Scheduler cron_client.Scheduler
+	AWS       aws_client.AWS
+	Midtrans  midtrans_client.Midtrans
+	Kafka     kafka_client.Kafka
+	Pub       kafka_client.Publisher
+	Sub       kafka_client.Consumer
+	Elastic   elastic_client.Elastic
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -39,11 +37,6 @@ func NewApps(config *configs.Config) (*App, error) {
 	}
 
 	redis, err := redis_client.NewRedisClient(config)
-	if err != nil {
-		return nil, err
-	}
-
-	googleStorage, err := storage_client.NewGoogleStorage(config)
 	if err != nil {
 		return nil, err
 	}
@@ -86,23 +79,22 @@ func NewApps(config *configs.Config) (*App, error) {
 	}
 
 	return &App{
-		MySQL:         mysql,
-		Redis:         redis,
-		GoogleStorage: googleStorage,
-		Scheduler:     scheduler,
-		AWS:           aws,
-		Midtrans:      midtrans,
-		Kafka:         kafka,
-		Pub:           pub,
-		Sub:           sub,
-		Elastic:       es,
+		MySQL:     mysql,
+		Redis:     redis,
+		Scheduler: scheduler,
+		AWS:       aws,
+		Midtrans:  midtrans,
+		Kafka:     kafka,
+		Pub:       pub,
+		Sub:       sub,
+		Elastic:   es,
 	}, nil
 }
 
 func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
 	caches := caches2.NewCaches(a.Redis.Client())
-	usecases := usecases2.NewUsecases(repositories, caches, a.GoogleStorage, a.AWS, a.Pub, a.Sub, a.Midtrans)
+	usecases := usecases2.NewUsecases(repositories, caches, a.AWS, a.Pub, a.Sub, a.Midtrans)
 	return apis.NewAPIs(usecases)
 }
 

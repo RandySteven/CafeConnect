@@ -2,7 +2,6 @@ package consumers
 
 import (
 	"context"
-	"github.com/RandySteven/CafeConnect/be/enums"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	"log"
@@ -19,7 +18,7 @@ func (d *DummyConsumer) CheckHealth(ctx context.Context) {
 			log.Println("CheckHealth: context canceled, stopping consumer")
 			return
 		default:
-			result, err := d.consumer.ReadMessage(ctx, enums.DummyTopic, `test-message`)
+			result, err := d.consumer.ReadMessage(ctx, `test-message`)
 			if err != nil {
 				log.Println(`error reading message:`, err)
 				return

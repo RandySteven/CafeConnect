@@ -14,7 +14,6 @@ import (
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
-	storage_client "github.com/RandySteven/CafeConnect/be/pkg/storage"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -29,7 +28,6 @@ type cafeUsecase struct {
 	cafeRepo      repository_interfaces.CafeRepository
 	franchiseRepo repository_interfaces.CafeFranchiseRepository
 	addressRepo   repository_interfaces.AddressRepository
-	googleStorage storage_client.GoogleStorage
 	aws           aws_client.AWS
 	cache         cache_interfaces.CafeCache
 }
@@ -81,17 +79,17 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 		resultPaths   = []string{}
 	)
 
-	franchise.LogoURL, err = c.googleStorage.UploadFile(ctx, enums.CafesStorage+`logos/`, utils.CafeNameToSnakeCase(request.Name), request.LogoFile, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 40, 40)
+	logoResult, err := c.aws.UploadImageFile(ctx, request.LogoFile, enums.CafesStorage+`logos/`, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 40, 40)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload logo`, err)
 	}
-
+	franchise.LogoURL = *logoResult
 	for _, file := range request.PhotoFiles {
-		resultPath, err := c.googleStorage.UploadFile(ctx, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(request.Name)), "", file, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
+		resultPath, err := c.aws.UploadImageFile(ctx, file, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(request.Name)), ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
 		if err != nil {
 			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
 		}
-		resultPaths = append(resultPaths, resultPath)
+		resultPaths = append(resultPaths, *resultPath)
 	}
 
 	photoUrls := utils.Join(resultPaths, ";")
@@ -135,9 +133,9 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				for _, resultPath := range resultPaths {
-					_ = c.googleStorage.DeleteFile(ctx, resultPath)
-				}
+				//for _, resultPath := range resultPaths {
+				//	_ = c.googleStorage.DeleteFile(ctx, resultPath)
+				//}
 			}()
 			wg.Wait()
 
@@ -314,11 +312,11 @@ func (c *cafeUsecase) AddCafeOutlet(ctx context.Context, request *requests.AddCa
 
 	if len(request.PhotoFiles) != 0 {
 		for _, file := range request.PhotoFiles {
-			resultPath, err := c.googleStorage.UploadFile(ctx, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(franchise.Name)), "", file, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
+			resultPath, err := c.aws.UploadImageFile(ctx, file, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(franchise.Name)), ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
 			if err != nil {
 				return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
 			}
-			resultPaths = append(resultPaths, resultPath)
+			resultPaths = append(resultPaths, *resultPath)
 		}
 	}
 
@@ -364,7 +362,6 @@ func newCafeUsecase(
 	franchiseRepo repository_interfaces.CafeFranchiseRepository,
 	addressRepo repository_interfaces.AddressRepository,
 	transaction repository_interfaces.Transaction,
-	googleStorage storage_client.GoogleStorage,
 	aws aws_client.AWS,
 	cache cache_interfaces.CafeCache) *cafeUsecase {
 	return &cafeUsecase{
@@ -372,7 +369,6 @@ func newCafeUsecase(
 		franchiseRepo: franchiseRepo,
 		addressRepo:   addressRepo,
 		transaction:   transaction,
-		googleStorage: googleStorage,
 		aws:           aws,
 		cache:         cache,
 	}

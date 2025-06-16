@@ -79,16 +79,15 @@ func NewApps(config *configs.Config) (*App, error) {
 	}
 
 	return &App{
-		MySQL:         mysql,
-		Redis:         redis,
-		GoogleStorage: googleStorage,
-		Scheduler:     scheduler,
-		AWS:           aws,
-		Midtrans:      midtrans,
-		Kafka:         kafka,
-		Pub:           pub,
-		Sub:           sub,
-		Elastic:       es,
+		MySQL:     mysql,
+		Redis:     redis,
+		Scheduler: scheduler,
+		AWS:       aws,
+		Midtrans:  midtrans,
+		Kafka:     kafka,
+		Pub:       pub,
+		Sub:       sub,
+		Elastic:   es,
 	}, nil
 }
 

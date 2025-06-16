@@ -84,13 +84,13 @@ func (c *cafeUsecase) RegisterCafeAndFranchise(ctx context.Context, request *req
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload logo`, err)
 	}
 	franchise.LogoURL = *logoResult
-	//for _, file := range request.PhotoFiles {
-	//	resultPath, err := c.aws.UploadImageFile(ctx, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(request.Name)), "", file, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
-	//	if err != nil {
-	//		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
-	//	}
-	//	resultPaths = append(resultPaths, resultPath)
-	//}
+	for _, file := range request.PhotoFiles {
+		resultPath, err := c.aws.UploadImageFile(ctx, file, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(request.Name)), ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
+		if err != nil {
+			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
+		}
+		resultPaths = append(resultPaths, *resultPath)
+	}
 
 	photoUrls := utils.Join(resultPaths, ";")
 
@@ -310,15 +310,15 @@ func (c *cafeUsecase) AddCafeOutlet(ctx context.Context, request *requests.AddCa
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get franchise`, err)
 	}
 
-	//if len(request.PhotoFiles) != 0 {
-	//	for _, file := range request.PhotoFiles {
-	//		resultPath, err := c.aws.UploadImageFile(ctx, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(franchise.Name)), "", file, ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
-	//		if err != nil {
-	//			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
-	//		}
-	//		resultPaths = append(resultPaths, resultPath)
-	//	}
-	//}
+	if len(request.PhotoFiles) != 0 {
+		for _, file := range request.PhotoFiles {
+			resultPath, err := c.aws.UploadImageFile(ctx, file, fmt.Sprintf("%s%s/", enums.CafesStorage, utils.CafeNameToSnakeCase(franchise.Name)), ctx.Value(enums.FileHeader).(*multipart.FileHeader), 1920, 1080)
+			if err != nil {
+				return nil, apperror.NewCustomError(apperror.ErrInternalServer, `there is issue while upload photo`, err)
+			}
+			resultPaths = append(resultPaths, *resultPath)
+		}
+	}
 
 	photoUrls := utils.Join(resultPaths, ";")
 

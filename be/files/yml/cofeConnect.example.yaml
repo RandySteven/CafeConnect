@@ -17,11 +17,13 @@ config:
       write: 10
       idle: 5
   mysql:
+    env: "localhost"
     host: "localhost"
     port: "3306"
     username: "root"
     password: ""
     database: "cafeConnect"
+    region: "us-east-1"
     connPool:
       maxIdle: 15
       connLimit: 100
@@ -34,13 +36,41 @@ config:
     poolTimeout: 1400
     password: ""
     db: 0
+  cron:
+    time: "Asia/Jakarta"
+  google:
+    apiKey: "API_KEY"
   oauth2:
-    googleClientID: "{{GOOGLE_CLIENT_ID}}"
-    googleClientSecret: "{{GOOGLE_CLIENT_SECRET}}"
+    googleClientID: "GOOGLE_CLIENT_ID"
+    googleClientSecret: "GOOGLE_CLIENT_SECRET"
     scopes:
       - "https://www.googleapis.com/auth/userinfo.email"
       - "https://www.googleapis.com/auth/userinfo.profile"
     redirectEndpoint: "/google_callback"
+  aws:
+    accessKeyID: "AWS_KEY_ID"
+    secretAccessKey: "AWS_SECRET_KEY"
+    region: "us-east-1"
+  midtrans:
+    serverKey: "MIDTRANS_SERVER_KEY"
+    environment: "SANDBOX"
+  rds:
+    endpoint: "MYSQL_RDS"
+    port: "3306"
   storage:
-    projectId: "{{PROJECT_ID}}"
-    bucketName: "{{BUCKET_NAME}}"
+    projectId: "cafeConnect-456615"
+    bucketName: "cafe_connect"
+  kafka:
+    dial: "tcp"
+    host: "localhost"
+    port: "9092"
+    topic: ""
+    partition: 0
+  elasticsearch:
+    host: "localhost"
+    port: "9200"
+    transport:
+      maxIdleConnsPerHost: 10
+      timeout: 5
+      keepAlive: 30
+    maxRetries: 3

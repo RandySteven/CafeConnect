@@ -8,6 +8,7 @@ import (
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	cron_client "github.com/RandySteven/CafeConnect/be/pkg/cron"
 	elastic_client "github.com/RandySteven/CafeConnect/be/pkg/elastic"
+	email_client "github.com/RandySteven/CafeConnect/be/pkg/email"
 	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
@@ -27,6 +28,7 @@ type App struct {
 	Pub       kafka_client.Publisher
 	Sub       kafka_client.Consumer
 	Elastic   elastic_client.Elastic
+	Email     email_client.Email
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -78,6 +80,11 @@ func NewApps(config *configs.Config) (*App, error) {
 		es = nil
 	}
 
+	em, err := email_client.NewEmail(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		MySQL:     mysql,
 		Redis:     redis,
@@ -88,6 +95,7 @@ func NewApps(config *configs.Config) (*App, error) {
 		Pub:       pub,
 		Sub:       sub,
 		Elastic:   es,
+		Email:     em,
 	}, nil
 }
 

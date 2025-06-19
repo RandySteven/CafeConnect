@@ -96,5 +96,15 @@ type Config struct {
 			} `yaml:"transport"`
 			MaxRetries int `yaml:"maxRetries"`
 		} `yaml:"elasticsearch"`
+
+		Email struct {
+			Host   string `yaml:"host"`
+			Port   int    `yaml:"port"`
+			Sender struct {
+				Name     string `yaml:"name"`
+				Email    string `yaml:"email"`
+				Password string `yaml:"password"`
+			} `yaml:"sender"`
+		} `yaml:"email"`
 	} `yaml:"config"`
 }

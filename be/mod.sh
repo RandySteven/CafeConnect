@@ -25,3 +25,4 @@ go get github.com/aws/aws-sdk-go-v2/feature/rds/auth
 go get github.com/aws/aws-sdk-go-v2/config
 go get github.com/aws/aws-sdk-go-v2/service/secretsmanager
 go get github.com/elastic/go-elasticsearch/v9@v9.0.0
+go get gopkg.in/gomail.v2

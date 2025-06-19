@@ -42,7 +42,7 @@ func main() {
 	repo := repositories2.NewRepositories(app.MySQL.Client())
 	cache := caches.NewCaches(app.Redis.Client())
 
-	consumers := consumers2.NewConsumers(repo, cache, app.Sub, app.Pub, app.Midtrans)
+	consumers := consumers2.NewConsumers(repo, cache, app.Sub, app.Pub, app.Midtrans, app.Email)
 
 	go consumers.DummyConsumer.CheckHealth(ctx)
 	go consumers.TransactionConsumer.MidtransTransactionRecord(ctx)

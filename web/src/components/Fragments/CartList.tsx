@@ -11,6 +11,7 @@ import { ListCard } from "@/components/Elements/Card";
 import {POST} from "@/api/api";
 import {TRANSACTION_V2_CHECKOUT} from "@/api/endpoint";
 import {redirect} from "next/navigation";
+import {TotalAmount} from "@/components/Elements/TotalAmount";
 
 export const CartList = () => {
     const carts = useCart();
@@ -127,23 +128,28 @@ export const CartList = () => {
                                 />
                             </Box>
 
-                            {checkout.items.map((product, pIndex) => (
-                                <Box key={pIndex} sx={{ display: "flex", alignItems: "center" }}>
-                                    <Checkbox
-                                        checked={selectedProducts.has(product.product_id)}
-                                        onChange={() => toggleProduct(product.product_id)}
-                                    />
-                                    <ListCard
-                                        link={`/products/${product.product_id}`}
-                                        type="cart"
-                                        name={product.product_name}
-                                        img={product.product_image}
-                                        stock={productQuantities[product.product_id] || product.qty}
-                                        onIncrease={() => increaseQty(product.product_id)}
-                                        onDecrease={() => decreaseQty(product.product_id)}
-                                    />
-                                </Box>
-                            ))}
+                            {checkout.items.map((product, pIndex) => {
+                                const allProductPrices = checkout.items.map((product) => product.product_price * productQuantities[product.product_id] || product.qty)
+
+                                return (
+                                    <Box key={pIndex} sx={{display: "flex", alignItems: "center"}}>
+                                        <TotalAmount amounts={allProductPrices} />
+                                        <Checkbox
+                                            checked={selectedProducts.has(product.product_id)}
+                                            onChange={() => toggleProduct(product.product_id)}
+                                        />
+                                        <ListCard
+                                            link={`/products/${product.product_id}`}
+                                            type="cart"
+                                            name={product.product_name}
+                                            img={product.product_image}
+                                            stock={productQuantities[product.product_id] || product.qty}
+                                            onIncrease={() => increaseQty(product.product_id)}
+                                            onDecrease={() => decreaseQty(product.product_id)}
+                                        />
+                                    </Box>
+                                )
+                            })}
                         </Box>
                     );
                 })}

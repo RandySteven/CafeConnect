@@ -6,7 +6,7 @@ export default function Home({params} : ParamProp) {
     const resolvedParams = use(params)
     return (
         <Fragment>
-            <CafeDetailContainer id={resolvedParams.id} />
+            <CafeDetailContainer id={parseInt(resolvedParams.id)} />
         </Fragment>
     );
 }

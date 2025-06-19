@@ -29,6 +29,14 @@ export const getItem = (key : string) : any | null => {
     return null
 }
 
+export const getTotalAmounts = (amounts : number[]) : number => {
+    let total = 0
+    amounts.forEach((amount : number) => {
+        total += amount
+    })
+    return total
+}
+
 // export const setTokenCookie = async (token: string) => {
 //     const cookieStore = await cookies()
 //     cookieStore.set({

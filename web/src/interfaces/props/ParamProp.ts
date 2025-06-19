@@ -9,3 +9,7 @@ export interface ParamProp {
 export interface IDParam {
     id: number
 }
+
+export interface CodeParam {
+    code: string
+}

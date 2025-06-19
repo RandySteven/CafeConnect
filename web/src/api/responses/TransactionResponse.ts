@@ -44,7 +44,21 @@ interface TransactionDetailItem {
 }
 
 export interface TransactionReceiptResponse {
+    id: number
+    transaction_code: string
+    status: string
+    transaction_at: string
+    midtrans_response: {
+        token: string
+        redirect_url: string
+    }
+}
 
+export interface CheckoutResponse {
+    id: number
+    transaction_code: string
+    status: string
+    transaction_at: string
 }
 
 export interface TransactionDetailResponse {

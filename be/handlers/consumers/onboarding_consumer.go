@@ -5,8 +5,8 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
+	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	email_client "github.com/RandySteven/CafeConnect/be/pkg/email"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"html/template"
 	"log"
@@ -15,15 +15,14 @@ import (
 const verifyTokenHTMLPath = `files/html/email/template/verify.token.html`
 
 type OnboardingConsumer struct {
-	consumer  kafka_client.Consumer
-	publisher kafka_client.Publisher
-	email     email_client.Email
-	userRepo  repository_interfaces.UserRepository
+	onboardingTopic topics_interfaces.OnboardingTopic
+	email           email_client.Email
+	userRepo        repository_interfaces.UserRepository
 }
 
 func (o *OnboardingConsumer) VerifyOnboardingToken(ctx context.Context) {
 	consume(ctx, func(ctx context.Context) {
-		verifyTokenMessageStr, err := o.consumer.ReadMessage(ctx, ``)
+		verifyTokenMessageStr, err := o.onboardingTopic.ReadMessage(ctx, ``)
 		if err != nil {
 			log.Println(`failed to consumer verify token message`, err)
 			return
@@ -53,15 +52,13 @@ func (o *OnboardingConsumer) VerifyOnboardingToken(ctx context.Context) {
 var _ consumer_interfaces.OnboardingConsumer = &OnboardingConsumer{}
 
 func newOnboardingConsumer(
-	consumer kafka_client.Consumer,
-	publisher kafka_client.Publisher,
+	onboardingTopic topics_interfaces.OnboardingTopic,
 	email email_client.Email,
 	userRepo repository_interfaces.UserRepository,
 ) *OnboardingConsumer {
 	return &OnboardingConsumer{
-		consumer:  consumer,
-		publisher: publisher,
-		email:     email,
-		userRepo:  userRepo,
+		onboardingTopic: onboardingTopic,
+		email:           email,
+		userRepo:        userRepo,
 	}
 }

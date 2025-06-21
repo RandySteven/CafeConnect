@@ -13,8 +13,8 @@ import (
 	"github.com/RandySteven/CafeConnect/be/enums"
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
+	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/redis/go-redis/v9"
@@ -34,7 +34,7 @@ type transactionUsecase struct {
 	productRepository             repository_interfaces.ProductRepository
 	cafeProductRepository         repository_interfaces.CafeProductRepository
 	transaction                   repository_interfaces.Transaction
-	pub                           kafka_client.Publisher
+	transactionTopic              topics_interfaces.TransactionTopic
 	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository
 	midtrans                      midtrans_client.Midtrans
 	transactionCache              cache_interfaces.TransactionCache
@@ -108,7 +108,7 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 	}
 
 	fname, lname := utils.FirstLastName(user.Name)
-	err = t.pub.WriteMessage(ctx, `transaction`, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
+	err = t.transactionTopic.WriteMessage(ctx, `transaction`, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
 		UserID:            user.ID,
 		FName:             fname,
 		Email:             user.Email,
@@ -455,7 +455,7 @@ func newTransactionUsecase(
 	transaction repository_interfaces.Transaction,
 	transactionCache cache_interfaces.TransactionCache,
 	productCache cache_interfaces.ProductCache,
-	publisher kafka_client.Publisher,
+	transactionTopic topics_interfaces.TransactionTopic,
 	midtrans midtrans_client.Midtrans) *transactionUsecase {
 	return &transactionUsecase{
 		transactionHeaderRepository:   transactionHeaderRepository,
@@ -471,7 +471,7 @@ func newTransactionUsecase(
 		transactionCache:              transactionCache,
 		midtransTransactionRepository: midtransTransactionRepository,
 		productCache:                  productCache,
-		pub:                           publisher,
+		transactionTopic:              transactionTopic,
 		midtrans:                      midtrans,
 	}
 }

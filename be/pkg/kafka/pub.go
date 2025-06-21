@@ -4,32 +4,39 @@ import (
 	"context"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/configs"
-	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/segmentio/kafka-go"
+	"log"
 )
 
 type (
 	Publisher interface {
-		WriteMessage(ctx context.Context, topic string, value string) (err error)
+		WriteMessage(ctx context.Context, key string, value string) (err error)
+		setTopic(topic string)
 	}
 
 	pub struct {
-		w *kafka.Writer
+		address string
+		w       *kafka.Writer
 	}
 )
 
 func NewPublisher(config *configs.Config) (*pub, error) {
 	kafkaConf := config.Config.Kafka
-	w := &kafka.Writer{
-		Addr: kafka.TCP(
-			fmt.Sprintf("%s:%s", kafkaConf.Host, kafkaConf.Port)),
-		Balancer: &kafka.LeastBytes{},
-		Topic:    enums.TransactionTopic,
-	}
+	addr := fmt.Sprintf("%s:%s", kafkaConf.Host, kafkaConf.Port)
 
 	return &pub{
-		w: w,
+		address: addr,
 	}, nil
+}
+
+func (p *pub) setTopic(topic string) {
+	w := &kafka.Writer{
+		Addr:     kafka.TCP(p.address),
+		Balancer: &kafka.LeastBytes{},
+		Topic:    topic,
+	}
+	p.w = w
+	log.Println(`success set pub topic `, topic)
 }
 
 func (p *pub) WriteMessage(ctx context.Context, key string, value string) (err error) {

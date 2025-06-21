@@ -12,10 +12,10 @@ import (
 	"github.com/RandySteven/CafeConnect/be/enums"
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
+	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	jwt_client "github.com/RandySteven/CafeConnect/be/pkg/jwt"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
@@ -35,7 +35,7 @@ type onboardingUsecase struct {
 	addressUserRepo repository_interfaces.AddressUserRepository
 	transaction     repository_interfaces.Transaction
 	onboardingCache cache_interfaces.OnboardingCache
-	pub             kafka_client.Publisher
+	onboardingTopic topics_interfaces.OnboardingTopic
 	aws             aws_client.AWS
 }
 
@@ -167,10 +167,6 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 }
 
 func (o *onboardingUsecase) LoginUser(ctx context.Context, request *requests.LoginUserRequest) (result *responses.LoginUserResponse, customErr *apperror.CustomError) {
-	//err := o.pub.WriteMessage(ctx, enums.DummyTopic, `test-message`, request.Email)
-	//if err != nil {
-	//	log.Println(`error send `, err)
-	//}
 	user, err := o.userRepo.FindByEmail(ctx, request.Email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -306,7 +302,7 @@ func newOnboardingUsecase(
 	referralRepo repository_interfaces.ReferralRepository,
 	transaction repository_interfaces.Transaction,
 	onboardingCache cache_interfaces.OnboardingCache,
-	pub kafka_client.Publisher,
+	onboardingTopic topics_interfaces.OnboardingTopic,
 	aws aws_client.AWS,
 ) *onboardingUsecase {
 	return &onboardingUsecase{
@@ -317,7 +313,7 @@ func newOnboardingUsecase(
 		referralRepo:    referralRepo,
 		transaction:     transaction,
 		onboardingCache: onboardingCache,
-		pub:             pub,
+		onboardingTopic: onboardingTopic,
 		aws:             aws,
 	}
 }

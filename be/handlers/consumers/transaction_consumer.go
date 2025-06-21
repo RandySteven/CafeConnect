@@ -10,7 +10,7 @@ import (
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
+	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/midtrans/midtrans-go"
@@ -20,8 +20,7 @@ import (
 )
 
 type TransactionConsumer struct {
-	consumer                      kafka_client.Consumer
-	publisher                     kafka_client.Publisher
+	transactionTopic              topics_interfaces.TransactionTopic
 	midtrans                      midtrans_client.Midtrans
 	userRepository                repository_interfaces.UserRepository
 	transactionRepository         repository_interfaces.TransactionHeaderRepository
@@ -37,7 +36,7 @@ type TransactionConsumer struct {
 
 func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 	for {
-		result, err := t.consumer.ReadMessage(ctx, `transaction`)
+		result, err := t.transactionTopic.ReadMessage(ctx, `transaction`)
 		if err != nil {
 			log.Println(`failed to consumer result`, err)
 			return
@@ -57,6 +56,7 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 		}
 		log.Println(`success get transaction header `, transactionHeader)
 
+		//transaction to checkout the item and do transaction detail
 		customErr := t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
 			defer func() {
 				if r := recover(); r != nil {
@@ -135,6 +135,7 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			return
 		}
 
+		//init transaction success
 		transactionHeader.Status = enums.TransactionSUCCESS.String()
 		transactionHeader.UpdatedAt = time.Now()
 		_, err = t.transactionRepository.Update(ctx, transactionHeader)
@@ -143,6 +144,7 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			return
 		}
 
+		//save to midtrans_transactions table
 		_, err = t.midtransTransactionRepository.Save(ctx, &models.MidtransTransaction{
 			TransactionCode: midtransRequest.TransactionCode,
 			TotalAmt:        midtransRequest.GrossAmt,
@@ -154,7 +156,7 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			return
 		}
 
-		err = t.publisher.WriteMessage(ctx, fmt.Sprintf(`transaction-midtrans-response-%s`, transactionHeader.TransactionCode), utils.WriteJSONObject[midtrans_client.MidtransResponse](midtransResponse))
+		err = t.transactionTopic.WriteMessage(ctx, fmt.Sprintf(`transaction-midtrans-response-%s`, transactionHeader.TransactionCode), utils.WriteJSONObject[midtrans_client.MidtransResponse](midtransResponse))
 		if err != nil {
 			log.Println(`error while try to publish transaction-midtrans-response`, err)
 			return
@@ -164,8 +166,8 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 
 var _ consumer_interfaces.TransactionConsumer = &TransactionConsumer{}
 
-func newTransactionConsumer(consumer kafka_client.Consumer,
-	publisher kafka_client.Publisher,
+func newTransactionConsumer(
+	transactionTopic topics_interfaces.TransactionTopic,
 	midtrans midtrans_client.Midtrans,
 	transactionRepository repository_interfaces.TransactionHeaderRepository,
 	userRepository repository_interfaces.UserRepository,
@@ -178,8 +180,7 @@ func newTransactionConsumer(consumer kafka_client.Consumer,
 	productCache cache_interfaces.ProductCache,
 	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository) *TransactionConsumer {
 	return &TransactionConsumer{
-		consumer:                      consumer,
-		publisher:                     publisher,
+		transactionTopic:              transactionTopic,
 		midtrans:                      midtrans,
 		transactionRepository:         transactionRepository,
 		userRepository:                userRepository,

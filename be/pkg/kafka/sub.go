@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/configs"
-	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/segmentio/kafka-go"
 	"log"
 	"time"
@@ -14,6 +13,7 @@ import (
 type (
 	Consumer interface {
 		ReadMessage(ctx context.Context, key string) (result string, err error)
+		setTopic(topic string)
 	}
 
 	sub struct {
@@ -33,18 +33,22 @@ func NewConsumer(config *configs.Config) (*sub, error) {
 
 	addr := fmt.Sprintf("%s:%s", kafkaConf.Host, kafkaConf.Port)
 
+	return &sub{
+		addr: addr,
+		d:    dialer,
+	}, nil
+}
+
+func (s *sub) setTopic(topic string) {
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{addr},
-		Topic:    enums.TransactionTopic,
+		Brokers:  []string{s.addr},
 		GroupID:  fmt.Sprintf("test-group-%d", time.Now().UnixNano()),
+		Topic:    topic,
 		MinBytes: 10e3,
 		MaxBytes: 10e6,
 	})
-	return &sub{
-		addr:   addr,
-		d:      dialer,
-		reader: r,
-	}, nil
+	s.reader = r
+	log.Println(`success set topic `, topic)
 }
 
 func (s *sub) ReadMessage(ctx context.Context, key string) (string, error) {

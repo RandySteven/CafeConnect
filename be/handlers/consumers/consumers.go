@@ -5,16 +5,24 @@ import (
 	"github.com/RandySteven/CafeConnect/be/caches"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	email_client "github.com/RandySteven/CafeConnect/be/pkg/email"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/RandySteven/CafeConnect/be/repositories"
+	"github.com/RandySteven/CafeConnect/be/topics"
 )
 
-type Consumers struct {
-	DummyConsumer       consumer_interfaces.DummyConsumer
-	TransactionConsumer consumer_interfaces.TransactionConsumer
-	OnboardingConsumer  consumer_interfaces.OnboardingConsumer
-}
+type (
+	Consumers struct {
+		//DummyConsumer       consumer_interfaces.DummyConsumer
+		TransactionConsumer consumer_interfaces.TransactionConsumer
+		OnboardingConsumer  consumer_interfaces.OnboardingConsumer
+	}
+
+	ConsumerFunc func(ctx context.Context)
+
+	Runners struct {
+		ConsumerFunc []ConsumerFunc
+	}
+)
 
 func consume(ctx context.Context, fn func(ctx context.Context)) {
 	for {
@@ -22,19 +30,29 @@ func consume(ctx context.Context, fn func(ctx context.Context)) {
 	}
 }
 
+func RegisterConsumer(consFunc ...ConsumerFunc) *Runners {
+	return &Runners{
+		ConsumerFunc: consFunc,
+	}
+}
+
+func (r *Runners) Run(ctx context.Context) {
+	for _, fun := range r.ConsumerFunc {
+		go fun(ctx)
+	}
+}
+
 func NewConsumers(
 	repo *repositories.Repositories,
 	cache *caches.Caches,
-	consumer kafka_client.Consumer,
-	publisher kafka_client.Publisher,
+	topics *topics.Topics,
 	midtrans midtrans_client.Midtrans,
 	email email_client.Email,
 ) *Consumers {
 	return &Consumers{
-		DummyConsumer: newDummyConsumer(consumer),
+		//DummyConsumer: newDummyConsumer(topics),
 		TransactionConsumer: newTransactionConsumer(
-			consumer,
-			publisher,
+			topics.TransactionTopic,
 			midtrans,
 			repo.TransactionHeaderRepository,
 			repo.UserRepository,
@@ -47,8 +65,7 @@ func NewConsumers(
 			cache.ProductCache,
 			repo.MidtransTransactionRepository),
 		OnboardingConsumer: newOnboardingConsumer(
-			consumer,
-			publisher,
+			topics.OnboardingTopic,
 			email,
 			repo.UserRepository),
 	}

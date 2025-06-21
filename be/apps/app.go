@@ -14,6 +14,7 @@ import (
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
+	topics2 "github.com/RandySteven/CafeConnect/be/topics"
 	usecases2 "github.com/RandySteven/CafeConnect/be/usecases"
 	"log"
 )
@@ -102,7 +103,8 @@ func NewApps(config *configs.Config) (*App, error) {
 func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
 	caches := caches2.NewCaches(a.Redis.Client())
-	usecases := usecases2.NewUsecases(repositories, caches, a.AWS, a.Pub, a.Sub, a.Midtrans)
+	topics := topics2.NewTopics(a.Pub, a.Sub)
+	usecases := usecases2.NewUsecases(repositories, caches, a.AWS, topics, a.Midtrans)
 	return apis.NewAPIs(usecases)
 }
 
@@ -114,4 +116,7 @@ func (a *App) PrepareJobScheduler(ctx context.Context) {
 }
 
 func (a *App) PrepareConsumer(ctx context.Context) {
+	//topics := topics2.NewTopics(a.Pub, a.Sub)
+	//repositories := repositories2.NewRepositories(a.MySQL.Client())
+	//caches := caches2.NewCaches(a.Redis.Client())
 }

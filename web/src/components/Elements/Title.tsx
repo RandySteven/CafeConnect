@@ -2,6 +2,8 @@ import { Fragment } from "react";
 import { Box, Typography } from "@mui/material";
 import {useDummy} from "@/hooks/useDummy";
 import {CafeTitleProp} from "@/interfaces/props/TitleProp";
+import {CafeListMaps} from "@/components/Fragments/ListCafe";
+import {Coordinate, useAWSLocationService, useAWSLocationServiceSinglePinPoint} from "@/hooks/useGeoLoc";
 
 export const AppTitle = () => {
     return (
@@ -30,6 +32,11 @@ export const DummyTitle = () => {
 };
 
 export const CafeTitle = (prop : CafeTitleProp) => {
+    console.log(`prop : `, prop)
+    // const coordinates : Coordinate[] = [{
+    //     long: prop.coordinate.longitude,
+    //     lat: prop.coordinate.latitude,
+    // }]
     return (
         <Fragment>
             <Box
@@ -53,7 +60,21 @@ export const CafeTitle = (prop : CafeTitleProp) => {
                 <Typography variant="body2">
                     {prop.address}
                 </Typography>
+                <CafeMap longitude={prop.longitude} latitude={prop.latitude} />
             </Box>
         </Fragment>
+    )
+}
+
+export const CafeMap = (prop : {
+    longitude: number
+    latitude: number
+}) => {
+    const href = useAWSLocationServiceSinglePinPoint({
+        long: prop.longitude,
+        lat: prop.latitude,
+    })
+    return (
+        <div ref={href} style={{width: "100%", height: "500px"}}/>
     )
 }

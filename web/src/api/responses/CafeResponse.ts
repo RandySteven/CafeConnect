@@ -5,7 +5,11 @@ export interface ListCafeResponse {
     status : string
     open_hour : string
     close_hour : string
-    address : string
+    address : {
+        address: string
+        longitude: number
+        latitude: number
+    }
 }
 
 export interface DetailCafeResponse {

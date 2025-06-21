@@ -4,8 +4,10 @@ import {Avatar, Box, CardContent} from "@mui/material";
 
 export const ProfileImage = (prop : ProfileImageProp) => {
     return <Fragment>
-        <CardContent sx={{ display: 'flex', gap: 2 }}>
-            <Avatar src={prop.imageURL} alt={prop.name} />
+        <CardContent sx={prop.sx}>
+            <Avatar src={prop.imageURL} alt={prop.name} sx={{
+                width: 150, height: 150
+            }}/>
         </CardContent>
     </Fragment>
 }

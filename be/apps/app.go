@@ -5,6 +5,7 @@ import (
 	caches2 "github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
+	consumers2 "github.com/RandySteven/CafeConnect/be/handlers/consumers"
 	aws_client "github.com/RandySteven/CafeConnect/be/pkg/aws"
 	cron_client "github.com/RandySteven/CafeConnect/be/pkg/cron"
 	elastic_client "github.com/RandySteven/CafeConnect/be/pkg/elastic"
@@ -115,8 +116,10 @@ func (a *App) RefreshRedis(ctx context.Context) error {
 func (a *App) PrepareJobScheduler(ctx context.Context) {
 }
 
-func (a *App) PrepareConsumer(ctx context.Context) {
-	//topics := topics2.NewTopics(a.Pub, a.Sub)
-	//repositories := repositories2.NewRepositories(a.MySQL.Client())
-	//caches := caches2.NewCaches(a.Redis.Client())
+func (a *App) PrepareConsumer(ctx context.Context) *consumers2.Consumers {
+	topics := topics2.NewTopics(a.Pub, a.Sub)
+	repositories := repositories2.NewRepositories(a.MySQL.Client())
+	caches := caches2.NewCaches(a.Redis.Client())
+	consumers := consumers2.NewConsumers(repositories, caches, topics, a.Midtrans, a.Email)
+	return consumers
 }

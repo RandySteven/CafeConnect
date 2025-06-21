@@ -3,11 +3,8 @@ package main
 import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/apps"
-	"github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	consumers2 "github.com/RandySteven/CafeConnect/be/handlers/consumers"
-	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
-	"github.com/RandySteven/CafeConnect/be/topics"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -40,11 +37,7 @@ func main() {
 		log.Fatalln("Error initializing app:", err)
 	}
 
-	repo := repositories2.NewRepositories(app.MySQL.Client())
-	cache := caches.NewCaches(app.Redis.Client())
-	topic := topics.NewTopics(app.Pub, app.Sub)
-
-	consumers := consumers2.NewConsumers(repo, cache, topic, app.Midtrans, app.Email)
+	consumers := app.PrepareConsumer(ctx)
 
 	runners := consumers2.RegisterConsumer(
 		consumers.TransactionConsumer.MidtransTransactionRecord,
@@ -52,8 +45,6 @@ func main() {
 	)
 
 	runners.Run(ctx)
-	//go consumers.DummyConsumer.CheckHealth(ctx)
-	//go consumers.TransactionConsumer.MidtransTransactionRecord(ctx)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

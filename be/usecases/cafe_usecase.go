@@ -205,7 +205,11 @@ func (c *cafeUsecase) GetListOfCafeBasedOnRadius(ctx context.Context, request *r
 			LogoURL:   utils.ImageStorage(cafeFranchise.LogoURL),
 			OpenHour:  cafe.OpenHour[0:5],
 			CloseHour: cafe.CloseHour[0:5],
-			Address:   address.Address,
+			Address: struct {
+				Address   string  `json:"address"`
+				Latitude  float64 `json:"latitude"`
+				Longitude float64 `json:"longitude"`
+			}{Address: address.Address, Latitude: address.Latitude, Longitude: address.Longitude},
 		})
 	}
 	_ = c.cache.SetCafeRadiusListCache(ctx, key, result)

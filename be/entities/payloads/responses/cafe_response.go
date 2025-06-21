@@ -15,7 +15,11 @@ type (
 		Status    string `json:"status"`
 		OpenHour  string `json:"open_hour"`
 		CloseHour string `json:"close_hour"`
-		Address   string `json:"address"`
+		Address   struct {
+			Address   string  `json:"address"`
+			Latitude  float64 `json:"latitude"`
+			Longitude float64 `json:"longitude"`
+		} `json:"address"`
 	}
 
 	FranchiseListResponse struct {

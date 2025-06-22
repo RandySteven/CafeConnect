@@ -107,6 +107,26 @@ func (t *TransactionApi) CheckoutTransactionV2(w http.ResponseWriter, r *http.Re
 	utils.ResponseHandler(w, http.StatusOK, `success create transaction`, &dataKey, result, nil)
 }
 
+func (t *TransactionApi) PaymentConfirmation(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		request = &requests.PaymentConfirmationRequest{}
+	)
+
+	if err := utils.BindJSON(r, &request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
+		return
+	}
+
+	customErr := t.usecase.PaymentConfirmation(ctx, request)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `SUCCESS UPDATE TRANSACTION`, nil, nil, nil)
+}
+
 var _ api_interfaces.TransactionApi = &TransactionApi{}
 
 func newTransactionApi(usecase usecase_interfaces.TransactionUsecase) *TransactionApi {

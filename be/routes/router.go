@@ -74,6 +74,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 		Get(`/{transactionCode}`, api.TransactionApi.GetTransactionByTransactionCode, enums.AuthenticationMiddleware),
 		Get(``, api.TransactionApi.GetUserTransactions, enums.AuthenticationMiddleware),
 		Post(`/receipt`, api.TransactionApi.CheckReceipt, enums.AuthenticationMiddleware),
+		Post(`/payment`, api.TransactionApi.PaymentConfirmation, enums.AuthenticationMiddleware),
 	}
 
 	return endpoint

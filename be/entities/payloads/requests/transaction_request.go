@@ -34,4 +34,9 @@ type (
 		Store             string `json:"store,omitempty"`
 		ExpiryTime        string `json:"expiry_time,omitempty"`
 	}
+
+	PaymentConfirmationRequest struct {
+		TransactionCode string `json:"transaction_code"`
+		Status          string `json:"status"`
+	}
 )

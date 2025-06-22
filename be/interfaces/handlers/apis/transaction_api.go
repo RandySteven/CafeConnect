@@ -8,4 +8,5 @@ type TransactionApi interface {
 	GetUserTransactions(w http.ResponseWriter, r *http.Request)
 	GetTransactionByTransactionCode(w http.ResponseWriter, r *http.Request)
 	CheckReceipt(w http.ResponseWriter, r *http.Request)
+	PaymentConfirmation(w http.ResponseWriter, r *http.Request)
 }

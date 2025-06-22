@@ -63,6 +63,7 @@ func NewConsumers(
 			repo.CartRepository,
 			repo.Transaction,
 			cache.ProductCache,
+			cache.CheckoutCache,
 			repo.MidtransTransactionRepository),
 		OnboardingConsumer: newOnboardingConsumer(
 			topics.OnboardingTopic,

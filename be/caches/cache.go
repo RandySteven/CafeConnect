@@ -11,6 +11,7 @@ type Caches struct {
 	CafeCache        cache_interfaces.CafeCache
 	ProductCache     cache_interfaces.ProductCache
 	TransactionCache cache_interfaces.TransactionCache
+	CheckoutCache    cache_interfaces.CheckoutCache
 }
 
 func NewCaches(redis *redis.Client) *Caches {
@@ -20,5 +21,6 @@ func NewCaches(redis *redis.Client) *Caches {
 		CafeCache:        newCafeCache(redis),
 		ProductCache:     newProductCache(redis),
 		TransactionCache: newTransactionCache(redis),
+		CheckoutCache:    newCheckoutCache(redis),
 	}
 }

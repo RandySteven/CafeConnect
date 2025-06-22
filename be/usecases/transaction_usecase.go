@@ -39,6 +39,75 @@ type transactionUsecase struct {
 	midtrans                      midtrans_client.Midtrans
 	transactionCache              cache_interfaces.TransactionCache
 	productCache                  cache_interfaces.ProductCache
+	checkoutCache                 cache_interfaces.CheckoutCache
+}
+
+func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (customErr *apperror.CustomError) {
+	userID := ctx.Value(enums.UserID).(uint64)
+	checkoutList, err := t.checkoutCache.GetMultiData(ctx, fmt.Sprintf(enums.TransactionCheckoutItemsKey, request.TransactionCode))
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to consume redis`, err)
+	}
+
+	customErr = t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
+		transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, request.TransactionCode)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
+		}
+
+		transactionHeader.Status = request.Status
+		transactionHeader.UpdatedAt = time.Now()
+		_, err = t.transactionHeaderRepository.Update(ctx, transactionHeader)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update transaction header`, err)
+		}
+
+		switch request.Status {
+		case enums.TransactionSUCCESS.String():
+			for _, item := range checkoutList {
+				cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+				}
+
+				if cafeProduct.Stock < item.Qty {
+					return apperror.NewCustomError(apperror.ErrBadRequest, `insufficient stock`, fmt.Errorf(`insufficient stock`))
+				}
+
+				cafeProduct.Stock -= item.Qty
+				cafeProduct.UpdatedAt = time.Now()
+				cafeProduct, err = t.cafeProductRepository.Update(ctx, cafeProduct)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+				}
+
+				transactionDetail := &models.TransactionDetail{
+					TransactionID: transactionHeader.ID,
+					CafeProductID: item.CafeProductID,
+					Qty:           item.Qty,
+				}
+
+				transactionDetail, err = t.transactionDetailRepository.Save(ctx, transactionDetail)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create detail transaction`, err)
+				}
+
+				err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, userID, item.CafeProductID)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
+				}
+			}
+		case enums.TransactionFAILED.String():
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to do transaction`, fmt.Errorf(`failed transaction`))
+		}
+
+		return nil
+	})
+	if customErr != nil {
+		return customErr
+	}
+
+	return nil
 }
 
 func (t *transactionUsecase) CheckReceipt(ctx context.Context, trasnactionCode string) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
@@ -455,6 +524,7 @@ func newTransactionUsecase(
 	transaction repository_interfaces.Transaction,
 	transactionCache cache_interfaces.TransactionCache,
 	productCache cache_interfaces.ProductCache,
+	checkoutCache cache_interfaces.CheckoutCache,
 	transactionTopic topics_interfaces.TransactionTopic,
 	midtrans midtrans_client.Midtrans) *transactionUsecase {
 	return &transactionUsecase{
@@ -471,6 +541,7 @@ func newTransactionUsecase(
 		transactionCache:              transactionCache,
 		midtransTransactionRepository: midtransTransactionRepository,
 		productCache:                  productCache,
+		checkoutCache:                 checkoutCache,
 		transactionTopic:              transactionTopic,
 		midtrans:                      midtrans,
 	}

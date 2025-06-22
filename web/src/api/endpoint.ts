@@ -10,3 +10,4 @@ export const GET_CARTS = `carts`
 export const TRANSACTION_LIST = `transactions`
 export const TRANSACTION_V2_CHECKOUT = `transactions/v2/check-out`
 export const TRANSACTION_RECEIPT = `transactions/receipt`
+export const PAYMENT_CONFIRMATION = `transactions/payment`

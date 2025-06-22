@@ -21,10 +21,14 @@ export const Receipt = (code : CodeParam) => {
     //     }
     //
     // }, 60000)
+    let paymentButton = <div>Loading</div>
+    if(receipt?.midtrans_response != null) {
+        paymentButton = <PaymentButton midtransUrl={receipt?.midtrans_response.redirect_url} snapToken={receipt?.midtrans_response?.token} transactionCode={receipt.transaction_code}/>
+    }
 
 
     return <Fragment>
         <ReceiptInfo transactionCode={receipt?.transaction_code} transactionAt={receipt?.transaction_at} status={receipt?.status} />
-        <PaymentButton midtransUrl={receipt?.midtrans_response.redirect_url} />
+        <PaymentButton midtransUrl={receipt?.midtrans_response?.redirect_url} snapToken={receipt?.midtrans_response?.token} transactionCode={receipt?.transaction_code}/>
     </Fragment>
 }

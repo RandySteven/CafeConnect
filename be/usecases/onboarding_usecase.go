@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/RandySteven/CafeConnect/be/apperror"
+	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
@@ -159,6 +160,10 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 	if customErr != nil {
 		return nil, customErr
 	}
+	_ = o.onboardingTopic.WriteMessage(ctx, `onboarding-verify-token`, utils.WriteJSONObject[messages.VerifyTokenMessage](&messages.VerifyTokenMessage{
+		Token:  ctx.Value(enums.RequestID).(string),
+		UserID: user.ID,
+	}))
 	return &responses.RegisterUserResponse{
 		ID:           uuid.NewString(),
 		Email:        request.Email,
@@ -290,6 +295,10 @@ func (o *onboardingUsecase) GetOnboardUser(ctx context.Context) (result *respons
 		o.onboardingCache.Set(ctx, strconv.Itoa(int(id)), result)
 		return result, nil
 	}
+}
+
+func (o *onboardingUsecase) VerifyUser(ctx context.Context, tokenID string) (customErr *apperror.CustomError) {
+	return
 }
 
 var _ usecase_interfaces.OnboardingUsecase = &onboardingUsecase{}

@@ -3,6 +3,7 @@ package consumers
 import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
+	"github.com/RandySteven/CafeConnect/be/entities/models"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
@@ -10,6 +11,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"html/template"
 	"log"
+	"time"
 )
 
 const verifyTokenHTMLPath = `files/html/email/template/verify.token.html`
@@ -18,11 +20,12 @@ type OnboardingConsumer struct {
 	onboardingTopic topics_interfaces.OnboardingTopic
 	email           email_client.Email
 	userRepo        repository_interfaces.UserRepository
+	verifyTokenRepo repository_interfaces.VerifyTokenRepository
 }
 
 func (o *OnboardingConsumer) VerifyOnboardingToken(ctx context.Context) {
 	consume(ctx, func(ctx context.Context) {
-		verifyTokenMessageStr, err := o.onboardingTopic.ReadMessage(ctx, ``)
+		verifyTokenMessageStr, err := o.onboardingTopic.ReadMessage(ctx, `onboarding-verify-token`)
 		if err != nil {
 			log.Println(`failed to consumer verify token message`, err)
 			return
@@ -36,6 +39,21 @@ func (o *OnboardingConsumer) VerifyOnboardingToken(ctx context.Context) {
 
 		verifyToken := utils.ReadJSONObject[messages.VerifyTokenMessage](verifyTokenMessageStr)
 		user, err := o.userRepo.FindByID(ctx, verifyToken.UserID)
+		if err != nil {
+			log.Println(`failed to get user`, err)
+			return
+		}
+
+		_, err = o.verifyTokenRepo.Save(ctx, &models.VerifyToken{
+			Token:       verifyToken.Token,
+			UserID:      verifyToken.UserID,
+			ExpiredTime: time.Now().Add(2 * time.Hour),
+			IsClicked:   false,
+		})
+		if err != nil {
+			log.Println(`failed to save verify token`, err)
+			return
+		}
 
 		contentMap := make(map[string]string)
 		contentMap[`token_url`] = verifyToken.Token
@@ -55,10 +73,12 @@ func newOnboardingConsumer(
 	onboardingTopic topics_interfaces.OnboardingTopic,
 	email email_client.Email,
 	userRepo repository_interfaces.UserRepository,
+	verifyTokenRepo repository_interfaces.VerifyTokenRepository,
 ) *OnboardingConsumer {
 	return &OnboardingConsumer{
 		onboardingTopic: onboardingTopic,
 		email:           email,
 		userRepo:        userRepo,
+		verifyTokenRepo: verifyTokenRepo,
 	}
 }

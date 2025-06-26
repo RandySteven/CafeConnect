@@ -107,6 +107,13 @@ func (o *OnboardingApi) GetOnboardUser(w http.ResponseWriter, r *http.Request) {
 	utils.ResponseHandler(w, http.StatusOK, `success get user`, &dataKey, result, nil)
 }
 
+func (o *OnboardingApi) VerifyOnboardUser(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID = uuid.NewString()
+		_   = context.WithValue(r.Context(), enums.RequestID, rID)
+	)
+}
+
 var _ api_interfaces.OnboardingApi = &OnboardingApi{}
 
 func newOnboardingApi(usecase usecase_interfaces.OnboardingUsecase) *OnboardingApi {

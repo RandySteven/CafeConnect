@@ -22,28 +22,30 @@ type Repositories struct {
 	TransactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 	TransactionDetailRepository   repository_interfaces.TransactionDetailRepository
 	MidtransTransactionRepository repository_interfaces.MidtransTransactionRepository
+	VerifyTokenRepository         repository_interfaces.VerifyTokenRepository
 	Transaction                   repository_interfaces.Transaction
 }
 
 func NewRepositories(db *sql.DB) *Repositories {
 	transaction, dbx := newTransaction(db)
 	return &Repositories{
-		UserRepository:              newUserRepository(dbx),
-		PointRepository:             newPointRepository(dbx),
-		AddressRepository:           newAddressRepository(dbx),
-		AddressUserRepository:       newAddressUserRepository(dbx),
-		ReferralRepository:          newReferralRepository(dbx),
-		CafeFranchiseRepository:     newCafeFranchiseRepository(dbx),
-		CafeRepository:              newCafeRepository(dbx),
-		ProductCategoryRepository:   newProductCategoryRepository(dbx),
-		ProductRepository:           newProductRepository(dbx),
-		CafeProductRepository:       newCafeProductRepository(dbx),
-		ReviewRepository:            newReviewRepository(dbx),
-		CartRepository:              newCartRepository(dbx),
-		RoleRepository:              newRoleRepository(dbx),
-		TransactionHeaderRepository: newTransactionHeaderRepository(dbx),
-		TransactionDetailRepository: newTransactionDetailRepository(dbx),
+		UserRepository:                newUserRepository(dbx),
+		PointRepository:               newPointRepository(dbx),
+		AddressRepository:             newAddressRepository(dbx),
+		AddressUserRepository:         newAddressUserRepository(dbx),
+		ReferralRepository:            newReferralRepository(dbx),
+		CafeFranchiseRepository:       newCafeFranchiseRepository(dbx),
+		CafeRepository:                newCafeRepository(dbx),
+		ProductCategoryRepository:     newProductCategoryRepository(dbx),
+		ProductRepository:             newProductRepository(dbx),
+		CafeProductRepository:         newCafeProductRepository(dbx),
+		ReviewRepository:              newReviewRepository(dbx),
+		CartRepository:                newCartRepository(dbx),
+		RoleRepository:                newRoleRepository(dbx),
+		TransactionHeaderRepository:   newTransactionHeaderRepository(dbx),
+		TransactionDetailRepository:   newTransactionDetailRepository(dbx),
 		MidtransTransactionRepository: newMidtransTransactionRepository(dbx),
-		Transaction:                 transaction,
+		VerifyTokenRepository:         newVerifyTokenRepository(dbx),
+		Transaction:                   transaction,
 	}
 }

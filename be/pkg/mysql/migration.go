@@ -24,6 +24,7 @@ func initMigrations() []queries.MigrationQuery {
 		queries.CreateTransactionHeaderTable,
 		queries.CreateTransactionDetailTable,
 		queries.CreateMidtransTransactionTable,
+		queries.CreateVerifyTokenTable,
 	}
 }
 

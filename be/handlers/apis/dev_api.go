@@ -13,6 +13,8 @@ func (d *DevApi) CheckHealth(w http.ResponseWriter, r *http.Request) {
 	utils.ResponseHandler(w, http.StatusOK, `success check health`, nil, nil, nil)
 }
 
+func (d *DevApi) SendEmail(w http.ResponseWriter, r *http.Request) {}
+
 func (d *DevApi) RouterList(w http.ResponseWriter, r *http.Request) {
 	//TODO implement me
 	panic("implement me")

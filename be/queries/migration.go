@@ -228,4 +228,18 @@ const (
 		    deleted_at TIMESTAMP DEFAULT NULL
 		)
 	`
+
+	CreateVerifyTokenTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS verify_tokens (
+			id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, 
+			token VARCHAR(144) NOT NULL,
+			user_id BIGINT NOT NULL,
+			is_clicked BOOLEAN DEFAULT FALSE,
+			expired_time TIMESTAMP NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+			deleted_at TIMESTAMP DEFAULT NULL,
+			FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE    
+		)
+	`
 )

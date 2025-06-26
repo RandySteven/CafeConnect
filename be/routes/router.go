@@ -33,6 +33,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 		Post(`/register`, api.OnboardingApi.RegisterUser),
 		Post(`/login`, api.OnboardingApi.LoginUser),
 		Get(``, api.OnboardingApi.GetOnboardUser, enums.AuthenticationMiddleware),
+		Get(`/verify-token/{token}`, api.OnboardingApi.VerifyOnboardUser),
 	}
 
 	endpoint[enums.RolePrefix] = []*Router{

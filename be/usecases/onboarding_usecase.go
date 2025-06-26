@@ -34,6 +34,7 @@ type onboardingUsecase struct {
 	referralRepo    repository_interfaces.ReferralRepository
 	addressRepo     repository_interfaces.AddressRepository
 	addressUserRepo repository_interfaces.AddressUserRepository
+	verifyTokenRepo repository_interfaces.VerifyTokenRepository
 	transaction     repository_interfaces.Transaction
 	onboardingCache cache_interfaces.OnboardingCache
 	onboardingTopic topics_interfaces.OnboardingTopic
@@ -298,7 +299,23 @@ func (o *onboardingUsecase) GetOnboardUser(ctx context.Context) (result *respons
 }
 
 func (o *onboardingUsecase) VerifyUser(ctx context.Context, tokenID string) (customErr *apperror.CustomError) {
-	return
+	verifyToken, err := o.verifyTokenRepo.FindByToken(ctx, tokenID)
+	if err != nil {
+		return apperror.NewCustomError(apperror.ErrNotFound, `not found verify token`, err)
+	}
+
+	if time.Now().After(verifyToken.ExpiredTime) {
+		return apperror.NewCustomError(apperror.ErrForbidden, `token already expired`, fmt.Errorf(`expired token`))
+	}
+
+	verifyToken.IsClicked = true
+	verifyToken.UpdatedAt = time.Now()
+	_, err = o.verifyTokenRepo.Update(ctx, verifyToken)
+	if err != nil {
+		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update token`, err)
+	}
+
+	return nil
 }
 
 var _ usecase_interfaces.OnboardingUsecase = &onboardingUsecase{}
@@ -309,6 +326,7 @@ func newOnboardingUsecase(
 	addressRepo repository_interfaces.AddressRepository,
 	addressUserRepo repository_interfaces.AddressUserRepository,
 	referralRepo repository_interfaces.ReferralRepository,
+	verifyTokenRepo repository_interfaces.VerifyTokenRepository,
 	transaction repository_interfaces.Transaction,
 	onboardingCache cache_interfaces.OnboardingCache,
 	onboardingTopic topics_interfaces.OnboardingTopic,
@@ -319,6 +337,7 @@ func newOnboardingUsecase(
 		pointRepo:       pointRepo,
 		addressRepo:     addressRepo,
 		addressUserRepo: addressUserRepo,
+		verifyTokenRepo: verifyTokenRepo,
 		referralRepo:    referralRepo,
 		transaction:     transaction,
 		onboardingCache: onboardingCache,

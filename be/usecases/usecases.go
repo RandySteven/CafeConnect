@@ -27,7 +27,7 @@ func NewUsecases(repo *repositories.Repositories,
 	midtrans midtrans_client.Midtrans) *Usecases {
 	return &Usecases{
 		AddressUsecase:     newAddressUsecase(repo.AddressRepository, repo.AddressUserRepository, repo.UserRepository, cache.AddressCache),
-		OnboardingUsecase:  newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.Transaction, cache.OnboardCache, topics.OnboardingTopic, aws),
+		OnboardingUsecase:  newOnboardingUsecase(repo.UserRepository, repo.PointRepository, repo.AddressRepository, repo.AddressUserRepository, repo.ReferralRepository, repo.VerifyTokenRepository, repo.Transaction, cache.OnboardCache, topics.OnboardingTopic, aws),
 		RoleUsecase:        newRoleUsecase(repo.RoleRepository),
 		CafeUsecase:        newCafeUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.AddressRepository, repo.Transaction, aws, cache.CafeCache),
 		ProductUsecase:     newProductUsecase(repo.CafeRepository, repo.CafeFranchiseRepository, repo.CafeProductRepository, repo.ProductRepository, repo.ProductCategoryRepository, aws, repo.Transaction, cache.ProductCache),

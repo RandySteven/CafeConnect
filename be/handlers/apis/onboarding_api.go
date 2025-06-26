@@ -8,6 +8,7 @@ import (
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 )
@@ -110,8 +111,16 @@ func (o *OnboardingApi) GetOnboardUser(w http.ResponseWriter, r *http.Request) {
 func (o *OnboardingApi) VerifyOnboardUser(w http.ResponseWriter, r *http.Request) {
 	var (
 		rID = uuid.NewString()
-		_   = context.WithValue(r.Context(), enums.RequestID, rID)
+		ctx = context.WithValue(r.Context(), enums.RequestID, rID)
 	)
+	vars := mux.Vars(r)
+	token := vars[`token`]
+	customErr := o.usecase.VerifyUser(ctx, token)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+	utils.ResponseHandler(w, http.StatusOK, `success click token`, nil, nil, nil)
 }
 
 var _ api_interfaces.OnboardingApi = &OnboardingApi{}

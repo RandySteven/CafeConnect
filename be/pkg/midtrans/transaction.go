@@ -43,9 +43,9 @@ func (m *midtransClient) CreateTransaction(ctx context.Context, request *Midtran
 }
 
 func (m *midtransClient) CheckTransaction(ctx context.Context, orderId string) (response *coreapi.TransactionStatusResponse, err error) {
-	response, err = m.coreApi.CheckTransaction(orderId)
-	if err != nil {
-		return nil, err
+	response, midtransErr := m.coreApi.CheckTransaction(orderId)
+	if midtransErr != nil {
+		return nil, midtransErr
 	}
 	return response, nil
 }

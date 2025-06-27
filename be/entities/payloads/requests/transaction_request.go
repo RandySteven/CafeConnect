@@ -37,6 +37,5 @@ type (
 
 	PaymentConfirmationRequest struct {
 		TransactionCode string `json:"transaction_code"`
-		Status          string `json:"status"`
 	}
 )

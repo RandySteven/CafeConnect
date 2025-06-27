@@ -103,6 +103,33 @@ func (t *transactionHeaderRepository) FindByUserID(ctx context.Context, userId u
 	return result, nil
 }
 
+func (t *transactionHeaderRepository) FindByTransactionStatus(ctx context.Context, status string) (result []*models.TransactionHeader, err error) {
+	rows, err := t.dbx(ctx).QueryContext(ctx, queries.SelectTransactionHeadersByStatus.String(), status)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		header := &models.TransactionHeader{}
+		err = rows.Scan(
+			&header.ID,
+			&header.UserID,
+			&header.CafeID,
+			&header.TransactionCode,
+			&header.Status,
+			&header.TransactionAt,
+			&header.CreatedAt,
+			&header.UpdatedAt,
+			&header.DeletedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, header)
+	}
+	return result, nil
+}
+
 var _ repository_interfaces.TransactionHeaderRepository = &transactionHeaderRepository{}
 
 func newTransactionHeaderRepository(dbx repository_interfaces.DBX) *transactionHeaderRepository {

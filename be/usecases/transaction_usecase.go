@@ -55,14 +55,24 @@ func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *r
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
 		}
 
-		transactionHeader.Status = request.Status
+		midtransTrx, err := t.midtrans.CheckTransaction(ctx, request.TransactionCode)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get midtrans`, err)
+		}
+		switch midtransTrx.TransactionStatus {
+		case `settlement`:
+			transactionHeader.Status = enums.TransactionSUCCESS.String()
+		case `canceled`:
+			transactionHeader.Status = enums.TransactionFAILED.String()
+		}
+
 		transactionHeader.UpdatedAt = time.Now()
 		_, err = t.transactionHeaderRepository.Update(ctx, transactionHeader)
 		if err != nil {
 			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update transaction header`, err)
 		}
 
-		switch request.Status {
+		switch transactionHeader.Status {
 		case enums.TransactionSUCCESS.String():
 			for _, item := range checkoutList {
 				cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)

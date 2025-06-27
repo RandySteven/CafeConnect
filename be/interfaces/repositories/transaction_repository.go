@@ -12,6 +12,7 @@ type (
 		FindByUserID(ctx context.Context, userId uint64) (result []*models.TransactionHeader, err error)
 		Updater[models.TransactionHeader]
 		Index
+		FindByTransactionStatus(ctx context.Context, status string) (result []*models.TransactionHeader, err error)
 	}
 
 	TransactionDetailRepository interface {

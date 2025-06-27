@@ -1,9 +1,13 @@
 package jobs
 
 import (
+	"context"
+	"github.com/RandySteven/CafeConnect/be/enums"
 	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
+	job_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/jobs"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
+	"time"
 )
 
 type TransactionJob struct {
@@ -13,6 +17,44 @@ type TransactionJob struct {
 	transactionCache        cache_interfaces.TransactionCache
 	midtrans                midtrans_client.Midtrans
 }
+
+func (t *TransactionJob) CheckMidtransStatus(ctx context.Context) (err error) {
+	pendingTransactions, err := t.transactionHeaderRepo.FindByTransactionStatus(ctx, enums.TransactionPENDING.String())
+	if err != nil {
+		return err
+	}
+
+	for _, transaction := range pendingTransactions {
+		midtransTransactionStatusResponse, err := t.midtrans.CheckTransaction(ctx, transaction.TransactionCode)
+		if err != nil {
+			return err
+		}
+
+		switch midtransTransactionStatusResponse.TransactionStatus {
+		case "settlement":
+			transaction.Status = enums.TransactionSUCCESS.String()
+			transaction.UpdatedAt = time.Now()
+			_, err = t.transactionHeaderRepo.Update(ctx, transaction)
+			if err != nil {
+				return err
+			}
+		case "pending":
+
+		case "cancel":
+			transaction.Status = enums.TransactionFAILED.String()
+			transaction.UpdatedAt = time.Now()
+			_, err = t.transactionHeaderRepo.Update(ctx, transaction)
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+
+	return
+}
+
+var _ job_interfaces.TransactionJob = &TransactionJob{}
 
 func NewTransactionJob(
 	transactionHeaderRepo repository_interfaces.TransactionHeaderRepository,

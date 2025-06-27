@@ -107,7 +107,6 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) err
 			log.Println("error publishing midtrans response:", err)
 		}
 	})
-
 }
 
 var _ consumer_interfaces.TransactionConsumer = &TransactionConsumer{}

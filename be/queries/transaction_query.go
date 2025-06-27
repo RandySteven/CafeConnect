@@ -37,6 +37,14 @@ const (
 		    transaction_id = ?
 	`
 
+	SelectTransactionHeadersByStatus GoQuery = `
+		SELECT id, user_id, cafe_id, transaction_code, status, transaction_at, created_at, updated_at, deleted_at
+		FROM
+		    transaction_headers
+		WHERE 
+		    status = ?
+	`
+
 	UpdateTransactionHeader GoQuery = `
 		UPDATE transaction_headers SET
 			user_id = ?,

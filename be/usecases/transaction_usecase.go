@@ -177,7 +177,7 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 	}
 
 	fname, lname := utils.FirstLastName(user.Name)
-	err = t.transactionTopic.WriteMessage(ctx, `transaction`, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
+	err = t.transactionTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
 		UserID:            user.ID,
 		FName:             fname,
 		Email:             user.Email,

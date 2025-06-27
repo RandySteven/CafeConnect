@@ -106,5 +106,12 @@ type Config struct {
 				Password string `yaml:"password"`
 			} `yaml:"sender"`
 		} `yaml:"email"`
+
+		Nsq struct {
+			NSQDHost        string `yaml:"nsqd_host"`
+			NSQDTCPPort     string `yaml:"nsqd_tcp_port"`
+			LookupdHttpPort string `yaml:"lookupd_http_port"`
+			LookupdTcpPort  string `yaml:"lookupd_tcp_port"`
+		} `yaml:"nsq"`
 	} `yaml:"config"`
 }

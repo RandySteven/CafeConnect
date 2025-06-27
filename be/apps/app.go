@@ -13,6 +13,7 @@ import (
 	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
+	nsq_client "github.com/RandySteven/CafeConnect/be/pkg/nsq"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
 	topics2 "github.com/RandySteven/CafeConnect/be/topics"
@@ -29,6 +30,7 @@ type App struct {
 	Kafka     kafka_client.Kafka
 	Pub       kafka_client.Publisher
 	Sub       kafka_client.Consumer
+	Nsq       nsq_client.Nsq
 	Elastic   elastic_client.Elastic
 	Email     email_client.Email
 }
@@ -87,6 +89,11 @@ func NewApps(config *configs.Config) (*App, error) {
 		return nil, err
 	}
 
+	nsq, err := nsq_client.NewNsqClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		MySQL:     mysql,
 		Redis:     redis,
@@ -96,6 +103,7 @@ func NewApps(config *configs.Config) (*App, error) {
 		Kafka:     kafka,
 		Pub:       pub,
 		Sub:       sub,
+		Nsq:       nsq,
 		Elastic:   es,
 		Email:     em,
 	}, nil
@@ -104,7 +112,7 @@ func NewApps(config *configs.Config) (*App, error) {
 func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
 	caches := caches2.NewCaches(a.Redis.Client())
-	topics := topics2.NewTopics(a.Pub, a.Sub)
+	topics := topics2.NewTopics(a.Nsq)
 	usecases := usecases2.NewUsecases(repositories, caches, a.AWS, topics, a.Midtrans)
 	return apis.NewAPIs(usecases)
 }
@@ -117,7 +125,7 @@ func (a *App) PrepareJobScheduler(ctx context.Context) {
 }
 
 func (a *App) PrepareConsumer(ctx context.Context) *consumers2.Consumers {
-	topics := topics2.NewTopics(a.Pub, a.Sub)
+	topics := topics2.NewTopics(a.Nsq)
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
 	caches := caches2.NewCaches(a.Redis.Client())
 	consumers := consumers2.NewConsumers(repositories, caches, topics, a.Midtrans, a.Email)

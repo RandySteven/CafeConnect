@@ -4,26 +4,25 @@ import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
+	nsq_client "github.com/RandySteven/CafeConnect/be/pkg/nsq"
 )
 
 type transactionTopic struct {
-	topic *kafka_client.Topic
+	nsq nsq_client.Nsq
 }
 
-func (t *transactionTopic) ReadMessage(ctx context.Context, key string) (result string, err error) {
-	return t.topic.Consumer.ReadMessage(ctx, key)
+func (t *transactionTopic) RegisterConsumer(handler func(message string)) (err error) {
+	return t.nsq.RegisterConsumer(enums.TransactionTopic, handler)
 }
 
-func (t *transactionTopic) WriteMessage(ctx context.Context, key string, value string) (err error) {
-	return t.topic.Publisher.WriteMessage(ctx, key, value)
+func (t *transactionTopic) WriteMessage(ctx context.Context, value string) (err error) {
+	return t.nsq.Publish(ctx, enums.TransactionTopic, []byte(value))
 }
 
 var _ topics_interfaces.TransactionTopic = &transactionTopic{}
 
-func newTransactionTopic(topic *kafka_client.Topic) *transactionTopic {
-	topic.SetTopic(enums.TransactionTopic)
+func newTransactionTopic(nsq nsq_client.Nsq) *transactionTopic {
 	return &transactionTopic{
-		topic: topic,
+		nsq: nsq,
 	}
 }

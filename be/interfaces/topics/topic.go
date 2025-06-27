@@ -5,6 +5,6 @@ import (
 )
 
 type Topic interface {
-	ReadMessage(ctx context.Context, key string) (result string, err error)
-	WriteMessage(ctx context.Context, key string, value string) (err error)
+	RegisterConsumer(handler func(string)) error
+	WriteMessage(ctx context.Context, value string) (err error)
 }

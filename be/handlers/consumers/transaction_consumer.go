@@ -33,47 +33,43 @@ type TransactionConsumer struct {
 	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository
 }
 
-func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
-	for {
-		result, err := t.transactionTopic.ReadMessage(ctx, `transaction`)
-		if err != nil {
-			log.Println(`failed to consumer result`, err)
-			return
-		}
+func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) error {
+	return t.transactionTopic.RegisterConsumer(func(message string) {
+		log.Println("Processing message:", message)
 
-		transactionMessage := utils.ReadJSONObject[messages.TransactionMidtransMessage](result)
-		log.Println(`transaction message : `, transactionMessage)
+		transactionMessage := utils.ReadJSONObject[messages.TransactionMidtransMessage](message)
 		transactionCode := transactionMessage.TransactionCode
 		checkoutList := transactionMessage.CheckoutList
 
 		items := make([]midtrans.ItemDetails, len(checkoutList))
-		var totalAmount int64 = 0
+		var totalAmount int64
+
 		transactionHeader, err := t.transactionRepository.FindByTransactionCode(ctx, transactionCode)
 		if err != nil {
-			log.Println(`failed to get transaction header`, err)
+			log.Println("failed to get transaction header:", err)
 			return
 		}
-		log.Println(`success get transaction header `, transactionHeader)
 
-		for index, item := range checkoutList {
+		for i, item := range checkoutList {
 			cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
 			if err != nil {
+				log.Println("failed to find cafe product:", err)
 				return
 			}
 
 			product, err := t.productRepository.FindByID(ctx, cafeProduct.ProductID)
 			if err != nil {
+				log.Println("failed to find product:", err)
 				return
 			}
 
-			items[index] = midtrans.ItemDetails{
+			items[i] = midtrans.ItemDetails{
 				ID:           strconv.FormatUint(item.CafeProductID, 10),
 				Name:         product.Name,
 				Qty:          int32(item.Qty),
 				Price:        int64(cafeProduct.Price),
 				MerchantName: transactionMessage.CafeFranchiseName,
 			}
-
 			totalAmount += int64(cafeProduct.Price * item.Qty)
 		}
 
@@ -86,14 +82,13 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			TransactionCode: transactionHeader.TransactionCode,
 			Items:           items,
 		}
-		log.Println(`midtrans request : `, midtransRequest)
+
 		midtransResponse, err := t.midtrans.CreateTransaction(ctx, midtransRequest)
 		if err != nil {
-			log.Println(`error midtrans trans`, err)
+			log.Println("error creating midtrans transaction:", err)
 			return
 		}
 
-		//save to midtrans_transactions table
 		_, err = t.midtransTransactionRepository.Save(ctx, &models.MidtransTransaction{
 			TransactionCode: midtransRequest.TransactionCode,
 			TotalAmt:        midtransRequest.GrossAmt,
@@ -101,18 +96,18 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) {
 			RedirectURL:     midtransResponse.RedirectURL,
 		})
 		if err != nil {
-			log.Println(`failed to create midtrans transaction`, err)
+			log.Println("failed to save midtrans transaction:", err)
 			return
 		}
 
 		_ = t.checkoutCache.SetMultiData(ctx, fmt.Sprintf(enums.TransactionCheckoutItemsKey, transactionCode), checkoutList)
 
-		err = t.transactionTopic.WriteMessage(ctx, fmt.Sprintf(`transaction-midtrans-response-%s`, transactionHeader.TransactionCode), utils.WriteJSONObject[midtrans_client.MidtransResponse](midtransResponse))
+		err = t.transactionTopic.WriteMessage(ctx, utils.WriteJSONObject(midtransResponse))
 		if err != nil {
-			log.Println(`error while try to publish transaction-midtrans-response`, err)
-			return
+			log.Println("error publishing midtrans response:", err)
 		}
-	}
+	})
+
 }
 
 var _ consumer_interfaces.TransactionConsumer = &TransactionConsumer{}

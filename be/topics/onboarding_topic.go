@@ -4,26 +4,25 @@ import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
+	nsq_client "github.com/RandySteven/CafeConnect/be/pkg/nsq"
 )
 
 type onboardingTopic struct {
-	topic *kafka_client.Topic
+	nsq nsq_client.Nsq
 }
 
-func (o *onboardingTopic) ReadMessage(ctx context.Context, key string) (result string, err error) {
-	return o.topic.Consumer.ReadMessage(ctx, key)
+func (o *onboardingTopic) RegisterConsumer(handler func(string)) error {
+	return o.nsq.RegisterConsumer(enums.OnboardingTopic, handler)
 }
 
-func (o *onboardingTopic) WriteMessage(ctx context.Context, key string, value string) (err error) {
-	return o.topic.Publisher.WriteMessage(ctx, key, value)
+func (o *onboardingTopic) WriteMessage(ctx context.Context, value string) (err error) {
+	return o.nsq.Publish(ctx, enums.OnboardingTopic, []byte(value))
 }
 
 var _ topics_interfaces.OnboardingTopic = &onboardingTopic{}
 
-func newOnboardingTopic(topic *kafka_client.Topic) *onboardingTopic {
-	topic.SetTopic(enums.OnboardingTopic)
+func newOnboardingTopic(nsq nsq_client.Nsq) *onboardingTopic {
 	return &onboardingTopic{
-		topic: topic,
+		nsq: nsq,
 	}
 }

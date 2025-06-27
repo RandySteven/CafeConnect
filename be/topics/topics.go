@@ -2,7 +2,7 @@ package topics
 
 import (
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
-	kafka_client "github.com/RandySteven/CafeConnect/be/pkg/kafka"
+	nsq_client "github.com/RandySteven/CafeConnect/be/pkg/nsq"
 )
 
 type Topics struct {
@@ -10,10 +10,9 @@ type Topics struct {
 	OnboardingTopic  topics_interfaces.OnboardingTopic
 }
 
-func NewTopics(pub kafka_client.Publisher, con kafka_client.Consumer) *Topics {
-	topic := kafka_client.NewTopic(con, pub)
+func NewTopics(nsq nsq_client.Nsq) *Topics {
 	return &Topics{
-		TransactionTopic: newTransactionTopic(topic),
-		OnboardingTopic:  newOnboardingTopic(topic),
+		TransactionTopic: newTransactionTopic(nsq),
+		OnboardingTopic:  newOnboardingTopic(nsq),
 	}
 }

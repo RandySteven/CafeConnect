@@ -2,9 +2,9 @@ package midtrans_client
 
 import (
 	"context"
-
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/midtrans/midtrans-go"
+	"github.com/midtrans/midtrans-go/coreapi"
 	"github.com/midtrans/midtrans-go/snap"
 )
 
@@ -26,10 +26,12 @@ type (
 
 	Midtrans interface {
 		CreateTransaction(ctx context.Context, request *MidtransRequest) (result *MidtransResponse, err error)
+		CheckTransaction(ctx context.Context, orderId string) (response *coreapi.TransactionStatusResponse, err error)
 	}
 
 	midtransClient struct {
 		snapClient *snap.Client
+		coreApi    *coreapi.Client
 	}
 )
 
@@ -46,7 +48,11 @@ func NewMidtrans(config *configs.Config) (*midtransClient, error) {
 	sc := &snap.Client{}
 	sc.New(midtransConf.ServerKey, midtransEnv)
 
+	ca := &coreapi.Client{}
+	ca.New(midtransConf.ServerKey, midtransEnv)
+
 	return &midtransClient{
 		snapClient: sc,
+		coreApi:    ca,
 	}, nil
 }

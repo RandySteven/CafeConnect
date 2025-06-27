@@ -17,7 +17,7 @@ type (
 		OnboardingConsumer  consumer_interfaces.OnboardingConsumer
 	}
 
-	ConsumerFunc func(ctx context.Context)
+	ConsumerFunc func(ctx context.Context) error
 
 	Runners struct {
 		ConsumerFunc []ConsumerFunc
@@ -68,6 +68,7 @@ func NewConsumers(
 		OnboardingConsumer: newOnboardingConsumer(
 			topics.OnboardingTopic,
 			email,
-			repo.UserRepository),
+			repo.UserRepository,
+			repo.VerifyTokenRepository),
 	}
 }

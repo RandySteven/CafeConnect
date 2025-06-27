@@ -2,6 +2,7 @@ package midtrans_client
 
 import (
 	"context"
+	"github.com/midtrans/midtrans-go/coreapi"
 	"log"
 
 	"github.com/midtrans/midtrans-go"
@@ -39,4 +40,12 @@ func (m *midtransClient) CreateTransaction(ctx context.Context, request *Midtran
 	}
 
 	return result, nil
+}
+
+func (m *midtransClient) CheckTransaction(ctx context.Context, orderId string) (response *coreapi.TransactionStatusResponse, err error) {
+	response, err = m.coreApi.CheckTransaction(orderId)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }

@@ -161,7 +161,7 @@ func (o *onboardingUsecase) RegisterUser(ctx context.Context, request *requests.
 	if customErr != nil {
 		return nil, customErr
 	}
-	_ = o.onboardingTopic.WriteMessage(ctx, `onboarding-verify-token`, utils.WriteJSONObject[messages.VerifyTokenMessage](&messages.VerifyTokenMessage{
+	_ = o.onboardingTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.VerifyTokenMessage](&messages.VerifyTokenMessage{
 		Token:  ctx.Value(enums.RequestID).(string),
 		UserID: user.ID,
 	}))

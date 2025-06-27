@@ -42,3 +42,6 @@ test:
 
 mockery:
 	mockery --all --output ./mocks
+
+start_nsq:
+	nsqd \\n  --lookupd-tcp-address=127.0.0.1:4160 \\n  --broadcast-address=127.0.0.1 \\n  --tcp-address=127.0.0.1:4150 \\n  --http-address=127.0.0.1:4151\n

@@ -8,11 +8,13 @@ import (
 type Topics struct {
 	TransactionTopic topics_interfaces.TransactionTopic
 	OnboardingTopic  topics_interfaces.OnboardingTopic
+	MidtransTopic    topics_interfaces.MidtransTopic
 }
 
 func NewTopics(nsq nsq_client.Nsq) *Topics {
 	return &Topics{
 		TransactionTopic: newTransactionTopic(nsq),
 		OnboardingTopic:  newOnboardingTopic(nsq),
+		MidtransTopic:    newMidtransTopic(nsq),
 	}
 }

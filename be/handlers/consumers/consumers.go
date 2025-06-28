@@ -53,6 +53,7 @@ func NewConsumers(
 		//DummyConsumer: newDummyConsumer(topics),
 		TransactionConsumer: newTransactionConsumer(
 			topics.TransactionTopic,
+			topics.MidtransTopic,
 			midtrans,
 			repo.TransactionHeaderRepository,
 			repo.UserRepository,

@@ -41,6 +41,7 @@ func main() {
 
 	runners := consumers2.RegisterConsumer(
 		consumers.TransactionConsumer.MidtransTransactionRecord,
+		consumers.TransactionConsumer.MidtransPaymentConfirmation,
 		consumers.OnboardingConsumer.VerifyOnboardingToken,
 	)
 

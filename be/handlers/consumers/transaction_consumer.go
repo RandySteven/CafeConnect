@@ -2,7 +2,9 @@ package consumers
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/enums"
@@ -13,12 +15,15 @@ import (
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/midtrans/midtrans-go"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"strconv"
+	"time"
 )
 
 type TransactionConsumer struct {
 	transactionTopic              topics_interfaces.TransactionTopic
+	midtransTopic                 topics_interfaces.MidtransTopic
 	midtrans                      midtrans_client.Midtrans
 	userRepository                repository_interfaces.UserRepository
 	transactionRepository         repository_interfaces.TransactionHeaderRepository
@@ -102,9 +107,100 @@ func (t *TransactionConsumer) MidtransTransactionRecord(ctx context.Context) err
 
 		_ = t.checkoutCache.SetMultiData(ctx, fmt.Sprintf(enums.TransactionCheckoutItemsKey, transactionCode), checkoutList)
 
-		err = t.transactionTopic.WriteMessage(ctx, utils.WriteJSONObject(midtransResponse))
+		err = t.midtransTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.MidtransPaymentConfirmationMessage](
+			&messages.MidtransPaymentConfirmationMessage{
+				Token:           midtransResponse.Token,
+				TransactionCode: transactionHeader.TransactionCode,
+			}))
 		if err != nil {
-			log.Println("error publishing midtrans response:", err)
+			log.Println(`failed to publish to midtrans topic`, err)
+			return
+		}
+	})
+}
+
+func (t *TransactionConsumer) MidtransPaymentConfirmation(ctx context.Context) error {
+	return t.midtransTopic.RegisterConsumer(func(message string) {
+		log.Println("Processing message:", message)
+
+		midtransPaymentConfirm := utils.ReadJSONObject[messages.MidtransPaymentConfirmationMessage](message)
+
+		transactionStatus, err := t.midtrans.CheckTransaction(ctx, midtransPaymentConfirm.TransactionCode)
+		if err != nil {
+			log.Println(`failed to hit midtrans check status api`, err)
+			return
+		}
+
+		transactionHeader, err := t.transactionRepository.FindByTransactionCode(ctx, midtransPaymentConfirm.TransactionCode)
+		if err != nil {
+			log.Println(`failed to query trans header`, err)
+			return
+		}
+
+		switch transactionStatus.TransactionStatus {
+		case "settlement":
+			transactionHeader.Status = enums.TransactionSUCCESS.String()
+			transactionHeader.UpdatedAt = time.Now()
+			checkoutList, err := t.checkoutCache.GetMultiData(ctx, fmt.Sprintf(enums.TransactionCheckoutItemsKey, transactionHeader.TransactionCode))
+			if err != nil && !errors.Is(err, redis.Nil) {
+				log.Println(`failed to get data from redis`)
+				return
+			}
+
+			customErr := t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
+				for _, item := range checkoutList {
+					cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
+					if err != nil {
+						return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+					}
+
+					if cafeProduct.Stock < item.Qty {
+						return apperror.NewCustomError(apperror.ErrBadRequest, `insufficient stock`, fmt.Errorf(`insufficient stock`))
+					}
+
+					cafeProduct.Stock -= item.Qty
+					cafeProduct.UpdatedAt = time.Now()
+					cafeProduct, err = t.cafeProductRepository.Update(ctx, cafeProduct)
+					if err != nil {
+						return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+					}
+
+					transactionDetail := &models.TransactionDetail{
+						TransactionID: transactionHeader.ID,
+						CafeProductID: item.CafeProductID,
+						Qty:           item.Qty,
+					}
+
+					transactionDetail, err = t.transactionDetailRepository.Save(ctx, transactionDetail)
+					if err != nil {
+						return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create detail transaction`, err)
+					}
+
+					err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, transactionHeader.UserID, item.CafeProductID)
+					if err != nil {
+						return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
+					}
+				}
+
+				_, err = t.transactionRepository.Update(ctx, transactionHeader)
+				if err != nil {
+					log.Println(`failed to update transaciton header`, err)
+					return
+				}
+				return nil
+			})
+			if customErr != nil {
+				log.Println(`failed to execute the transaction`)
+				return
+			}
+		case "cancelled":
+			transactionHeader.Status = enums.TransactionFAILED.String()
+			transactionHeader.UpdatedAt = time.Now()
+			_, err = t.transactionRepository.Update(ctx, transactionHeader)
+			if err != nil {
+				log.Println(`failed to update transaciton header`, err)
+				return
+			}
 		}
 	})
 }
@@ -113,6 +209,7 @@ var _ consumer_interfaces.TransactionConsumer = &TransactionConsumer{}
 
 func newTransactionConsumer(
 	transactionTopic topics_interfaces.TransactionTopic,
+	midtransTopic topics_interfaces.MidtransTopic,
 	midtrans midtrans_client.Midtrans,
 	transactionRepository repository_interfaces.TransactionHeaderRepository,
 	userRepository repository_interfaces.UserRepository,
@@ -127,6 +224,7 @@ func newTransactionConsumer(
 	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository) *TransactionConsumer {
 	return &TransactionConsumer{
 		transactionTopic:              transactionTopic,
+		midtransTopic:                 midtransTopic,
 		midtrans:                      midtrans,
 		transactionRepository:         transactionRepository,
 		userRepository:                userRepository,

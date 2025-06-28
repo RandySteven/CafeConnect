@@ -15,5 +15,5 @@ type TransactionUsecase interface {
 	GetUserTransactions(ctx context.Context) (result []*responses.TransactionListResponse, customErr *apperror.CustomError)
 	GetTransactionByCode(ctx context.Context, transactionCode string) (result *responses.TransactionDetailResponse, customErr *apperror.CustomError)
 	CheckReceipt(ctx context.Context, transactionCode string) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError)
-	PaymentConfirmation(ct context.Context, request *requests.PaymentConfirmationRequest) (message string, customErr *apperror.CustomError)
+	PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (result []*responses.PaymentConfirmationResponse, message string, customErr *apperror.CustomError)
 }

@@ -49,4 +49,15 @@ type (
 		UpdatedAt       time.Time     `json:"updated_at"`
 		DeletedAt       *time.Time    `json:"deleted_at"`
 	}
+
+	PaymentConfirmationResponse struct {
+		CafeProductID   uint64 `json:"cafe_product_id"`
+		ProductName     string `json:"product_name"`
+		ProductImage    string `json:"product_image"`
+		ProductPerPrice uint64 `json:"product_per_price"`
+		CurrentStock    uint64 `json:"current_stock"`
+		PrevStock       uint64 `json:"prev_stock"`
+		Qty             uint64 `json:"qty"`
+		ProductPrice    uint64 `json:"product_price"`
+	}
 )

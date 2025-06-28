@@ -42,16 +42,44 @@ type transactionUsecase struct {
 	checkoutCache                 cache_interfaces.CheckoutCache
 }
 
-func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (message string, customErr *apperror.CustomError) {
+func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (result []*responses.PaymentConfirmationResponse, message string, customErr *apperror.CustomError) {
 	message = ""
 	transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, request.TransactionCode)
 	if err != nil {
-		return message, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get header`, err)
+		return nil, message, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get header`, err)
 	}
 
 	switch transactionHeader.Status {
 	case enums.TransactionSUCCESS.String():
 		message = `the transaction success`
+		transactionDetails, err := t.transactionDetailRepository.FindByTransactionId(ctx, transactionHeader.ID)
+		if err != nil {
+			return nil, "", apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction id`, err)
+		}
+		paymentConfirmationResponses := make([]*responses.PaymentConfirmationResponse, len(transactionDetails))
+		for index, detail := range transactionDetails {
+			cafeProduct, err := t.cafeProductRepository.FindByID(ctx, detail.CafeProductID)
+			if err != nil {
+				return nil, "", apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
+			}
+
+			productName, err := t.productRepository.FindByID(ctx, cafeProduct.ProductID)
+			if err != nil {
+				return nil, "", apperror.NewCustomError(apperror.ErrInternalServer, `failed to get product`, err)
+			}
+
+			paymentConfirmationResponses[index] = &responses.PaymentConfirmationResponse{
+				CafeProductID:   cafeProduct.ID,
+				ProductName:     productName.Name,
+				ProductPerPrice: cafeProduct.Price,
+				ProductPrice:    cafeProduct.Price * detail.Qty,
+				ProductImage:    productName.PhotoURL,
+				CurrentStock:    cafeProduct.Stock,
+				PrevStock:       cafeProduct.Stock + detail.Qty,
+				Qty:             detail.Qty,
+			}
+		}
+		result = paymentConfirmationResponses
 		break
 	case enums.TransactionFAILED.String():
 		message = `transaction failed`
@@ -61,7 +89,7 @@ func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *r
 		break
 	}
 
-	return message, nil
+	return result, message, nil
 }
 
 func (t *transactionUsecase) CheckReceipt(ctx context.Context, trasnactionCode string) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {

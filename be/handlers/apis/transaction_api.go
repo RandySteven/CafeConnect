@@ -112,6 +112,7 @@ func (t *TransactionApi) PaymentConfirmation(w http.ResponseWriter, r *http.Requ
 		rID     = uuid.NewString()
 		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
 		request = &requests.PaymentConfirmationRequest{}
+		dataKey = `result`
 	)
 
 	if err := utils.BindJSON(r, &request); err != nil {
@@ -119,12 +120,12 @@ func (t *TransactionApi) PaymentConfirmation(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	message, customErr := t.usecase.PaymentConfirmation(ctx, request)
+	result, message, customErr := t.usecase.PaymentConfirmation(ctx, request)
 	if customErr != nil {
 		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
 		return
 	}
-	utils.ResponseHandler(w, http.StatusOK, message, nil, nil, nil)
+	utils.ResponseHandler(w, http.StatusOK, message, &dataKey, result, nil)
 }
 
 var _ api_interfaces.TransactionApi = &TransactionApi{}

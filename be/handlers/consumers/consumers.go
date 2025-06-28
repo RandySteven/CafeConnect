@@ -54,6 +54,7 @@ func NewConsumers(
 		TransactionConsumer: newTransactionConsumer(
 			topics.TransactionTopic,
 			topics.MidtransTopic,
+			topics.PointTopic,
 			midtrans,
 			repo.TransactionHeaderRepository,
 			repo.UserRepository,
@@ -68,8 +69,10 @@ func NewConsumers(
 			repo.MidtransTransactionRepository),
 		OnboardingConsumer: newOnboardingConsumer(
 			topics.OnboardingTopic,
+			topics.PointTopic,
 			email,
 			repo.UserRepository,
-			repo.VerifyTokenRepository),
+			repo.VerifyTokenRepository,
+			repo.PointRepository),
 	}
 }

@@ -8,6 +8,8 @@ type Settlement struct {
 	TransactionCode       string
 	FranchiseID           uint64
 	CafeID                uint64
+	PayedAmount           uint64
+	Point                 uint64
 	GrossAmount           string
 	PaymentType           string
 	SettlementStatus      string

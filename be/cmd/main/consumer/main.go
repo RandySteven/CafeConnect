@@ -43,6 +43,7 @@ func main() {
 		consumers.TransactionConsumer.MidtransTransactionRecord,
 		consumers.TransactionConsumer.MidtransPaymentConfirmation,
 		consumers.OnboardingConsumer.VerifyOnboardingToken,
+		consumers.OnboardingConsumer.UserPointUpdate,
 	)
 
 	runners.Run(ctx)

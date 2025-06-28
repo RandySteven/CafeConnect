@@ -242,4 +242,20 @@ const (
 			FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE    
 		)
 	`
+
+	CreateSettlementTable MigrationQuery = `
+		CREATE TABLE IF NOT EXISTS settlements (
+		    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+		    midtrans_transaction_id VARCHAR(144) NOT NULL,
+		    transaction_code CHAR(24) NOT NULL,
+		    franchise_id BIGINT NOT NULL,
+		    payed_amount BIGINT NOT NULL,
+		    point BIGINT NOT NULL,
+		    gross_amount BIGINT NOT NULL,
+		    metadata TEXT NOT NULL,
+		    created_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP NOT NULL DEFAUlT CURRENT_TIMESTAMP,
+			deleted_at TIMESTAMP DEFAULT NULL,
+		)
+	`
 )

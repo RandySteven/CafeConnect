@@ -24,6 +24,7 @@ import (
 type TransactionConsumer struct {
 	transactionTopic              topics_interfaces.TransactionTopic
 	midtransTopic                 topics_interfaces.MidtransTopic
+	pointTopic                    topics_interfaces.PointTopic
 	midtrans                      midtrans_client.Midtrans
 	userRepository                repository_interfaces.UserRepository
 	transactionRepository         repository_interfaces.TransactionHeaderRepository
@@ -206,6 +207,16 @@ func (t *TransactionConsumer) handleMidtransConfirmation(ctx context.Context, co
 			return fmt.Errorf("failed to commit transaction: %w", customErr)
 		}
 
+		grossAmt, _ := strconv.Atoi(transactionStatus.GrossAmount[:len(transactionStatus.GrossAmount)-3])
+		err = t.pointTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.TransactionPointMessage](&messages.TransactionPointMessage{
+			UserID: transactionHeader.UserID,
+			Point:  uint64(grossAmt / 1000),
+		}))
+		if err != nil {
+			log.Println(`failed to write at point topic`, err)
+			return nil
+		}
+
 	case "pending":
 		log.Println("ℹ️ Payment still pending")
 		return fmt.Errorf("status still pending")
@@ -229,6 +240,7 @@ var _ consumer_interfaces.TransactionConsumer = &TransactionConsumer{}
 func newTransactionConsumer(
 	transactionTopic topics_interfaces.TransactionTopic,
 	midtransTopic topics_interfaces.MidtransTopic,
+	pointTopic topics_interfaces.PointTopic,
 	midtrans midtrans_client.Midtrans,
 	transactionRepository repository_interfaces.TransactionHeaderRepository,
 	userRepository repository_interfaces.UserRepository,
@@ -244,6 +256,7 @@ func newTransactionConsumer(
 	return &TransactionConsumer{
 		transactionTopic:              transactionTopic,
 		midtransTopic:                 midtransTopic,
+		pointTopic:                    pointTopic,
 		midtrans:                      midtrans,
 		transactionRepository:         transactionRepository,
 		userRepository:                userRepository,

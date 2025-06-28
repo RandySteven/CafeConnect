@@ -6,4 +6,5 @@ const (
 	ProductTopic         = `products-topic`
 	OnboardingTopic      = `onboarding-topic`
 	PaymentMidtransTopic = `payment-midtrans-topic`
+	UserPointTopic       = `user-point-topic`
 )

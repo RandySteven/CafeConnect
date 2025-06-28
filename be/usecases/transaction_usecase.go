@@ -42,82 +42,26 @@ type transactionUsecase struct {
 	checkoutCache                 cache_interfaces.CheckoutCache
 }
 
-func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (customErr *apperror.CustomError) {
-	userID := ctx.Value(enums.UserID).(uint64)
-	checkoutList, err := t.checkoutCache.GetMultiData(ctx, fmt.Sprintf(enums.TransactionCheckoutItemsKey, request.TransactionCode))
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to consume redis`, err)
+func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (message string, customErr *apperror.CustomError) {
+	message = ""
+	transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, request.TransactionCode)
+	if err != nil {
+		return message, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get header`, err)
 	}
 
-	customErr = t.transaction.RunInTx(ctx, func(ctx context.Context) (customErr *apperror.CustomError) {
-		transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, request.TransactionCode)
-		if err != nil {
-			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
-		}
-
-		midtransTrx, err := t.midtrans.CheckTransaction(ctx, request.TransactionCode)
-		if err != nil {
-			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get midtrans`, err)
-		}
-		switch midtransTrx.TransactionStatus {
-		case `settlement`:
-			transactionHeader.Status = enums.TransactionSUCCESS.String()
-		case `canceled`:
-			transactionHeader.Status = enums.TransactionFAILED.String()
-		}
-
-		transactionHeader.UpdatedAt = time.Now()
-		_, err = t.transactionHeaderRepository.Update(ctx, transactionHeader)
-		if err != nil {
-			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to update transaction header`, err)
-		}
-
-		switch transactionHeader.Status {
-		case enums.TransactionSUCCESS.String():
-			for _, item := range checkoutList {
-				cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
-				if err != nil {
-					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
-				}
-
-				if cafeProduct.Stock < item.Qty {
-					return apperror.NewCustomError(apperror.ErrBadRequest, `insufficient stock`, fmt.Errorf(`insufficient stock`))
-				}
-
-				cafeProduct.Stock -= item.Qty
-				cafeProduct.UpdatedAt = time.Now()
-				cafeProduct, err = t.cafeProductRepository.Update(ctx, cafeProduct)
-				if err != nil {
-					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
-				}
-
-				transactionDetail := &models.TransactionDetail{
-					TransactionID: transactionHeader.ID,
-					CafeProductID: item.CafeProductID,
-					Qty:           item.Qty,
-				}
-
-				transactionDetail, err = t.transactionDetailRepository.Save(ctx, transactionDetail)
-				if err != nil {
-					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to create detail transaction`, err)
-				}
-
-				err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, userID, item.CafeProductID)
-				if err != nil {
-					return apperror.NewCustomError(apperror.ErrInternalServer, `failed to delete cart`, err)
-				}
-			}
-		case enums.TransactionFAILED.String():
-			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to do transaction`, fmt.Errorf(`failed transaction`))
-		}
-
-		return nil
-	})
-	if customErr != nil {
-		return customErr
+	switch transactionHeader.Status {
+	case enums.TransactionSUCCESS.String():
+		message = `the transaction success`
+		break
+	case enums.TransactionFAILED.String():
+		message = `transaction failed`
+		break
+	case enums.TransactionPENDING.String():
+		message = `transaction still on progress`
+		break
 	}
 
-	return nil
+	return message, nil
 }
 
 func (t *transactionUsecase) CheckReceipt(ctx context.Context, trasnactionCode string) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {

@@ -119,12 +119,12 @@ func (t *TransactionApi) PaymentConfirmation(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	customErr := t.usecase.PaymentConfirmation(ctx, request)
+	message, customErr := t.usecase.PaymentConfirmation(ctx, request)
 	if customErr != nil {
 		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
 		return
 	}
-	utils.ResponseHandler(w, http.StatusOK, `SUCCESS UPDATE TRANSACTION`, nil, nil, nil)
+	utils.ResponseHandler(w, http.StatusOK, message, nil, nil, nil)
 }
 
 var _ api_interfaces.TransactionApi = &TransactionApi{}

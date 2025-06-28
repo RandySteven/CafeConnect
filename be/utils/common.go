@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
@@ -235,4 +236,27 @@ func WriteJSONObject[T any](obj *T) string {
 func FirstLastName(name string) (firstName, lastName string) {
 	userName := strings.Split(name, " ")
 	return userName[0], userName[1]
+}
+
+func Retry(ctx context.Context, maxRetries int, fn func(ctx context.Context) error) error {
+	numbOfRetry := 0
+
+	for numbOfRetry < maxRetries {
+		err := fn(ctx)
+		if err == nil {
+			return nil
+		}
+
+		numbOfRetry++
+		log.Printf("Retry %d/%d failed: %v", numbOfRetry, maxRetries, err)
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
+
+	log.Println("⚠️ Max retries reached")
+	return fmt.Errorf("max retries reached")
 }

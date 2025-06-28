@@ -124,112 +124,104 @@ func (t *TransactionConsumer) MidtransPaymentConfirmation(ctx context.Context) e
 		log.Println("Processing message:", message)
 
 		midtransPaymentConfirm := utils.ReadJSONObject[messages.MidtransPaymentConfirmationMessage](message)
-		numbOfRetry := 0
-		maxRetries := 10
-		retry := true
 
-		for retry && numbOfRetry < maxRetries {
-			log.Printf("Checking Midtrans status for %s (attempt %d)", midtransPaymentConfirm.TransactionCode, numbOfRetry+1)
-			transactionStatus, err := t.midtrans.CheckTransaction(ctx, midtransPaymentConfirm.TransactionCode)
-			if err != nil {
-				log.Println("❌ Failed to check Midtrans status:", err)
-				numbOfRetry++
-				time.Sleep(5 * time.Second)
-				continue
-			}
+		err := utils.Retry(ctx, 10, func(ctx context.Context) error {
+			return t.handleMidtransConfirmation(ctx, midtransPaymentConfirm)
+		})
 
-			transactionHeader, err := t.transactionRepository.FindByTransactionCode(ctx, midtransPaymentConfirm.TransactionCode)
-			if err != nil {
-				log.Println("❌ Failed to get transaction header:", err)
-				return
-			}
-
-			switch transactionStatus.TransactionStatus {
-			case "settlement":
-				log.Println("✅ Payment settled")
-
-				transactionHeader.Status = enums.TransactionSUCCESS.String()
-				transactionHeader.UpdatedAt = time.Now()
-
-				checkoutList, err := t.checkoutCache.GetMultiData(ctx, fmt.Sprintf(enums.TransactionCheckoutItemsKey, transactionHeader.TransactionCode))
-				if err != nil && !errors.Is(err, redis.Nil) {
-					log.Println("❌ Failed to fetch from Redis:", err)
-					return
-				}
-
-				customErr := t.transaction.RunInTx(ctx, func(ctx context.Context) *apperror.CustomError {
-					for _, item := range checkoutList {
-						cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
-						if err != nil {
-							return apperror.NewCustomError(apperror.ErrInternalServer, "failed to get cafe product", err)
-						}
-
-						if cafeProduct.Stock < item.Qty {
-							return apperror.NewCustomError(apperror.ErrBadRequest, "insufficient stock", nil)
-						}
-
-						cafeProduct.Stock -= item.Qty
-						cafeProduct.UpdatedAt = time.Now()
-
-						_, err = t.cafeProductRepository.Update(ctx, cafeProduct)
-						if err != nil {
-							return apperror.NewCustomError(apperror.ErrInternalServer, "failed to update product", err)
-						}
-
-						transactionDetail := &models.TransactionDetail{
-							TransactionID: transactionHeader.ID,
-							CafeProductID: item.CafeProductID,
-							Qty:           item.Qty,
-						}
-
-						_, err = t.transactionDetailRepository.Save(ctx, transactionDetail)
-						if err != nil {
-							return apperror.NewCustomError(apperror.ErrInternalServer, "failed to save transaction detail", err)
-						}
-
-						err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, transactionHeader.UserID, item.CafeProductID)
-						if err != nil {
-							return apperror.NewCustomError(apperror.ErrInternalServer, "failed to delete cart", err)
-						}
-					}
-
-					if _, err := t.transactionRepository.Update(ctx, transactionHeader); err != nil {
-						return apperror.NewCustomError(apperror.ErrInternalServer, "failed to update transaction", err)
-					}
-
-					return nil
-				})
-
-				if customErr != nil {
-					log.Println("❌ Failed to commit transaction:", customErr)
-					return
-				}
-
-				retry = false
-
-			case "pending":
-				log.Println("ℹ️ Payment still pending")
-				numbOfRetry++
-				time.Sleep(5 * time.Second)
-
-			case "cancel", "cancelled", "expire", "failure":
-				log.Println("❌ Payment failed or expired:", transactionStatus.TransactionStatus)
-				transactionHeader.Status = enums.TransactionFAILED.String()
-				transactionHeader.UpdatedAt = time.Now()
-				if _, err := t.transactionRepository.Update(ctx, transactionHeader); err != nil {
-					log.Println("❌ Failed to update transaction status to FAILED:", err)
-				}
-				retry = false
-			default:
-				log.Println("⚠️ Unhandled Midtrans status:", transactionStatus.TransactionStatus)
-				retry = false
-			}
-		}
-
-		if numbOfRetry >= maxRetries {
-			log.Println("⚠️ Max retries reached for", midtransPaymentConfirm.TransactionCode)
+		if err != nil {
+			log.Println("⚠️ Max retries reached or unrecoverable error:", err)
 		}
 	})
+}
+
+func (t *TransactionConsumer) handleMidtransConfirmation(ctx context.Context, confirm *messages.MidtransPaymentConfirmationMessage) error {
+	log.Printf("Checking Midtrans status for %s", confirm.TransactionCode)
+
+	transactionStatus, err := t.midtrans.CheckTransaction(ctx, confirm.TransactionCode)
+	if err != nil {
+		return fmt.Errorf("check transaction error: %w", err)
+	}
+
+	transactionHeader, err := t.transactionRepository.FindByTransactionCode(ctx, confirm.TransactionCode)
+	if err != nil {
+		return fmt.Errorf("get transaction header error: %w", err)
+	}
+
+	switch transactionStatus.TransactionStatus {
+	case "settlement":
+		log.Println("✅ Payment settled")
+		transactionHeader.Status = enums.TransactionSUCCESS.String()
+		transactionHeader.UpdatedAt = time.Now()
+
+		checkoutList, err := t.checkoutCache.GetMultiData(ctx, fmt.Sprintf(enums.TransactionCheckoutItemsKey, transactionHeader.TransactionCode))
+		if err != nil && !errors.Is(err, redis.Nil) {
+			return fmt.Errorf("redis error: %w", err)
+		}
+
+		customErr := t.transaction.RunInTx(ctx, func(ctx context.Context) *apperror.CustomError {
+			for _, item := range checkoutList {
+				cafeProduct, err := t.cafeProductRepository.FindByID(ctx, item.CafeProductID)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, "failed to get cafe product", err)
+				}
+
+				if cafeProduct.Stock < item.Qty {
+					return apperror.NewCustomError(apperror.ErrBadRequest, "insufficient stock", nil)
+				}
+
+				cafeProduct.Stock -= item.Qty
+				cafeProduct.UpdatedAt = time.Now()
+
+				_, err = t.cafeProductRepository.Update(ctx, cafeProduct)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, "failed to update product", err)
+				}
+
+				transactionDetail := &models.TransactionDetail{
+					TransactionID: transactionHeader.ID,
+					CafeProductID: item.CafeProductID,
+					Qty:           item.Qty,
+				}
+
+				_, err = t.transactionDetailRepository.Save(ctx, transactionDetail)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, "failed to save transaction detail", err)
+				}
+
+				err = t.cartRepository.DeleteByUserIDAndCafeProductID(ctx, transactionHeader.UserID, item.CafeProductID)
+				if err != nil {
+					return apperror.NewCustomError(apperror.ErrInternalServer, "failed to delete cart", err)
+				}
+			}
+
+			if _, err := t.transactionRepository.Update(ctx, transactionHeader); err != nil {
+				return apperror.NewCustomError(apperror.ErrInternalServer, "failed to update transaction", err)
+			}
+
+			return nil
+		})
+
+		if customErr != nil {
+			return fmt.Errorf("failed to commit transaction: %w", customErr)
+		}
+
+	case "pending":
+		log.Println("ℹ️ Payment still pending")
+		return fmt.Errorf("status still pending")
+
+	case "cancel", "cancelled", "expire", "failure":
+		log.Println("❌ Payment failed or expired:", transactionStatus.TransactionStatus)
+		transactionHeader.Status = enums.TransactionFAILED.String()
+		transactionHeader.UpdatedAt = time.Now()
+		if _, err := t.transactionRepository.Update(ctx, transactionHeader); err != nil {
+			return fmt.Errorf("update to failed status error: %w", err)
+		}
+	default:
+		log.Println("⚠️ Unhandled Midtrans status:", transactionStatus.TransactionStatus)
+	}
+
+	return nil
 }
 
 var _ consumer_interfaces.TransactionConsumer = &TransactionConsumer{}

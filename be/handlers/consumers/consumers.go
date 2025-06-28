@@ -71,6 +71,7 @@ func NewConsumers(
 			topics.OnboardingTopic,
 			topics.PointTopic,
 			email,
+			cache.OnboardCache,
 			repo.UserRepository,
 			repo.VerifyTokenRepository,
 			repo.PointRepository),

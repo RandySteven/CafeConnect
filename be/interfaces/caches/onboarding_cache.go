@@ -1,7 +1,11 @@
 package cache_interfaces
 
-import "github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
+import (
+	"context"
+	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
+)
 
 type OnboardingCache interface {
 	SingleDataCache[responses.OnboardUserResponse]
+	Del(ctx context.Context, key string) error
 }

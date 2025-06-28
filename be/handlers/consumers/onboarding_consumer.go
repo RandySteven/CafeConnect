@@ -3,12 +3,14 @@ package consumers
 import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
+	cache_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/caches"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	email_client "github.com/RandySteven/CafeConnect/be/pkg/email"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -18,6 +20,7 @@ type OnboardingConsumer struct {
 	onboardingTopic topics_interfaces.OnboardingTopic
 	pointTopic      topics_interfaces.PointTopic
 	email           email_client.Email
+	onboardingCache cache_interfaces.OnboardingCache
 	userRepo        repository_interfaces.UserRepository
 	verifyTokenRepo repository_interfaces.VerifyTokenRepository
 	pointRepo       repository_interfaces.PointRepository
@@ -91,6 +94,7 @@ func (o *OnboardingConsumer) UserPointUpdate(ctx context.Context) error {
 			log.Println(`failed to update point`, err)
 			return
 		}
+		o.onboardingCache.Del(ctx, strconv.Itoa(int(user.ID)))
 	})
 }
 
@@ -100,6 +104,7 @@ func newOnboardingConsumer(
 	onboardingTopic topics_interfaces.OnboardingTopic,
 	pointTopic topics_interfaces.PointTopic,
 	email email_client.Email,
+	onboardingCache cache_interfaces.OnboardingCache,
 	userRepo repository_interfaces.UserRepository,
 	verifyTokenRepo repository_interfaces.VerifyTokenRepository,
 	pointRepo repository_interfaces.PointRepository,
@@ -108,6 +113,7 @@ func newOnboardingConsumer(
 		onboardingTopic: onboardingTopic,
 		pointTopic:      pointTopic,
 		email:           email,
+		onboardingCache: onboardingCache,
 		userRepo:        userRepo,
 		verifyTokenRepo: verifyTokenRepo,
 		pointRepo:       pointRepo,

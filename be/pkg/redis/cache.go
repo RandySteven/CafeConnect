@@ -55,6 +55,6 @@ func GetMultiple[T any](ctx context.Context, redis *redis.Client, key string) (v
 	return value, nil
 }
 
-func Del[T any](ctx context.Context, redis *redis.Client, key string) (err error) {
+func Del(ctx context.Context, redis *redis.Client, key string) (err error) {
 	return redis.Del(ctx, key).Err()
 }

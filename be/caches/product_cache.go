@@ -15,6 +15,10 @@ type productCache struct {
 	redis *redis.Client
 }
 
+func (p *productCache) Del(ctx context.Context, key string) (err error) {
+	return redis_client.Del(ctx, p.redis, key)
+}
+
 func (p *productCache) SetMultiData(ctx context.Context, key string, values []*responses.ListProductResponse) (err error) {
 	return redis_client.SetMultiple[responses.ListProductResponse](ctx, p.redis, key, values)
 }

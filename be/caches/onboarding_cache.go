@@ -23,7 +23,7 @@ func (o *onboardingCache) Get(ctx context.Context, key string) (value *responses
 }
 
 func (o *onboardingCache) Del(ctx context.Context, key string) error {
-	return redis_client.Del[responses.OnboardUserResponse](ctx, o.redis, fmt.Sprintf(enums.OnboardUserCacheKey, key))
+	return redis_client.Del(ctx, o.redis, fmt.Sprintf(enums.OnboardUserCacheKey, key))
 }
 
 var _ cache_interfaces.OnboardingCache = &onboardingCache{}

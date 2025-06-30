@@ -9,4 +9,5 @@ type ProductCache interface {
 	MultiDataCache[responses.ListProductResponse]
 	SingleDataCache[responses.DetailProductResponse]
 	DecreaseProductStock(ctx context.Context, key string, productId uint64, triggerCtx string) (err error)
+	Flusher
 }

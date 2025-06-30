@@ -37,7 +37,7 @@ services:
   migration:
     build:
       context: .
-      dockerfile: Dockerfile.migrator
+      dockerfile: migrator.dockerfile
     depends_on:
       - mysql
     networks:
@@ -111,7 +111,7 @@ services:
   scheduler:
     build:
       context: .
-      dockerfile: Dockerfile.scheduler
+      dockerfile: scheduler.dockerfile
     depends_on:
       - mysql
       - redis
@@ -124,7 +124,7 @@ services:
   consumer:
     build:
       context: .
-      dockerfile: Dockerfile.consumer
+      dockerfile: consumer.dockerfile
     depends_on:
       - mysql
       - redis
@@ -137,7 +137,7 @@ services:
   topic:
     build:
       context: .
-      dockerfile: Dockerfile.topic
+      dockerfile: topic.dockerfile
     depends_on:
       - mysql
       - redis

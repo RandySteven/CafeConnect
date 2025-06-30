@@ -74,7 +74,7 @@ func (t *TransactionJob) HardFailedPendingTrx(ctx context.Context) (err error) {
 
 var _ job_interfaces.TransactionJob = &TransactionJob{}
 
-func NewTransactionJob(
+func newTransactionJob(
 	transactionHeaderRepo repository_interfaces.TransactionHeaderRepository,
 	transactionDetailRepo repository_interfaces.TransactionDetailRepository,
 	midtransTransactionRepo repository_interfaces.MidtransTransactionRepository,

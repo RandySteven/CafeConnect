@@ -61,7 +61,6 @@ func NewApps(config *configs.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println(`is midtrans nil ? `, midtrans == nil)
 
 	kafka, err := kafka_client.NewKafkaClient(config)
 	if err != nil {

@@ -54,6 +54,24 @@ func (t *TransactionJob) CheckMidtransStatus(ctx context.Context) (err error) {
 	return
 }
 
+func (t *TransactionJob) HardFailedPendingTrx(ctx context.Context) (err error) {
+	transactionHeaders, err := t.transactionHeaderRepo.FindByTransactionStatus(ctx, enums.TransactionPENDING.String())
+	if err != nil {
+		return err
+	}
+
+	for _, transactionHeader := range transactionHeaders {
+		transactionHeader.Status = enums.TransactionFAILED.String()
+		transactionHeader.UpdatedAt = time.Now()
+		_, err = t.transactionHeaderRepo.Update(ctx, transactionHeader)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 var _ job_interfaces.TransactionJob = &TransactionJob{}
 
 func NewTransactionJob(

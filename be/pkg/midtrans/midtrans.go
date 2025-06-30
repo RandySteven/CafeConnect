@@ -27,6 +27,7 @@ type (
 	Midtrans interface {
 		CreateTransaction(ctx context.Context, request *MidtransRequest) (result *MidtransResponse, err error)
 		CheckTransaction(ctx context.Context, orderId string) (response *coreapi.TransactionStatusResponse, err error)
+		CheckTransactionHistory(ctx context.Context, orderId string)
 	}
 
 	midtransClient struct {

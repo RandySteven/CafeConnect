@@ -2,15 +2,12 @@ package midtrans_client
 
 import (
 	"context"
-	"github.com/midtrans/midtrans-go/coreapi"
-	"log"
-
 	"github.com/midtrans/midtrans-go"
+	"github.com/midtrans/midtrans-go/coreapi"
 	"github.com/midtrans/midtrans-go/snap"
 )
 
 func (m *midtransClient) CreateTransaction(ctx context.Context, request *MidtransRequest) (result *MidtransResponse, err error) {
-	log.Println(`snap clientnya nil kah ?`, m.snapClient == nil)
 	response, midtransErr := m.snapClient.CreateTransaction(
 		&snap.Request{
 			CustomerDetail: &midtrans.CustomerDetails{
@@ -30,10 +27,6 @@ func (m *midtransClient) CreateTransaction(ctx context.Context, request *Midtran
 		return nil, midtransErr
 	}
 
-	log.Println(response.Token)
-	log.Println(response.RedirectURL)
-	log.Println(response.StatusCode)
-
 	result = &MidtransResponse{
 		Token:       response.Token,
 		RedirectURL: response.RedirectURL,
@@ -48,4 +41,7 @@ func (m *midtransClient) CheckTransaction(ctx context.Context, orderId string) (
 		return nil, midtransErr
 	}
 	return response, nil
+}
+
+func (m *midtransClient) CheckTransactionHistory(ctx context.Context, orderId string) {
 }

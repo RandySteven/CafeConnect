@@ -75,3 +75,14 @@ config:
       timeout: 5
       keepAlive: 30
     maxRetries: 3
+  nsq:
+    nsqd_host: "nsq"
+    nsqd_tcp_port: "4150"
+    lookupd_http_port: "4161"
+    lookupd_tcp_port: "4160"
+  email:
+    host: ""
+    port: 0
+    senderName: "Cafe Connect"
+    authEmail: "cafe_connect123@gmail.com"
+    authPassword: "cafe_connect123"

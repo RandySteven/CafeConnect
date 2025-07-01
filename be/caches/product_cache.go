@@ -67,7 +67,7 @@ func (p *productCache) DecreaseProductStock(ctx context.Context, key string, pro
 				} else {
 					product.Stock -= qty
 				}
-				_ = redis_client.Del[uint64](ctx, p.redis, `qty_cart`)
+				_ = redis_client.Del(ctx, p.redis, `qty_cart`)
 			}
 			updated = true
 			break

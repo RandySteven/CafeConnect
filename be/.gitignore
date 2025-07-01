@@ -6,3 +6,4 @@ service-account-key.json
 *.log
 temp-images
 nsqd.dat
+logs

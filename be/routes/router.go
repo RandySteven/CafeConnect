@@ -13,6 +13,7 @@ type (
 	HandlerFunc func(w http.ResponseWriter, r *http.Request)
 
 	Router struct {
+		methodName  string
 		path        string
 		handler     HandlerFunc
 		method      string
@@ -26,56 +27,56 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 	endpoint := make(RouterPrefix)
 
 	endpoint[enums.DevPrefix] = []*Router{
-		Get(`/check-health`, api.DevApi.CheckHealth),
+		Get(`CheckHealth`, `/check-health`, api.DevApi.CheckHealth),
 	}
 
 	endpoint[enums.OnboardingPrefix] = []*Router{
-		Post(`/register`, api.OnboardingApi.RegisterUser),
-		Post(`/login`, api.OnboardingApi.LoginUser),
-		Get(``, api.OnboardingApi.GetOnboardUser, enums.AuthenticationMiddleware),
-		Get(`/verify-token/{token}`, api.OnboardingApi.VerifyOnboardUser),
+		Post(`RegisterUser`, `/register`, api.OnboardingApi.RegisterUser),
+		Post(`LoginUser`, `/login`, api.OnboardingApi.LoginUser),
+		Get(`GetOnboardUser`, ``, api.OnboardingApi.GetOnboardUser, enums.AuthenticationMiddleware),
+		Get(`VerifyOnboardUser`, `/verify-token/{token}`, api.OnboardingApi.VerifyOnboardUser),
 	}
 
 	endpoint[enums.RolePrefix] = []*Router{
-		Get(``, api.RoleApi.GetRoleList),
+		Get(`GetRoleList`, ``, api.RoleApi.GetRoleList),
 	}
 
 	endpoint[enums.AddressPrefix] = []*Router{
-		Post(``, api.AddressApi.AddUserAddress, enums.AuthenticationMiddleware),
-		Get(``, api.AddressApi.GetUserAddresses, enums.AuthenticationMiddleware),
+		Post(`AddUserAddress`, ``, api.AddressApi.AddUserAddress, enums.AuthenticationMiddleware),
+		Get(`GetUserAddresses`, ``, api.AddressApi.GetUserAddresses, enums.AuthenticationMiddleware),
 	}
 
 	endpoint[enums.CafePrefix] = []*Router{
-		Get(`/franchises`, api.CafeApi.GetListCafeFranchise),
-		Post(`/franchises`, api.CafeApi.RegisterCafeAndFranchise),
-		Get(`/{id}`, api.CafeApi.GetCafeDetail),
-		Post(``, api.CafeApi.GetListOfCafeBasedOnRadius),
-		Post(`/add-outlet`, api.CafeApi.AddCafeOutlet),
+		Get(`GetListCafeFranchise`, `/franchises`, api.CafeApi.GetListCafeFranchise),
+		Post(`RegisterCafeAndFranchise`, `/franchises`, api.CafeApi.RegisterCafeAndFranchise),
+		Get(`GetCafeDetail`, `/{id}`, api.CafeApi.GetCafeDetail),
+		Post(`GetListOfCafeBasedOnRadius`, ``, api.CafeApi.GetListOfCafeBasedOnRadius),
+		Post(`AddCafeOutlet`, `/add-outlet`, api.CafeApi.AddCafeOutlet),
 	}
 
 	endpoint[enums.ReviewPrefix] = []*Router{
-		Post(`/cafe-review`, api.ReviewApi.GetCafeReviews),
-		Post(``, api.ReviewApi.AddCafeReview, enums.AuthenticationMiddleware),
+		Post(`GetCafeReviews`, `/cafe-review`, api.ReviewApi.GetCafeReviews),
+		Post(`AddCafeReview`, ``, api.ReviewApi.AddCafeReview, enums.AuthenticationMiddleware),
 	}
 
 	endpoint[enums.ProductPrefix] = []*Router{
-		Post(``, api.ProductApi.AddProduct),
-		Get(`/{id}`, api.ProductApi.GetProductDetail),
-		Post(`/cafe-list`, api.ProductApi.GetListOfProducts),
+		Post(`AddProduct`, ``, api.ProductApi.AddProduct),
+		Get(`GetProductDetail`, `/{id}`, api.ProductApi.GetProductDetail),
+		Post(`GetListOfProducts`, `/cafe-list`, api.ProductApi.GetListOfProducts),
 	}
 
 	endpoint[enums.CartPrefix] = []*Router{
-		Post(``, api.CartApi.AddCart, enums.AuthenticationMiddleware),
-		Get(``, api.CartApi.GetCart, enums.AuthenticationMiddleware),
+		Post(`AddCart`, ``, api.CartApi.AddCart, enums.AuthenticationMiddleware),
+		Get(`GetCart`, ``, api.CartApi.GetCart, enums.AuthenticationMiddleware),
 	}
 
 	endpoint[enums.TransactionPrefix] = []*Router{
-		Get(`/v1/check-out`, api.TransactionApi.CheckoutTransactionV1, enums.AuthenticationMiddleware),
-		Post(`/v2/check-out`, api.TransactionApi.CheckoutTransactionV2, enums.AuthenticationMiddleware),
-		Get(`/{transactionCode}`, api.TransactionApi.GetTransactionByTransactionCode, enums.AuthenticationMiddleware),
-		Get(``, api.TransactionApi.GetUserTransactions, enums.AuthenticationMiddleware),
-		Post(`/receipt`, api.TransactionApi.CheckReceipt, enums.AuthenticationMiddleware),
-		Post(`/payment`, api.TransactionApi.PaymentConfirmation, enums.AuthenticationMiddleware),
+		Get(`CheckoutTransactionV1`, `/v1/check-out`, api.TransactionApi.CheckoutTransactionV1, enums.AuthenticationMiddleware),
+		Post(`CheckoutTransactionV2`, `/v2/check-out`, api.TransactionApi.CheckoutTransactionV2, enums.AuthenticationMiddleware),
+		Get(`GetTransactionByTransactionCode`, `/{transactionCode}`, api.TransactionApi.GetTransactionByTransactionCode, enums.AuthenticationMiddleware),
+		Get(`GetUserTransactions`, ``, api.TransactionApi.GetUserTransactions, enums.AuthenticationMiddleware),
+		Post(`CheckReceipt`, `/receipt`, api.TransactionApi.CheckReceipt, enums.AuthenticationMiddleware),
+		Post(`PaymentConfirmation`, `/payment`, api.TransactionApi.PaymentConfirmation, enums.AuthenticationMiddleware),
 	}
 
 	return endpoint

@@ -5,22 +5,22 @@ import (
 	"net/http"
 )
 
-func registerEndpointRouter(path, method string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
-	return &Router{path: path, handler: handler, method: method, middlewares: middlewares}
+func registerEndpointRouter(methodName string, path, method string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
+	return &Router{methodName: methodName, path: path, handler: handler, method: method, middlewares: middlewares}
 }
 
-func Post(path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
-	return registerEndpointRouter(path, http.MethodPost, handler, middlewares...)
+func Post(methodName string, path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
+	return registerEndpointRouter(methodName, path, http.MethodPost, handler, middlewares...)
 }
 
-func Get(path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
-	return registerEndpointRouter(path, http.MethodGet, handler, middlewares...)
+func Get(methodName string, path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
+	return registerEndpointRouter(methodName, path, http.MethodGet, handler, middlewares...)
 }
 
-func Put(path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
-	return registerEndpointRouter(path, http.MethodPut, handler, middlewares...)
+func Put(methodName string, path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
+	return registerEndpointRouter(methodName, path, http.MethodPut, handler, middlewares...)
 }
 
-func Delete(path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
-	return registerEndpointRouter(path, http.MethodDelete, handler, middlewares...)
+func Delete(methodName string, path string, handler HandlerFunc, middlewares ...enums.Middleware) *Router {
+	return registerEndpointRouter(methodName, path, http.MethodDelete, handler, middlewares...)
 }

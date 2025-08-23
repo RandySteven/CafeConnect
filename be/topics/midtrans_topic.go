@@ -11,10 +11,6 @@ type midtransTopic struct {
 	nsq nsq_client.Nsq
 }
 
-func (m *midtransTopic) RegisterConsumer(handler func(context.Context, string)) error {
-	return m.nsq.RegisterConsumer(enums.PaymentMidtransTopic, handler)
-}
-
 func (m *midtransTopic) WriteMessage(ctx context.Context, value string) (err error) {
 	return m.nsq.Publish(ctx, enums.PaymentMidtransTopic, []byte(value))
 }

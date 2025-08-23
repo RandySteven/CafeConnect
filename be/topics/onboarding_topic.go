@@ -11,10 +11,6 @@ type onboardingTopic struct {
 	nsq nsq_client.Nsq
 }
 
-func (o *onboardingTopic) RegisterConsumer(handler func(context.Context, string)) error {
-	return o.nsq.RegisterConsumer(enums.OnboardingTopic, handler)
-}
-
 func (o *onboardingTopic) WriteMessage(ctx context.Context, value string) (err error) {
 	return o.nsq.Publish(ctx, enums.OnboardingTopic, []byte(value))
 }

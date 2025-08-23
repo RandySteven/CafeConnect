@@ -13,7 +13,7 @@ type (
 	Nsq interface {
 		Publish(ctx context.Context, topic string, body []byte) error
 		Consume(ctx context.Context, topic string) (string, error)
-		RegisterConsumer(topic string, handlerFunc func(string)) error
+		RegisterConsumer(topic string, handlerFunc func(context.Context, string)) error
 	}
 
 	nsqClient struct {
@@ -44,41 +44,16 @@ func (n *nsqClient) Publish(ctx context.Context, topic string, body []byte) erro
 }
 
 func (n *nsqClient) Consume(ctx context.Context, topic string) (string, error) {
-	nsqConfig := nsq.NewConfig()
-	log.Println("Creating NSQ consumer for topic:", topic)
-
-	consumer, err := nsq.NewConsumer(topic, "channel", nsqConfig)
-	if err != nil {
-		return "", fmt.Errorf("failed to create NSQ consumer: %w", err)
-	}
-
-	msgChan := make(chan string)
-	consumer.AddHandler(nsq.HandlerFunc(func(msg *nsq.Message) error {
-		log.Println("message received:", string(msg.Body))
-		msgChan <- string(msg.Body)
-		return nil
-	}))
-
-	lookupAddr := fmt.Sprintf("%s:%s", n.config.Config.Nsq.NSQDHost, n.config.Config.Nsq.LookupdHttpPort)
-	log.Println("Connecting to nsqlookupd at", lookupAddr)
-
-	if err := consumer.ConnectToNSQLookupd(lookupAddr); err != nil {
-		return "", fmt.Errorf("failed to connect to NSQ lookupd: %w", err)
-	}
-
-	log.Println("Connected. Waiting for message...")
-	select {
-	case msg := <-msgChan:
-		log.Println("Got message from channel")
-		return msg, nil
-	case <-ctx.Done():
-		return "", ctx.Err()
-	case <-time.After(10 * time.Second):
-		return "", fmt.Errorf("timeout waiting for message")
+	if ctx.Value(topic) != nil {
+		log.Println(`context value : `, ctx.Value(topic).(string))
+		return ctx.Value(topic).(string), nil
+	} else {
+		log.Println(`context value : `, nil)
+		return "", fmt.Errorf(`failed to consume the topic %s`, topic)
 	}
 }
 
-func (n *nsqClient) RegisterConsumer(topic string, handlerFunc func(string)) error {
+func (n *nsqClient) RegisterConsumer(topic string, handlerFunc func(context.Context, string)) error {
 	nsqConfig := nsq.NewConfig()
 	log.Println("Creating NSQ consumer for topic:", topic)
 
@@ -89,8 +64,19 @@ func (n *nsqClient) RegisterConsumer(topic string, handlerFunc func(string)) err
 
 	consumer.AddHandler(nsq.HandlerFunc(func(msg *nsq.Message) error {
 		body := string(msg.Body)
-		log.Println("NSQ message received:", body)
-		handlerFunc(body)
+		ctx := context.WithValue(context.Background(), topic, body)
+		ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+		defer cancel()
+
+		if err := func() error {
+			handlerFunc(ctx, topic)
+			return nil
+		}(); err != nil {
+			log.Println("Error in handlerFunc:", err)
+			msg.Requeue(-1)
+			return err
+		}
+
 		return nil
 	}))
 
@@ -101,6 +87,6 @@ func (n *nsqClient) RegisterConsumer(topic string, handlerFunc func(string)) err
 		return fmt.Errorf("failed to connect to NSQ lookupd: %w", err)
 	}
 
-	log.Println("NSQ consumer registered and running...")
+	log.Println("NSQ consumer registered and running... for topic ", topic)
 	return nil
 }

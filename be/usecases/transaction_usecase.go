@@ -170,6 +170,9 @@ func (t *transactionUsecase) CheckoutTransactionV2(ctx context.Context, request 
 		CafeFranchiseName: cafeFranchise.Name,
 		CheckoutList:      request.Checkouts,
 	}))
+	if err != nil {
+		log.Println(`error while publish : `, err)
+	}
 
 	return &responses.TransactionReceiptResponse{
 		ID:              transactionHeader.ID,

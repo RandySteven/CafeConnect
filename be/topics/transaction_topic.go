@@ -11,12 +11,12 @@ type transactionTopic struct {
 	nsq nsq_client.Nsq
 }
 
-func (t *transactionTopic) RegisterConsumer(handler func(message string)) (err error) {
-	return t.nsq.RegisterConsumer(enums.TransactionTopic, handler)
-}
-
 func (t *transactionTopic) WriteMessage(ctx context.Context, value string) (err error) {
 	return t.nsq.Publish(ctx, enums.TransactionTopic, []byte(value))
+}
+
+func (t *transactionTopic) ReadMessage(ctx context.Context) (message string, err error) {
+	return t.nsq.Consume(ctx, enums.TransactionTopic)
 }
 
 var _ topics_interfaces.TransactionTopic = &transactionTopic{}

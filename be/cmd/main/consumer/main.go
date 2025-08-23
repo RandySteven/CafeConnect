@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/RandySteven/CafeConnect/be/apps"
 	"github.com/RandySteven/CafeConnect/be/configs"
+	"github.com/RandySteven/CafeConnect/be/enums"
 	consumers2 "github.com/RandySteven/CafeConnect/be/handlers/consumers"
 	"github.com/joho/godotenv"
 	"log"
@@ -38,15 +39,21 @@ func main() {
 	}
 
 	consumers := app.PrepareConsumer(ctx)
-
-	runners := consumers2.RegisterConsumer(
-		consumers.TransactionConsumer.MidtransTransactionRecord,
-		consumers.TransactionConsumer.MidtransPaymentConfirmation,
-		consumers.OnboardingConsumer.VerifyOnboardingToken,
-		consumers.OnboardingConsumer.UserPointUpdate,
+	runners := consumers2.InitRunner(app.Nsq)
+	runners.RegisterConsumer(
+		enums.TransactionTopic, consumers.TransactionConsumer.MidtransTransactionRecord,
+	)
+	runners.RegisterConsumer(
+		enums.PaymentMidtransTopic, consumers.TransactionConsumer.MidtransPaymentConfirmation,
+	)
+	runners.RegisterConsumer(
+		enums.OnboardingTopic, consumers.OnboardingConsumer.VerifyOnboardingToken,
+	)
+	runners.RegisterConsumer(
+		enums.UserPointTopic, consumers.OnboardingConsumer.UserPointUpdate,
 	)
 
-	runners.Run(ctx)
+	_ = runners.Run(ctx)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

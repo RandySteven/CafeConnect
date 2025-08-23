@@ -228,6 +228,7 @@ func ReadJSONObject[T any](jsonStr string) *T {
 func WriteJSONObject[T any](obj *T) string {
 	bytes, err := json.Marshal(obj)
 	if err != nil {
+		log.Println(`err json `, err)
 		return ""
 	}
 	return string(bytes)

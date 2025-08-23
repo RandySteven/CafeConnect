@@ -2,12 +2,15 @@ package consumers
 
 import (
 	"context"
+	"fmt"
 	"github.com/RandySteven/CafeConnect/be/caches"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	email_client "github.com/RandySteven/CafeConnect/be/pkg/email"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
+	nsq_client "github.com/RandySteven/CafeConnect/be/pkg/nsq"
 	"github.com/RandySteven/CafeConnect/be/repositories"
 	"github.com/RandySteven/CafeConnect/be/topics"
+	"log"
 )
 
 type (
@@ -19,8 +22,12 @@ type (
 
 	ConsumerFunc func(ctx context.Context) error
 
+	RunConsumer map[string]ConsumerFunc
+
 	Runners struct {
+		nsq          nsq_client.Nsq
 		ConsumerFunc []ConsumerFunc
+		RunConsumers RunConsumer
 	}
 )
 
@@ -30,16 +37,48 @@ func consume(ctx context.Context, fn func(ctx context.Context)) {
 	}
 }
 
-func RegisterConsumer(consFunc ...ConsumerFunc) *Runners {
+func InitRunner(nsq nsq_client.Nsq) *Runners {
 	return &Runners{
-		ConsumerFunc: consFunc,
+		nsq:          nsq,
+		RunConsumers: make(map[string]ConsumerFunc),
 	}
 }
 
-func (r *Runners) Run(ctx context.Context) {
-	for _, fun := range r.ConsumerFunc {
-		go fun(ctx)
+func (r *Runners) RegisterConsumer(topic string, fun ConsumerFunc) *Runners {
+	r.RunConsumers[topic] = fun
+	return r
+}
+
+func (r *Runners) Run(ctx context.Context) error {
+	errChan := make(chan error, len(r.RunConsumers))
+
+	for topic, consumer := range r.RunConsumers {
+		go func(topic string, consumer ConsumerFunc) {
+			log.Println(`execute consumer `, consumer)
+			err := r.nsq.RegisterConsumer(topic, func(msgCtx context.Context, key string) {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("Recovered from panic in consumer %s: %v", topic, r)
+					}
+				}()
+
+				if err := consumer(msgCtx); err != nil {
+					log.Printf("Error in consumer %s: %v", topic, err)
+				}
+			})
+			if err != nil {
+				errChan <- fmt.Errorf("failed to register consumer for topic %s: %w", topic, err)
+			}
+		}(topic, consumer)
 	}
+
+	select {
+	case err := <-errChan:
+		return err
+	default:
+		return nil
+	}
+
 }
 
 func NewConsumers(

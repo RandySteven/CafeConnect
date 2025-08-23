@@ -11,12 +11,16 @@ type pointTopic struct {
 	nsq nsq_client.Nsq
 }
 
-func (p *pointTopic) RegisterConsumer(handler func(string)) error {
+func (p *pointTopic) RegisterConsumer(handler func(context.Context, string)) error {
 	return p.nsq.RegisterConsumer(enums.UserPointTopic, handler)
 }
 
 func (p *pointTopic) WriteMessage(ctx context.Context, value string) (err error) {
 	return p.nsq.Publish(ctx, enums.UserPointTopic, []byte(value))
+}
+
+func (p *pointTopic) ReadMessage(ctx context.Context) (value string, err error) {
+	return p.nsq.Consume(ctx, enums.UserPointTopic)
 }
 
 var _ topics_interfaces.PointTopic = &pointTopic{}

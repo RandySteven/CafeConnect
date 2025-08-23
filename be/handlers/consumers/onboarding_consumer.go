@@ -72,30 +72,33 @@ func (o *OnboardingConsumer) VerifyOnboardingToken(ctx context.Context) error {
 }
 
 func (o *OnboardingConsumer) UserPointUpdate(ctx context.Context) error {
-	return o.pointTopic.RegisterConsumer(func(message string) {
-		userPointMessage := utils.ReadJSONObject[messages.TransactionPointMessage](message)
+	message, err := o.pointTopic.ReadMessage(ctx)
+	if err != nil {
+		return err
+	}
+	userPointMessage := utils.ReadJSONObject[messages.TransactionPointMessage](message)
 
-		user, err := o.userRepo.FindByID(ctx, userPointMessage.UserID)
-		if err != nil {
-			log.Println(`failed to get user`, err)
-			return
-		}
+	user, err := o.userRepo.FindByID(ctx, userPointMessage.UserID)
+	if err != nil {
+		log.Println(`failed to get user`, err)
+		return err
+	}
 
-		point, err := o.pointRepo.FindByUserID(ctx, user.ID)
-		if err != nil {
-			log.Println(`failed to get point`, err)
-			return
-		}
+	point, err := o.pointRepo.FindByUserID(ctx, user.ID)
+	if err != nil {
+		log.Println(`failed to get point`, err)
+		return err
+	}
 
-		point.Point += userPointMessage.Point
-		point.UpdatedAt = time.Now()
-		_, err = o.pointRepo.Update(ctx, point)
-		if err != nil {
-			log.Println(`failed to update point`, err)
-			return
-		}
-		o.onboardingCache.Del(ctx, strconv.Itoa(int(user.ID)))
-	})
+	point.Point += userPointMessage.Point
+	point.UpdatedAt = time.Now()
+	_, err = o.pointRepo.Update(ctx, point)
+	if err != nil {
+		log.Println(`failed to update point`, err)
+		return err
+	}
+	o.onboardingCache.Del(ctx, strconv.Itoa(int(user.ID)))
+	return nil
 }
 
 var _ consumer_interfaces.OnboardingConsumer = &OnboardingConsumer{}

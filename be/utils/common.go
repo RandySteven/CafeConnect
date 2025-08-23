@@ -254,7 +254,7 @@ func Retry(ctx context.Context, maxRetries int, fn func(ctx context.Context) err
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(6 * time.Second):
+		case <-time.After(30 * time.Second):
 		}
 	}
 

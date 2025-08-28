@@ -21,6 +21,14 @@ type (
 		config  *configs.Config
 		lookupd string
 	}
+
+	Publish interface {
+		Publish(ctx context.Context, topic string, body []byte) error
+	}
+
+	Consume interface {
+		Consume(ctx context.Context, topic string) (string, error)
+	}
 )
 
 func NewNsqClient(cfg *configs.Config) (*nsqClient, error) {
@@ -37,20 +45,6 @@ func NewNsqClient(cfg *configs.Config) (*nsqClient, error) {
 		config:  cfg,
 		lookupd: fmt.Sprintf("%s:%s", cfg.Config.Nsq.NSQDHost, cfg.Config.Nsq.LookupdHttpPort),
 	}, nil
-}
-
-func (n *nsqClient) Publish(ctx context.Context, topic string, body []byte) error {
-	return n.pub.Publish(topic, body)
-}
-
-func (n *nsqClient) Consume(ctx context.Context, topic string) (string, error) {
-	if ctx.Value(topic) != nil {
-		log.Println(`context value : `, ctx.Value(topic).(string))
-		return ctx.Value(topic).(string), nil
-	} else {
-		log.Println(`context value : `, nil)
-		return "", fmt.Errorf(`failed to consume the topic %s`, topic)
-	}
 }
 
 func (n *nsqClient) RegisterConsumer(topic string, handlerFunc func(context.Context, string)) error {

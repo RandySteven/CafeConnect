@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/RandySteven/CafeConnect/be/apps"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	consumers2 "github.com/RandySteven/CafeConnect/be/handlers/consumers"
 	"github.com/joho/godotenv"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func init() {
@@ -51,6 +52,9 @@ func main() {
 	)
 	runners.RegisterConsumer(
 		enums.UserPointTopic, consumers.OnboardingConsumer.UserPointUpdate,
+	)
+	runners.RegisterConsumer(
+		enums.CafeTopic, consumers.CafeConsumer.GetCafesByRadius,
 	)
 
 	_ = runners.Run(ctx)

@@ -3,6 +3,8 @@ package consumers
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/RandySteven/CafeConnect/be/caches"
 	consumer_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/consumers"
 	email_client "github.com/RandySteven/CafeConnect/be/pkg/email"
@@ -10,7 +12,6 @@ import (
 	nsq_client "github.com/RandySteven/CafeConnect/be/pkg/nsq"
 	"github.com/RandySteven/CafeConnect/be/repositories"
 	"github.com/RandySteven/CafeConnect/be/topics"
-	"log"
 )
 
 type (
@@ -18,6 +19,7 @@ type (
 		//DummyConsumer       consumer_interfaces.DummyConsumer
 		TransactionConsumer consumer_interfaces.TransactionConsumer
 		OnboardingConsumer  consumer_interfaces.OnboardingConsumer
+		CafeConsumer        consumer_interfaces.CafeConsumer
 	}
 
 	ConsumerFunc func(ctx context.Context) error
@@ -114,5 +116,12 @@ func NewConsumers(
 			repo.UserRepository,
 			repo.VerifyTokenRepository,
 			repo.PointRepository),
+		CafeConsumer: newCafeConsumer(
+			topics.CafeTopic,
+			repo.CafeRepository,
+			repo.AddressRepository,
+			repo.CafeFranchiseRepository,
+			cache.CafeCache,
+		),
 	}
 }

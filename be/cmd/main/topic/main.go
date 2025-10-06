@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os/exec"
+
 	"github.com/RandySteven/CafeConnect/be/apps"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/joho/godotenv"
-	"log"
-	"os/exec"
 )
 
 func init() {
@@ -70,6 +71,7 @@ func prepareTopics(app *apps.App) {
 		enums.TransactionTopic,
 		enums.ProductTopic,
 		enums.OnboardingTopic,
+		enums.CafeTopic,
 	)
 	if err != nil {
 		log.Println(err)

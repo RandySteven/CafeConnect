@@ -10,6 +10,7 @@ type Topics struct {
 	OnboardingTopic  topics_interfaces.OnboardingTopic
 	MidtransTopic    topics_interfaces.MidtransTopic
 	PointTopic       topics_interfaces.PointTopic
+	CafeTopic        topics_interfaces.CafeTopic
 }
 
 func NewTopics(nsq nsq_client.Nsq) *Topics {
@@ -18,5 +19,6 @@ func NewTopics(nsq nsq_client.Nsq) *Topics {
 		OnboardingTopic:  newOnboardingTopic(nsq),
 		MidtransTopic:    newMidtransTopic(nsq),
 		PointTopic:       newPointTopic(nsq),
+		CafeTopic:        newCafeTopic(nsq),
 	}
 }

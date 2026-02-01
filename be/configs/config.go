@@ -113,5 +113,11 @@ type Config struct {
 			LookupdHttpPort string `yaml:"lookupd_http_port"`
 			LookupdTcpPort  string `yaml:"lookupd_tcp_port"`
 		} `yaml:"nsq"`
+
+		Temporal struct {
+			Host      string `yaml:"host"`
+			Port      string `yaml:"port"`
+			Namespace string `yaml:"namespace"`
+		} `yaml:"temporal"`
 	} `yaml:"config"`
 }

@@ -3,8 +3,10 @@ package repositories
 import (
 	"context"
 	"database/sql"
+
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	repository_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/repositories"
+	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
 type (
@@ -13,6 +15,8 @@ type (
 	}
 
 	txCtxKey struct{}
+
+	stepFunc func(ctx context.Context, params ...interface{}) (customErr *apperror.CustomError)
 )
 
 func (t *transaction) RunInTx(ctx context.Context, txFunc func(ctx context.Context) *apperror.CustomError) (customErr *apperror.CustomError) {
@@ -31,6 +35,33 @@ func (t *transaction) RunInTx(ctx context.Context, txFunc func(ctx context.Conte
 	}
 
 	return nil
+}
+
+func (t *transaction) RunInTxV2(ctx context.Context, steps ...stepFunc) (customErr *apperror.CustomError) {
+	err := utils.MutexLock(ctx, func(ctx context.Context) error {
+		tx, err := t.db.BeginTx(ctx, nil)
+		if err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to begin tx`, err)
+		}
+
+		_ = txToContext(ctx, tx)
+		for _, step := range steps {
+			if err := step(ctx, tx); err != nil {
+				_ = tx.Rollback()
+				return apperror.NewCustomError(apperror.ErrInternalServer, `failed to run step`, err)
+			}
+		}
+
+		if err = tx.Commit(); err != nil {
+			return apperror.NewCustomError(apperror.ErrInternalServer, `failed to commit tx`, err)
+		}
+		return nil
+	})
+	if err != nil {
+		return apperror.NewCustomError(apperror.ErrInternalServer, `failed to run in tx`, err)
+	}
+
+	return customErr
 }
 
 func txToContext(ctx context.Context, tx *sql.Tx) context.Context {

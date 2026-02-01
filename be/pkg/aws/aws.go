@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
+
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"io"
-	"mime/multipart"
 )
 
 type (
@@ -38,7 +39,7 @@ type (
 var _ AWS = &awsClient{}
 
 func NewAWS(configYml *configs.Config) (*awsClient, error) {
-	if configYml == nil || &configYml.Config.AWS == nil {
+	if configYml == nil {
 		return nil, errors.New("AWS configuration is required")
 	}
 

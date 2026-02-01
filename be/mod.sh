@@ -26,3 +26,5 @@ go get github.com/aws/aws-sdk-go-v2/service/secretsmanager
 go get github.com/elastic/go-elasticsearch/v9@v9.0.0
 go get gopkg.in/gomail.v2
 go get github.com/nsqio/go-nsq
+go get go.temporal.io/sdk/client
+go get go.temporal.io/sdk/worker

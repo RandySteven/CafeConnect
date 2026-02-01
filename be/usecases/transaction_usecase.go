@@ -80,13 +80,10 @@ func (t *transactionUsecase) PaymentConfirmation(ctx context.Context, request *r
 			}
 		}
 		result = paymentConfirmationResponses
-		break
 	case enums.TransactionFAILED.String():
 		message = `transaction failed`
-		break
 	case enums.TransactionPENDING.String():
 		message = `transaction still on progress`
-		break
 	}
 
 	return result, message, nil

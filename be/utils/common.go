@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/nfnt/resize"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -16,7 +14,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/nfnt/resize"
 )
 
 func ReplaceLastURLID(url string) string {
@@ -260,4 +262,16 @@ func Retry(ctx context.Context, maxRetries int, fn func(ctx context.Context) err
 
 	log.Println("⚠️ Max retries reached")
 	return fmt.Errorf("max retries reached")
+}
+
+func MutexLock(ctx context.Context, fn func(ctx context.Context) error) error {
+	mutex := sync.Mutex{}
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if err := fn(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

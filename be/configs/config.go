@@ -1,5 +1,7 @@
 package configs
 
+import "time"
+
 type Config struct {
 	Config struct {
 		Env string `yaml:"env"`
@@ -115,9 +117,20 @@ type Config struct {
 		} `yaml:"nsq"`
 
 		Temporal struct {
-			Host      string `yaml:"host"`
-			Port      string `yaml:"port"`
-			Namespace string `yaml:"namespace"`
+			Host          string `yaml:"host"`
+			Port          string `yaml:"port"`
+			Namespace     string `yaml:"namespace"`
+			TaskQueue     string `yaml:"taskQueue"`
+			WorkerOptions *struct {
+				MaxConcurrentActivityExecutionSize      int           `yaml:"maxConcurrentActivityExecutionSize"`
+				WorkerActivitiesPerSecond               float64       `yaml:"workerActivitiesPerSecond"`
+				MaxConcurrentLocalActivityExecutionSize int           `yaml:"maxConcurrentLocalActivityExecutionSize"`
+				WorkerLocalActivitiesPerSecond          float64       `yaml:"workerLocalActivitiesPerSecond"`
+				TaskQueueActivitiesPerSecond            float64       `yaml:"taskQueueActivitiesPerSecond"`
+				MaxConcurrentActivityTaskPollers        int           `yaml:"maxConcurrentActivityTaskPollers"`
+				MaxConcurrentWorkflowTaskExecutionSize  int           `yaml:"maxConcurrentWorkflowTaskExecutionSize"`
+				WorkerStopTimeout                       time.Duration `yaml:"workerStopTimeout"`
+			} `yaml:"workerOptions"`
 		} `yaml:"temporal"`
 	} `yaml:"config"`
 }

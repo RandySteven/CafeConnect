@@ -2,23 +2,20 @@ package transactions_usecases
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/RandySteven/CafeConnect/be/entities/models"
-	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 )
 
-func (t *transactionWorkflow) checkFranchise(ctx context.Context, request *requests.CreateTransactionRequest) (err error) {
-	cafe := ctx.Value("cafe").(*models.Cafe)
-
-	franchise, err := t.cafeFranchiseRepository.FindByID(ctx, cafe.ID)
+func (t *transactionWorkflow) checkFranchise(ctx context.Context, franchiseID uint64) (*models.CafeFranchise, error) {
+	franchise, err := t.cafeFranchiseRepository.FindByID(ctx, franchiseID)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get franchise: %w", err)
 	}
 
 	if franchise.ID == 0 {
-		return errors.New("franchise not found")
+		return nil, fmt.Errorf("franchise not found")
 	}
 
-	return nil
+	return franchise, nil
 }

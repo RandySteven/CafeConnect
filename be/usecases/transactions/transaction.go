@@ -1,7 +1,8 @@
 package transactions_usecases
 
 import (
-	"context"
+	"fmt"
+	"time"
 
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
@@ -9,58 +10,48 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func (t *transactionWorkflow) transactionWorkflow(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, err error) {
-	workflowCtx := workflow.WithChildOptions(ctx.(workflow.Context), workflow.ChildWorkflowOptions{
-		WorkflowID: "CheckUser",
-	})
-
-	errCh := make(chan error)
-
-	defer close(errCh)
-
-	workflow.Go(workflowCtx, func(ctx workflow.Context) {
-		checkUserActivity := workflow.ExecuteActivity(workflowCtx, t.checkUser, request)
-		if err := checkUserActivity.Get(workflowCtx, nil); err != nil {
-			errCh <- err
-			return
-		}
-
-		checkCafeActivity := workflow.ExecuteActivity(workflowCtx, t.checkCafe, request)
-		if err := checkCafeActivity.Get(workflowCtx, nil); err != nil {
-			errCh <- err
-			return
-		}
-	})
-
-	select {
-	case err = <-errCh:
-		return nil, err
-	default:
-		checkFranchiseActivity := workflow.ExecuteActivity(workflowCtx, t.checkFranchise, request)
-		if err := checkFranchiseActivity.Get(workflowCtx, nil); err != nil {
-			return nil, err
-		}
-
-		saveTransactionHeaderActivity := workflow.ExecuteActivity(workflowCtx, t.saveTransactionHeader, request)
-		if err := saveTransactionHeaderActivity.Get(workflowCtx, nil); err != nil {
-			return nil, err
-		}
-
-		publishTransactionActivity := workflow.ExecuteActivity(workflowCtx, t.publishTransaction, request)
-		if err := publishTransactionActivity.Get(workflowCtx, nil); err != nil {
-			return nil, err
-		}
-
-		transactionHeader := ctx.Value("transactionHeader").(*models.TransactionHeader)
-
-		result = &responses.TransactionReceiptResponse{
-			ID:              transactionHeader.ID,
-			TransactionCode: transactionHeader.TransactionCode,
-			Status:          transactionHeader.Status,
-			TransactionAt:   transactionHeader.TransactionAt.Local(),
-		}
-		ctx = context.WithValue(ctx, "result", result)
-
-		return result, nil
+func (t *transactionWorkflow) transactionWorkflow(workflowCtx workflow.Context, userID uint64, request *requests.CreateTransactionRequest) (*responses.TransactionReceiptResponse, error) {
+	lao := workflow.LocalActivityOptions{
+		ScheduleToCloseTimeout: 10 * time.Second,
 	}
+	workflowCtx = workflow.WithLocalActivityOptions(workflowCtx, lao)
+
+	// Run checkUser and checkCafe in parallel
+	var user *models.User
+	var cafe *models.Cafe
+
+	userFuture := workflow.ExecuteLocalActivity(workflowCtx, t.checkUser, userID)
+	cafeFuture := workflow.ExecuteLocalActivity(workflowCtx, t.checkCafe, request.CafeID)
+
+	if err := userFuture.Get(workflowCtx, &user); err != nil {
+		return nil, fmt.Errorf("failed to check user: %w", err)
+	}
+
+	if err := cafeFuture.Get(workflowCtx, &cafe); err != nil {
+		return nil, fmt.Errorf("failed to check cafe: %w", err)
+	}
+
+	// Check franchise
+	var franchise *models.CafeFranchise
+	if err := workflow.ExecuteLocalActivity(workflowCtx, t.checkFranchise, cafe.CafeFranchiseID).Get(workflowCtx, &franchise); err != nil {
+		return nil, fmt.Errorf("failed to check franchise: %w", err)
+	}
+
+	// Save transaction header
+	var transactionHeader *models.TransactionHeader
+	if err := workflow.ExecuteLocalActivity(workflowCtx, t.saveTransactionHeader, user.ID, request).Get(workflowCtx, &transactionHeader); err != nil {
+		return nil, fmt.Errorf("failed to save transaction header: %w", err)
+	}
+
+	// Publish transaction
+	if err := workflow.ExecuteLocalActivity(workflowCtx, t.publishTransaction, user, cafe, franchise, transactionHeader, request).Get(workflowCtx, nil); err != nil {
+		return nil, fmt.Errorf("failed to publish transaction: %w", err)
+	}
+
+	return &responses.TransactionReceiptResponse{
+		ID:              transactionHeader.ID,
+		TransactionCode: transactionHeader.TransactionCode,
+		Status:          transactionHeader.Status,
+		TransactionAt:   transactionHeader.TransactionAt.Local(),
+	}, nil
 }

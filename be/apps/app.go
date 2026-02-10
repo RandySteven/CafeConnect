@@ -2,6 +2,8 @@ package apps
 
 import (
 	"context"
+	"log"
+
 	caches2 "github.com/RandySteven/CafeConnect/be/caches"
 	"github.com/RandySteven/CafeConnect/be/configs"
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
@@ -15,10 +17,10 @@ import (
 	mysql_client "github.com/RandySteven/CafeConnect/be/pkg/mysql"
 	nsq_client "github.com/RandySteven/CafeConnect/be/pkg/nsq"
 	redis_client "github.com/RandySteven/CafeConnect/be/pkg/redis"
+	temporal_client "github.com/RandySteven/CafeConnect/be/pkg/temporal"
 	repositories2 "github.com/RandySteven/CafeConnect/be/repositories"
 	topics2 "github.com/RandySteven/CafeConnect/be/topics"
 	usecases2 "github.com/RandySteven/CafeConnect/be/usecases"
-	"log"
 )
 
 type App struct {
@@ -33,6 +35,7 @@ type App struct {
 	Nsq       nsq_client.Nsq
 	Elastic   elastic_client.Elastic
 	Email     email_client.Email
+	Workflow  temporal_client.Workflow
 }
 
 func NewApps(config *configs.Config) (*App, error) {
@@ -93,6 +96,11 @@ func NewApps(config *configs.Config) (*App, error) {
 		return nil, err
 	}
 
+	wf, err := temporal_client.NewTemporalClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
 		MySQL:     mysql,
 		Redis:     redis,
@@ -105,6 +113,7 @@ func NewApps(config *configs.Config) (*App, error) {
 		Nsq:       nsq,
 		Elastic:   es,
 		Email:     em,
+		Workflow:  wf,
 	}, nil
 }
 
@@ -112,7 +121,7 @@ func (a *App) PrepareHttpHandler(ctx context.Context) *apis.APIs {
 	repositories := repositories2.NewRepositories(a.MySQL.Client())
 	caches := caches2.NewCaches(a.Redis.Client())
 	topics := topics2.NewTopics(a.Nsq)
-	usecases := usecases2.NewUsecases(repositories, caches, a.AWS, topics, a.Midtrans)
+	usecases := usecases2.NewUsecases(repositories, caches, a.AWS, topics, a.Midtrans, a.Workflow)
 	return apis.NewAPIs(usecases)
 }
 

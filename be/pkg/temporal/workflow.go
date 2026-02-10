@@ -18,3 +18,23 @@ type (
 		CompletedAt time.Time
 	}
 )
+
+// func (w *WorkflowExecution) GetID() string {
+// 	return w.ID
+// }
+
+// func (w *WorkflowExecution) GetRunID() string {
+// 	return w.RunID
+// }
+
+// func (w *WorkflowExecution) GetActivityName() string {
+// 	return w.ActivityName
+// }
+
+// func (w *WorkflowExecution) GetTransitionActivityName() string {
+// 	return w.TransitionActivityName
+// }
+
+// func (w *WorkflowExecution) GetPreviousWorkflowID() string {
+// 	return w.PreviousWorkflowID
+// }

@@ -2,6 +2,7 @@ package transactions_usecases
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
@@ -9,14 +10,9 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *transactionWorkflow) publishTransaction(ctx context.Context, request *requests.CreateTransactionRequest) (err error) {
-	transactionHeader := ctx.Value("transactionHeader").(*models.TransactionHeader)
-	user := ctx.Value("user").(*models.User)
-	cafe := ctx.Value("cafe").(*models.Cafe)
-	cafeFranchise := ctx.Value("cafeFranchise").(*models.CafeFranchise)
-
+func (t *transactionWorkflow) publishTransaction(ctx context.Context, user *models.User, cafe *models.Cafe, franchise *models.CafeFranchise, transactionHeader *models.TransactionHeader, request *requests.CreateTransactionRequest) error {
 	fname, lname := utils.FirstLastName(user.Name)
-	err = t.transactionTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
+	err := t.transactionTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
 		UserID:            user.ID,
 		FName:             fname,
 		Email:             user.Email,
@@ -24,9 +20,12 @@ func (t *transactionWorkflow) publishTransaction(ctx context.Context, request *r
 		LName:             lname,
 		TransactionCode:   transactionHeader.TransactionCode,
 		CafeID:            cafe.ID,
-		CafeFranchiseName: cafeFranchise.Name,
+		CafeFranchiseName: franchise.Name,
 		CheckoutList:      request.Checkouts,
 	}))
+	if err != nil {
+		return fmt.Errorf("failed to publish transaction: %w", err)
+	}
 
 	return nil
 }

@@ -1,12 +1,13 @@
 package routes
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/RandySteven/CafeConnect/be/enums"
 	"github.com/RandySteven/CafeConnect/be/handlers/apis"
 	"github.com/RandySteven/CafeConnect/be/middlewares"
 	"github.com/gorilla/mux"
-	"log"
-	"net/http"
 )
 
 type (
@@ -73,6 +74,7 @@ func NewEndpointRouters(api *apis.APIs) RouterPrefix {
 	endpoint[enums.TransactionPrefix] = []*Router{
 		Get(`CheckoutTransactionV1`, `/v1/check-out`, api.TransactionApi.CheckoutTransactionV1, enums.AuthenticationMiddleware),
 		Post(`CheckoutTransactionV2`, `/v2/check-out`, api.TransactionApi.CheckoutTransactionV2, enums.AuthenticationMiddleware),
+		Post(`CheckoutTransactionV3`, `/v3/check-out`, api.TransactionApi.CheckoutTransactionV3, enums.AuthenticationMiddleware),
 		Get(`GetTransactionByTransactionCode`, `/{transactionCode}`, api.TransactionApi.GetTransactionByTransactionCode, enums.AuthenticationMiddleware),
 		Get(`GetUserTransactions`, ``, api.TransactionApi.GetUserTransactions, enums.AuthenticationMiddleware),
 		Post(`CheckReceipt`, `/receipt`, api.TransactionApi.CheckReceipt, enums.AuthenticationMiddleware),

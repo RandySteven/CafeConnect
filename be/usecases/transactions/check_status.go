@@ -4,29 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
-	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 )
 
-func (t *transactionWorkflow) checkStatus(ctx context.Context) (err error) {
-	transactionHeader := ctx.Value("transactionHeader").(*models.TransactionHeader)
-
-	transactionHeader, err = t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionHeader.TransactionCode)
+func (t *transactionWorkflow) checkStatus(ctx context.Context, transactionCode string) (*responses.TransactionReceiptResponse, error) {
+	transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionCode)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get transaction header: %w", err)
 	}
-	var midtransTransaction *models.MidtransTransaction
 
-	if transactionHeader.Status == enums.TransactionSUCCESS.String() {
-		midtransTransaction, err = t.midtransTransactionRepository.FindByTransactionCode(ctx, transactionHeader.TransactionCode)
-		if err != nil && !errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
-	} else {
-		return nil
+	if transactionHeader.Status != enums.TransactionSUCCESS.String() {
+		return nil, fmt.Errorf("transaction is not successful, status: %s", transactionHeader.Status)
+	}
+
+	midtransTransaction, err := t.midtransTransactionRepository.FindByTransactionCode(ctx, transactionHeader.TransactionCode)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, fmt.Errorf("failed to get midtrans transaction: %w", err)
 	}
 
 	result := &responses.TransactionReceiptResponse{
@@ -39,7 +36,6 @@ func (t *transactionWorkflow) checkStatus(ctx context.Context) (err error) {
 			RedirectURL: midtransTransaction.RedirectURL,
 		},
 	}
-	ctx = context.WithValue(ctx, "result", result)
 
-	return nil
+	return result, nil
 }

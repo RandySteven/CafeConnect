@@ -2,6 +2,7 @@ package transactions_usecases
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/RandySteven/CafeConnect/be/entities/models"
@@ -10,20 +11,18 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *transactionWorkflow) saveTransactionHeader(ctx context.Context, request *requests.CreateTransactionRequest) (err error) {
-	user := ctx.Value("user").(*models.User)
+func (t *transactionWorkflow) saveTransactionHeader(ctx context.Context, userID uint64, request *requests.CreateTransactionRequest) (*models.TransactionHeader, error) {
 	transactionHeader := &models.TransactionHeader{
-		UserID:          user.ID,
+		UserID:          userID,
 		TransactionCode: utils.GenerateCode(24),
 		CafeID:          request.CafeID,
 		Status:          enums.TransactionPENDING.String(),
 		TransactionAt:   time.Now(),
 	}
-	transactionHeader, err = t.transactionHeaderRepository.Save(ctx, transactionHeader)
+	transactionHeader, err := t.transactionHeaderRepository.Save(ctx, transactionHeader)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to save transaction header: %w", err)
 	}
-	ctx = context.WithValue(ctx, "transactionHeader", transactionHeader)
 
-	return nil
+	return transactionHeader, nil
 }

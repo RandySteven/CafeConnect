@@ -46,6 +46,12 @@ func main() {
 	router := routes.NewEndpointRouters(apis)
 	routes.InitRouter(router, r)
 
+	if err = app.Workflow.Start(); err != nil {
+		log.Fatalln("Failed to start Temporal worker:", err)
+		return
+	}
+	defer app.Workflow.Stop()
+
 	go config.Run(r)
 
 	quit := make(chan os.Signal, 1)

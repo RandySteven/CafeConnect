@@ -2,23 +2,20 @@ package transactions_usecases
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
-	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
-	"github.com/RandySteven/CafeConnect/be/enums"
+	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (t *transactionWorkflow) checkUser(ctx context.Context, request *requests.CreateTransactionRequest) (err error) {
-	userId := ctx.Value(enums.UserID).(uint64)
-	user, err := t.userRepository.FindByID(ctx, userId)
+func (t *transactionWorkflow) checkUser(ctx context.Context, userID uint64) (*models.User, error) {
+	user, err := t.userRepository.FindByID(ctx, userID)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
 	if user.ID == 0 {
-		return errors.New("user not found")
+		return nil, fmt.Errorf("user not found")
 	}
 
-	ctx = context.WithValue(ctx, "user", user)
-	return nil
+	return user, nil
 }

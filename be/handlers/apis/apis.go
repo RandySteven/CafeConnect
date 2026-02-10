@@ -27,6 +27,6 @@ func NewAPIs(usecases *usecases.Usecases) *APIs {
 		ReviewApi:      newReviewApi(usecases.ReviewUsecase),
 		RoleApi:        newRoleApi(usecases.RoleUsecase),
 		CartApi:        newCartApi(usecases.CartUsecase),
-		TransactionApi: newTransactionApi(usecases.TransactionUsecase),
+		TransactionApi: newTransactionApi(usecases.TransactionUsecase, usecases.TransactionWorkflow),
 	}
 }

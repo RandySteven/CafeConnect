@@ -2,22 +2,20 @@ package transactions_usecases
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
-	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
+	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (t *transactionWorkflow) checkCafe(ctx context.Context, request *requests.CreateTransactionRequest) (err error) {
-	cafe, err := t.cafeRepository.FindByID(ctx, request.CafeID)
+func (t *transactionWorkflow) checkCafe(ctx context.Context, cafeID uint64) (*models.Cafe, error) {
+	cafe, err := t.cafeRepository.FindByID(ctx, cafeID)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to get cafe: %w", err)
 	}
 
 	if cafe.ID == 0 {
-		return errors.New("cafe not found")
+		return nil, fmt.Errorf("cafe not found")
 	}
 
-	ctx = context.WithValue(ctx, "cafe", cafe)
-
-	return nil
+	return cafe, nil
 }

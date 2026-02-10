@@ -2,6 +2,7 @@ package temporal_client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/RandySteven/CafeConnect/be/configs"
@@ -11,10 +12,11 @@ import (
 )
 
 type (
-	Temporal interface {
+	Workflow interface {
 		RegisterWorkflow(workflow interface{})
 		RegisterActivity(activity interface{}, activityName string)
-		StartWorkflow(ctx context.Context, workflowID string, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
+		ExecuteWorkflow(ctx context.Context, workflowID string, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)
+		GetWorkflowRun(ctx context.Context, workflowID string, runID string) (*client.WorkflowRun, error)
 	}
 
 	temporalClient struct {
@@ -22,6 +24,16 @@ type (
 		client client.Client
 	}
 )
+
+var _ Workflow = &temporalClient{}
+
+func (t *temporalClient) GetWorkflowRun(ctx context.Context, workflowID string, runID string) (*client.WorkflowRun, error) {
+	workflowRun := t.client.GetWorkflow(ctx, workflowID, runID)
+	if workflowRun.GetID() == "" {
+		return nil, errors.New("workflow run not found")
+	}
+	return &workflowRun, nil
+}
 
 func (t *temporalClient) RegisterActivity(activityFn interface{}, activityName string) {
 	t.worker.RegisterActivityWithOptions(activityFn, activity.RegisterOptions{
@@ -33,7 +45,7 @@ func (t *temporalClient) RegisterWorkflow(workflow interface{}) {
 	t.worker.RegisterWorkflow(workflow)
 }
 
-func (t *temporalClient) StartWorkflow(ctx context.Context, workflowID string, workflow interface{}, args ...interface{}) (client.WorkflowRun, error) {
+func (t *temporalClient) ExecuteWorkflow(ctx context.Context, workflowID string, workflow interface{}, args ...interface{}) (client.WorkflowRun, error) {
 	return t.client.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 		ID: workflowID,
 	}, workflow, args...)

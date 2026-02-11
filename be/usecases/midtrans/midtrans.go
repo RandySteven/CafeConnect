@@ -10,7 +10,12 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-func (m *midtransWorkflow) midtransTransaction(workflowCtx workflow.Context, message *messages.TransactionMidtransMessage) (result *midtrans_client.MidtransResponse, err error) {
+func (m *midtransWorkflow) midtransTransaction(workflowCtx workflow.Context) (*midtrans_client.MidtransResponse, error) {
+	// Wait for signal from the handler with the transaction data
+	var message messages.TransactionMidtransMessage
+	signalChan := workflow.GetSignalChannel(workflowCtx, "MidtransTransaction")
+	signalChan.Receive(workflowCtx, &message)
+
 	lao := workflow.LocalActivityOptions{
 		ScheduleToCloseTimeout: 10 * time.Second,
 	}

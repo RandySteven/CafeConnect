@@ -9,6 +9,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/repositories"
 	"github.com/RandySteven/CafeConnect/be/topics"
 	auto_transfer_usecases "github.com/RandySteven/CafeConnect/be/usecases/auto"
+	midtrans_usecases "github.com/RandySteven/CafeConnect/be/usecases/midtrans"
 	transactions_usecases "github.com/RandySteven/CafeConnect/be/usecases/transactions"
 )
 
@@ -22,6 +23,7 @@ type Usecases struct {
 	RoleUsecase          usecase_interfaces.RoleUsecase
 	TransactionUsecase   usecase_interfaces.TransactionUsecase
 	TransactionWorkflow  transactions_usecases.TransactionWorkflow
+	MidtransWorkflow     midtrans_usecases.MidtransWorkflow
 	AutoTransferWorkflow auto_transfer_usecases.AutoTransferWorkflow
 }
 
@@ -42,6 +44,7 @@ func NewUsecases(repo *repositories.Repositories,
 		CartUsecase:          newCartUsecase(repo.CafeRepository, repo.CafeProductRepository, repo.CartRepository, repo.ProductRepository, repo.UserRepository, repo.CafeFranchiseRepository, cache.ProductCache, repo.Transaction),
 		TransactionUsecase:   newTransactionUsecase(repo.TransactionHeaderRepository, repo.TransactionDetailRepository, repo.AddressRepository, repo.CartRepository, repo.UserRepository, repo.CafeRepository, repo.CafeFranchiseRepository, repo.ProductRepository, repo.MidtransTransactionRepository, repo.CafeProductRepository, repo.Transaction, cache.TransactionCache, cache.ProductCache, cache.CheckoutCache, topics.TransactionTopic, midtrans),
 		TransactionWorkflow:  transactions_usecases.NewTransactionWorkflow(repo.TransactionHeaderRepository, repo.TransactionDetailRepository, repo.AddressRepository, repo.CartRepository, repo.UserRepository, repo.CafeRepository, repo.CafeFranchiseRepository, repo.ProductRepository, repo.CafeProductRepository, repo.Transaction, topics.TransactionTopic, repo.MidtransTransactionRepository, midtrans, cache.TransactionCache, cache.ProductCache, cache.CheckoutCache, workflow),
+		MidtransWorkflow:     midtrans_usecases.NewMidtransWorkflow(workflow, repo.TransactionHeaderRepository, repo.MidtransTransactionRepository, repo.TransactionDetailRepository, repo.CafeProductRepository, repo.ProductRepository, midtrans),
 		AutoTransferWorkflow: auto_transfer_usecases.NewAutoTransferWorkflow(workflow, repo.TransactionHeaderRepository, repo.TransactionDetailRepository, repo.AddressRepository, repo.CartRepository, repo.UserRepository, repo.CafeRepository, repo.CafeFranchiseRepository, repo.ProductRepository, repo.CafeProductRepository, repo.Transaction, topics.TransactionTopic, repo.MidtransTransactionRepository, midtrans, cache.TransactionCache, cache.ProductCache, cache.CheckoutCache),
 	}
 }

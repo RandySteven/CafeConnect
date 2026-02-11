@@ -7,10 +7,10 @@ import (
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 )
 
-func (m *midtransWorkflow) createMidtransTransaction(ctx context.Context, request *midtrans_client.MidtransRequest) error {
+func (m *midtransWorkflow) createMidtransTransaction(ctx context.Context, request *midtrans_client.MidtransRequest) (*midtrans_client.MidtransResponse, error) {
 	midtransResponse, err := m.midtrans.CreateTransaction(ctx, request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = m.midtransTransactionRepository.Save(ctx, &models.MidtransTransaction{
@@ -19,8 +19,8 @@ func (m *midtransWorkflow) createMidtransTransaction(ctx context.Context, reques
 		Token:           midtransResponse.Token,
 		RedirectURL:     midtransResponse.RedirectURL})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return midtransResponse, nil
 }

@@ -7,10 +7,24 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
+	"github.com/RandySteven/CafeConnect/be/utils"
 	"go.temporal.io/sdk/workflow"
 )
 
-func (t *transactionWorkflow) transactionWorkflow(workflowCtx workflow.Context, userID uint64, request *requests.CreateTransactionRequest) (*responses.TransactionReceiptResponse, error) {
+// transactionResult is the internal result of the transaction workflow.
+// It carries both the receipt and the data needed to signal the Midtrans workflow.
+type transactionResult struct {
+	Receipt           *responses.TransactionReceiptResponse `json:"receipt"`
+	UserID            uint64                                `json:"user_id"`
+	FName             string                                `json:"f_name"`
+	LName             string                                `json:"l_name"`
+	Email             string                                `json:"email"`
+	Phone             string                                `json:"phone"`
+	CafeID            uint64                                `json:"cafe_id"`
+	CafeFranchiseName string                                `json:"cafe_franchise_name"`
+}
+
+func (t *transactionWorkflow) transactionWorkflow(workflowCtx workflow.Context, userID uint64, request *requests.CreateTransactionRequest) (*transactionResult, error) {
 	lao := workflow.LocalActivityOptions{
 		ScheduleToCloseTimeout: 10 * time.Second,
 	}
@@ -43,15 +57,21 @@ func (t *transactionWorkflow) transactionWorkflow(workflowCtx workflow.Context, 
 		return nil, fmt.Errorf("failed to save transaction header: %w", err)
 	}
 
-	// Publish transaction
-	if err := workflow.ExecuteLocalActivity(workflowCtx, t.publishTransaction, user, cafe, franchise, transactionHeader, request).Get(workflowCtx, nil); err != nil {
-		return nil, fmt.Errorf("failed to publish transaction: %w", err)
-	}
+	fname, lname := utils.FirstLastName(user.Name)
 
-	return &responses.TransactionReceiptResponse{
-		ID:              transactionHeader.ID,
-		TransactionCode: transactionHeader.TransactionCode,
-		Status:          transactionHeader.Status,
-		TransactionAt:   transactionHeader.TransactionAt.Local(),
+	return &transactionResult{
+		Receipt: &responses.TransactionReceiptResponse{
+			ID:              transactionHeader.ID,
+			TransactionCode: transactionHeader.TransactionCode,
+			Status:          transactionHeader.Status,
+			TransactionAt:   transactionHeader.TransactionAt.Local(),
+		},
+		UserID:            user.ID,
+		FName:             fname,
+		LName:             lname,
+		Email:             user.Email,
+		Phone:             user.PhoneNumber,
+		CafeID:            cafe.ID,
+		CafeFranchiseName: franchise.Name,
 	}, nil
 }

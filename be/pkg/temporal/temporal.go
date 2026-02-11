@@ -79,6 +79,9 @@ type (
 		// RegisterActivity registers an activity definition with the engine.
 		RegisterActivity(definition ActivityDefinition)
 
+		// GetWorkflow returns a workflow execution.
+		GetWorkflowInfo(workflowCtx workflow.Context) (*workflow.Info, error)
+
 		// StartWorkflow starts a new workflow execution and returns the run ID.
 		StartWorkflow(ctx context.Context, opts StartWorkflowOptions, workflowFn interface{}, args ...interface{}) (client.WorkflowRun, error)
 
@@ -175,6 +178,11 @@ func (t *temporalClient) Stop() {
 	if t.worker != nil {
 		t.worker.Stop()
 	}
+}
+
+func (t *temporalClient) GetWorkflowInfo(workflowCtx workflow.Context) (*workflow.Info, error) {
+	info := workflow.GetInfo(workflowCtx)
+	return info, nil
 }
 
 func NewTemporalClient(config *configs.Config) (*temporalClient, error) {

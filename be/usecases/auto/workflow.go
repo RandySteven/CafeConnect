@@ -16,13 +16,13 @@ import (
 )
 
 const (
-	checkUserActivity             = "AutoTransferCheckUser"
-	checkCafeActivity             = "AutoTransferCheckCafe"
-	checkFranchiseActivity        = "AutoTransferCheckFranchise"
-	saveTransactionHeaderActivity = "AutoTransferSaveTransactionHeader"
-	publishTransactionActivity    = "AutoTransferPublishTransaction"
-	stockDeductionActivity        = "AutoTransferStockDeduction"
-	saveTransactionDetailActivity = "AutoTransferSaveTransactionDetail"
+	autoTransferCheckUserActivity             = "AutoTransferCheckUser"
+	autoTransferCheckCafeActivity             = "AutoTransferCheckCafe"
+	autoTransferCheckFranchiseActivity        = "AutoTransferCheckFranchise"
+	autoTransferSaveTransactionHeaderActivity = "AutoTransferSaveTransactionHeader"
+	autoTransferPublishTransactionActivity    = "AutoTransferPublishTransaction"
+	autoTransferStockDeductionActivity        = "AutoTransferStockDeduction"
+	autoTransferSaveTransactionDetailActivity = "AutoTransferSaveTransactionDetail"
 )
 
 type (
@@ -53,31 +53,31 @@ type (
 
 func (a *autoTransferWorkflow) registerWorkflowAndActivities() {
 	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: checkUserActivity,
+		Name: autoTransferCheckUserActivity,
 		Fn:   a.checkUser,
 	})
 	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: checkCafeActivity,
+		Name: autoTransferCheckCafeActivity,
 		Fn:   a.checkCafe,
 	})
 	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: checkFranchiseActivity,
+		Name: autoTransferCheckFranchiseActivity,
 		Fn:   a.checkFranchise,
 	})
 	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: saveTransactionHeaderActivity,
+		Name: autoTransferSaveTransactionHeaderActivity,
 		Fn:   a.saveTransactionHeader,
 	})
 	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: publishTransactionActivity,
+		Name: autoTransferPublishTransactionActivity,
 		Fn:   a.publishTransaction,
 	})
 	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: stockDeductionActivity,
+		Name: autoTransferStockDeductionActivity,
 		Fn:   a.stockDeduction,
 	})
 	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: saveTransactionDetailActivity,
+		Name: autoTransferSaveTransactionDetailActivity,
 		Fn:   a.saveTransactionDetail,
 	})
 

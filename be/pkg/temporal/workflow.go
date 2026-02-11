@@ -13,7 +13,7 @@ type (
 		GetRunID() string
 
 		// ExecuteLocalActivity executes a local activity.
-		ExecuteLocalActivity(ctx context.Context, activityFn interface{}, args ...interface{}) (error)
+		ExecuteLocalActivity(ctx context.Context, activityFn interface{}, args ...interface{}) error
 
 		// GetWorkflowResult blocks until the workflow completes and returns the result.
 		GetWorkflowResult(ctx context.Context, workflowID string, runID string, result interface{}) error
@@ -31,6 +31,11 @@ type (
 		CompletedAt time.Time
 	}
 )
+
+// func (t *temporalClient) GetWorkflowRunID(workflowID string, runID string) string {
+// 	run := t.client.GetWorkflow(context.Background(), workflowID, runID)
+// 	return run.GetRunID()
+// }
 
 // func (w *WorkflowExecution) GetID() string {
 // 	return w.ID

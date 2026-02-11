@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/RandySteven/CafeConnect/be/apperror"
+	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
@@ -14,6 +15,7 @@ import (
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	temporal_client "github.com/RandySteven/CafeConnect/be/pkg/temporal"
+	"github.com/google/uuid"
 )
 
 const (
@@ -89,24 +91,60 @@ func (t *transactionWorkflow) CheckoutTransactionV3(ctx context.Context, request
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user id from context`, fmt.Errorf("user id not found in context"))
 	}
 
-	workflowRun, err := t.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
-		WorkflowID: "CreateTransaction",
-		TaskQueue:  "transaction",
+	correlationID := uuid.NewString()
+
+	// 1. Start Transaction workflow and wait for it to complete
+	txWorkflowID := fmt.Sprintf("CreateTransaction-%s", correlationID)
+	txRun, err := t.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+		WorkflowID: txWorkflowID,
 	}, t.transactionWorkflow, userID, request)
 	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start workflow`, err)
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start transaction workflow`, err)
 	}
-	log.Println("Workflow started", workflowRun.GetID())
+	log.Println("Transaction workflow started:", txRun.GetID())
 
-	// Use background context to avoid HTTP request timeout cancelling the wait
-	err = t.workflow.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
+	var txResult transactionResult
+	err = t.workflow.GetWorkflowResult(context.Background(), txRun.GetID(), txRun.GetRunID(), &txResult)
 	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get workflow result`, err)
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction workflow result`, err)
 	}
 
-	if result == nil {
-		return nil, apperror.NewCustomError(apperror.ErrNotFound, `result not found`, nil)
+	// 2. Start Midtrans workflow (it waits for signal)
+	midtransWorkflowID := fmt.Sprintf("MidtransTransaction-%s", correlationID)
+	midtransRun, err := t.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+		WorkflowID: midtransWorkflowID,
+	}, "MidtransTransaction")
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start midtrans workflow`, err)
 	}
+	log.Println("Midtrans workflow started:", midtransWorkflowID)
+
+	// 3. Signal the Midtrans workflow with the transaction data
+	err = t.workflow.SignalWorkflow(ctx, midtransRun.GetID(), midtransRun.GetRunID(), "MidtransTransaction", &messages.TransactionMidtransMessage{
+		UserID:            txResult.UserID,
+		FName:             txResult.FName,
+		LName:             txResult.LName,
+		Email:             txResult.Email,
+		Phone:             txResult.Phone,
+		TransactionCode:   txResult.Receipt.TransactionCode,
+		CafeID:            txResult.CafeID,
+		CafeFranchiseName: txResult.CafeFranchiseName,
+		CheckoutList:      request.Checkouts,
+	})
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to signal midtrans workflow`, err)
+	}
+
+	// 4. Wait for Midtrans workflow to complete and get the result
+	var midtransResponse *midtrans_client.MidtransResponse
+	err = t.workflow.GetWorkflowResult(context.Background(), midtransRun.GetID(), midtransRun.GetRunID(), &midtransResponse)
+	if err != nil {
+		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get midtrans workflow result`, err)
+	}
+
+	// 5. Attach Midtrans response to receipt
+	result = txResult.Receipt
+	result.MidtransResponse = midtransResponse
 
 	return result, nil
 }

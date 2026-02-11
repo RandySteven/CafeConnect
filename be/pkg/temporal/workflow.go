@@ -1,11 +1,24 @@
 package temporal_client
 
 import (
+	"context"
 	"time"
 )
 
 type (
-	WorkflowExecution struct {
+	WorkflowExecution interface {
+		// GetID returns the workflow ID.
+		GetID() string
+		// GetRunID returns the run ID.
+		GetRunID() string
+
+		// ExecuteLocalActivity executes a local activity.
+		ExecuteLocalActivity(ctx context.Context, activityFn interface{}, args ...interface{}) (error)
+
+		// GetWorkflowResult blocks until the workflow completes and returns the result.
+		GetWorkflowResult(ctx context.Context, workflowID string, runID string, result interface{}) error
+	}
+	WorkflowExecutionInfo struct {
 		ID                     uint64
 		WorkflowID             string
 		RunID                  string

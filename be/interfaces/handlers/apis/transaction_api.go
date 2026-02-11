@@ -6,6 +6,7 @@ type TransactionApi interface {
 	CheckoutTransactionV1(w http.ResponseWriter, r *http.Request)
 	CheckoutTransactionV2(w http.ResponseWriter, r *http.Request)
 	CheckoutTransactionV3(w http.ResponseWriter, r *http.Request)
+	CheckoutTransactionV4(w http.ResponseWriter, r *http.Request)
 	GetUserTransactions(w http.ResponseWriter, r *http.Request)
 	GetTransactionByTransactionCode(w http.ResponseWriter, r *http.Request)
 	CheckReceipt(w http.ResponseWriter, r *http.Request)

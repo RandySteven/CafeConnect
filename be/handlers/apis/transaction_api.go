@@ -8,6 +8,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/enums"
 	api_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/handlers/apis"
 	usecase_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/usecases"
+	auto_transfer_usecases "github.com/RandySteven/CafeConnect/be/usecases/auto"
 	transactions_usecases "github.com/RandySteven/CafeConnect/be/usecases/transactions"
 	"github.com/RandySteven/CafeConnect/be/utils"
 	"github.com/google/uuid"
@@ -15,8 +16,9 @@ import (
 )
 
 type TransactionApi struct {
-	usecase  usecase_interfaces.TransactionUsecase
-	workflow transactions_usecases.TransactionWorkflow
+	usecase      usecase_interfaces.TransactionUsecase
+	workflow     transactions_usecases.TransactionWorkflow
+	autoWorkflow auto_transfer_usecases.AutoTransferWorkflow
 }
 
 func (t *TransactionApi) CheckReceipt(w http.ResponseWriter, r *http.Request) {
@@ -153,11 +155,36 @@ func (t *TransactionApi) CheckoutTransactionV3(w http.ResponseWriter, r *http.Re
 	utils.ResponseHandler(w, http.StatusOK, `success create transaction`, &dataKey, result, nil)
 }
 
+func (t *TransactionApi) CheckoutTransactionV4(w http.ResponseWriter, r *http.Request) {
+	var (
+		rID     = uuid.NewString()
+		ctx     = context.WithValue(r.Context(), enums.RequestID, rID)
+		request = &requests.CreateTransactionRequest{}
+		dataKey = `result`
+	)
+
+	if err := utils.BindJSON(r, &request); err != nil {
+		utils.ResponseHandler(w, http.StatusBadRequest, `failed to proceed request`, nil, nil, err)
+		return
+	}
+
+	result, customErr := t.autoWorkflow.AutoTransfer(ctx, request)
+	if customErr != nil {
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		return
+	}
+
+	utils.ResponseHandler(w, http.StatusOK, `success create transaction`, &dataKey, result, nil)
+}
+
 var _ api_interfaces.TransactionApi = &TransactionApi{}
 
-func newTransactionApi(usecase usecase_interfaces.TransactionUsecase, workflow transactions_usecases.TransactionWorkflow) *TransactionApi {
+func newTransactionApi(usecase usecase_interfaces.TransactionUsecase,
+	workflow transactions_usecases.TransactionWorkflow,
+	autoWorkflow auto_transfer_usecases.AutoTransferWorkflow) *TransactionApi {
 	return &TransactionApi{
-		usecase: usecase,
+		usecase:  usecase,
 		workflow: workflow,
+		autoWorkflow: autoWorkflow,
 	}
 }

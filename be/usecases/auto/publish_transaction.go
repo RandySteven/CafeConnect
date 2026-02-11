@@ -1,4 +1,4 @@
-package transactions_usecases
+package auto_transfer_usecases
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *transactionWorkflow) publishTransaction(ctx context.Context, user *models.User, cafe *models.Cafe, franchise *models.CafeFranchise, transactionHeader *models.TransactionHeader, request *requests.CreateTransactionRequest) error {
+func (t *autoTransferWorkflow) publishTransaction(ctx context.Context, user *models.User, cafe *models.Cafe, franchise *models.CafeFranchise, transactionHeader *models.TransactionHeader, request *requests.CreateTransactionRequest) error {
 	fname, lname := utils.FirstLastName(user.Name)
 	err := t.transactionTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
 		UserID:            user.ID,

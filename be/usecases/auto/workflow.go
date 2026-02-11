@@ -1,9 +1,8 @@
-package transactions_usecases
+package auto_transfer_usecases
 
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
@@ -17,21 +16,21 @@ import (
 )
 
 const (
-	checkUserActivity             = "CheckUser"
-	checkCafeActivity             = "CheckCafe"
-	checkFranchiseActivity        = "CheckFranchise"
-	saveTransactionHeaderActivity = "SaveTransactionHeader"
-	publishTransactionActivity    = "PublishTransaction"
-	checkStatusActivity           = "CheckStatus"
+	checkUserActivity             = "AutoTransferCheckUser"
+	checkCafeActivity             = "AutoTransferCheckCafe"
+	checkFranchiseActivity        = "AutoTransferCheckFranchise"
+	saveTransactionHeaderActivity = "AutoTransferSaveTransactionHeader"
+	publishTransactionActivity    = "AutoTransferPublishTransaction"
+	stockDeductionActivity        = "AutoTransferStockDeduction"
+	saveTransactionDetailActivity = "AutoTransferSaveTransactionDetail"
 )
 
 type (
-	TransactionWorkflow interface {
-		CheckoutTransactionV3(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError)
-		PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (result []*responses.PaymentConfirmationResponse, customErr *apperror.CustomError)
+	AutoTransferWorkflow interface {
+		AutoTransfer(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError)
 	}
 
-	transactionWorkflow struct {
+	autoTransferWorkflow struct {
 		workflow                      temporal_client.Workflow
 		transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 		transactionDetailRepository   repository_interfaces.TransactionDetailRepository
@@ -52,54 +51,57 @@ type (
 	}
 )
 
-func (t *transactionWorkflow) registerWorkflowAndActivities() {
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+func (a *autoTransferWorkflow) registerWorkflowAndActivities() {
+	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkUserActivity,
-		Fn:   t.checkUser,
+		Fn:   a.checkUser,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkCafeActivity,
-		Fn:   t.checkCafe,
+		Fn:   a.checkCafe,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkFranchiseActivity,
-		Fn:   t.checkFranchise,
+		Fn:   a.checkFranchise,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: saveTransactionHeaderActivity,
-		Fn:   t.saveTransactionHeader,
+		Fn:   a.saveTransactionHeader,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: publishTransactionActivity,
-		Fn:   t.publishTransaction,
+		Fn:   a.publishTransaction,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: checkStatusActivity,
-		Fn:   t.checkStatus,
+	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+		Name: stockDeductionActivity,
+		Fn:   a.stockDeduction,
 	})
-	t.workflow.RegisterWorkflow(temporal_client.WorkflowDefinition{
-		Name: "CreateTransaction",
-		Fn:   t.transactionWorkflow,
+	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+		Name: saveTransactionDetailActivity,
+		Fn:   a.saveTransactionDetail,
+	})
+
+	a.workflow.RegisterWorkflow(temporal_client.WorkflowDefinition{
+		Name: "AutoTransfer",
+		Fn:   a.autoTransferWorkflow,
 	})
 }
 
-func (t *transactionWorkflow) CheckoutTransactionV3(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
+// AutoTransfer implements [AutoTransferWorkflow].
+func (a *autoTransferWorkflow) AutoTransfer(ctx context.Context, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, customErr *apperror.CustomError) {
 	userID, ok := ctx.Value(enums.UserID).(uint64)
 	if !ok {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user id from context`, fmt.Errorf("user id not found in context"))
 	}
 
-	workflowRun, err := t.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
-		WorkflowID: "CreateTransaction",
-		TaskQueue:  "transaction",
-	}, t.transactionWorkflow, userID, request)
+	workflowRun, err := a.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+		WorkflowID: "AutoTransfer",
+	}, a.autoTransferWorkflow, userID, request)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start workflow`, err)
 	}
-	log.Println("Workflow started", workflowRun.GetID())
 
-	// Use background context to avoid HTTP request timeout cancelling the wait
-	err = t.workflow.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
+	err = a.workflow.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get workflow result`, err)
 	}
@@ -111,42 +113,8 @@ func (t *transactionWorkflow) CheckoutTransactionV3(ctx context.Context, request
 	return result, nil
 }
 
-func (t *transactionWorkflow) PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (result []*responses.PaymentConfirmationResponse, customErr *apperror.CustomError) {
-	transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, request.TransactionCode)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction header`, err)
-	}
-
-	transactionDetails, err := t.transactionDetailRepository.FindByTransactionId(ctx, transactionHeader.ID)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction details`, err)
-	}
-
-	paymentConfirmationResponses := make([]*responses.PaymentConfirmationResponse, len(transactionDetails))
-	for index, detail := range transactionDetails {
-		cafeProduct, err := t.cafeProductRepository.FindByID(ctx, detail.CafeProductID)
-		if err != nil {
-			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get cafe product`, err)
-		}
-		product, err := t.productRepository.FindByID(ctx, cafeProduct.ProductID)
-		if err != nil {
-			return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get product`, err)
-		}
-		paymentConfirmationResponses[index] = &responses.PaymentConfirmationResponse{
-			CafeProductID:   cafeProduct.ID,
-			ProductName:     product.Name,
-			ProductPerPrice: cafeProduct.Price,
-			ProductPrice:    cafeProduct.Price * detail.Qty,
-			ProductImage:    product.PhotoURL,
-			CurrentStock:    cafeProduct.Stock,
-			PrevStock:       cafeProduct.Stock + detail.Qty,
-			Qty:             detail.Qty,
-		}
-	}
-	return paymentConfirmationResponses, nil
-}
-
-func NewTransactionWorkflow(
+func NewAutoTransferWorkflow(
+	workflow temporal_client.Workflow,
 	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository,
 	transactionDetailRepository repository_interfaces.TransactionDetailRepository,
 	addressRepository repository_interfaces.AddressRepository,
@@ -163,9 +131,9 @@ func NewTransactionWorkflow(
 	transactionCache cache_interfaces.TransactionCache,
 	productCache cache_interfaces.ProductCache,
 	checkoutCache cache_interfaces.CheckoutCache,
-	workflow temporal_client.Workflow,
-) TransactionWorkflow {
-	tw := &transactionWorkflow{
+) AutoTransferWorkflow {
+	atw := &autoTransferWorkflow{
+		workflow:                      workflow,
 		transactionHeaderRepository:   transactionHeaderRepository,
 		transactionDetailRepository:   transactionDetailRepository,
 		addressRepository:             addressRepository,
@@ -182,8 +150,7 @@ func NewTransactionWorkflow(
 		transactionCache:              transactionCache,
 		productCache:                  productCache,
 		checkoutCache:                 checkoutCache,
-		workflow:                      workflow,
 	}
-	tw.registerWorkflowAndActivities()
-	return tw
+	atw.registerWorkflowAndActivities()
+	return atw
 }

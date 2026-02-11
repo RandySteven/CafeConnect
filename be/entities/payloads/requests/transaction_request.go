@@ -7,8 +7,9 @@ type (
 	}
 
 	CreateTransactionRequest struct {
-		CafeID    uint64          `json:"cafe_id"`
-		Checkouts []*CheckoutList `json:"checkouts"`
+		IdempotencyKey string          `json:"idempotency_key"`
+		CafeID         uint64          `json:"cafe_id"`
+		Checkouts      []*CheckoutList `json:"checkouts"`
 	}
 
 	ReceiptRequest struct {

@@ -72,13 +72,6 @@ type (
 		Fn   interface{}
 	}
 
-	WorkflowRun interface {
-		// GetID returns the workflow ID.
-		GetID() string
-		// GetRunID returns the run ID.
-		GetRunID() string
-	}
-
 	Workflow interface {
 		// RegisterWorkflow registers a workflow definition with the engine.
 		RegisterWorkflow(definition WorkflowDefinition)
@@ -90,7 +83,7 @@ type (
 		StartWorkflow(ctx context.Context, opts StartWorkflowOptions, workflowFn interface{}, args ...interface{}) (client.WorkflowRun, error)
 
 		// SignalWorkflow sends a signal to a running workflow.
-		SignalWorkflow(ctx context.Context, workflowID string, signalName string, arg interface{}) error
+		SignalWorkflow(ctx context.Context, workflowID string, runID string, signalName string, arg interface{}) error
 
 		// QueryWorkflow queries a running workflow for its current state.
 		QueryWorkflow(ctx context.Context, workflowID string, queryType string, args ...interface{}) (interface{}, error)
@@ -147,8 +140,8 @@ func (t *temporalClient) StartWorkflow(ctx context.Context, opts StartWorkflowOp
 	return t.client.ExecuteWorkflow(ctx, startOpts, workflowFn, args...)
 }
 
-func (t *temporalClient) SignalWorkflow(ctx context.Context, workflowID string, signalName string, arg interface{}) error {
-	return t.client.SignalWorkflow(ctx, workflowID, "", signalName, arg)
+func (t *temporalClient) SignalWorkflow(ctx context.Context, workflowID string, runID string, signalName string, arg interface{}) error {
+	return t.client.SignalWorkflow(ctx, workflowID, runID, signalName, arg)
 }
 
 func (t *temporalClient) QueryWorkflow(ctx context.Context, workflowID string, queryType string, args ...interface{}) (interface{}, error) {

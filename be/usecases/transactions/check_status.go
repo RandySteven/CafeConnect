@@ -11,7 +11,7 @@ import (
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 )
 
-func (t *transactionWorkflow) checkStatus(ctx context.Context, transactionCode string) (*responses.TransactionReceiptResponse, error) {
+func (t *transactionWorkflow) transactionCheckStatus(ctx context.Context, transactionCode string) (*responses.TransactionReceiptResponse, error) {
 	transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transaction header: %w", err)

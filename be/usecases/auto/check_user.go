@@ -18,4 +18,5 @@ func (t *autoTransferWorkflow) checkUser(ctx context.Context, userID uint64) (*m
 	}
 
 	return user, nil
+	// return nil, errors.New("mock error")
 }

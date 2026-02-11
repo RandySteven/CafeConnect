@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/RandySteven/CafeConnect/be/apperror"
-	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	"github.com/RandySteven/CafeConnect/be/enums"
@@ -19,12 +18,12 @@ import (
 )
 
 const (
-	checkUserActivity             = "CheckUser"
-	checkCafeActivity             = "CheckCafe"
-	checkFranchiseActivity        = "CheckFranchise"
-	saveTransactionHeaderActivity = "SaveTransactionHeader"
-	publishTransactionActivity    = "PublishTransaction"
-	checkStatusActivity           = "CheckStatus"
+	checkUserActivity             = "TransactionCheckUser"
+	checkCafeActivity             = "TransactionCheckCafe"
+	checkFranchiseActivity        = "TransactionCheckFranchise"
+	saveTransactionHeaderActivity = "TransactionSaveTransactionHeader"
+	publishTransactionActivity    = "TransactionPublishTransaction"
+	checkStatusActivity           = "TransactionCheckStatus"
 )
 
 type (
@@ -57,19 +56,19 @@ type (
 func (t *transactionWorkflow) registerWorkflowAndActivities() {
 	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkUserActivity,
-		Fn:   t.checkUser,
+		Fn:   t.transactionCheckUser,
 	})
 	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkCafeActivity,
-		Fn:   t.checkCafe,
+		Fn:   t.transactionCheckCafe,
 	})
 	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkFranchiseActivity,
-		Fn:   t.checkFranchise,
+		Fn:   t.transactionCheckFranchise,
 	})
 	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: saveTransactionHeaderActivity,
-		Fn:   t.saveTransactionHeader,
+		Fn:   t.transactionSaveTransactionHeader,
 	})
 	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: publishTransactionActivity,
@@ -77,7 +76,7 @@ func (t *transactionWorkflow) registerWorkflowAndActivities() {
 	})
 	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkStatusActivity,
-		Fn:   t.checkStatus,
+		Fn:   t.transactionCheckUser,
 	})
 	t.workflow.RegisterWorkflow(temporal_client.WorkflowDefinition{
 		Name: "CreateTransaction",
@@ -103,50 +102,14 @@ func (t *transactionWorkflow) CheckoutTransactionV3(ctx context.Context, request
 	}
 	log.Println("Transaction workflow started:", txRun.GetID())
 
+	// 2. Wait for the workflow to complete (includes child MidtransTransaction)
 	var txResult transactionResult
 	err = t.workflow.GetWorkflowResult(context.Background(), txRun.GetID(), txRun.GetRunID(), &txResult)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction workflow result`, err)
 	}
 
-	// 2. Start Midtrans workflow (it waits for signal)
-	midtransWorkflowID := fmt.Sprintf("MidtransTransaction-%s", correlationID)
-	midtransRun, err := t.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
-		WorkflowID: midtransWorkflowID,
-	}, "MidtransTransaction")
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start midtrans workflow`, err)
-	}
-	log.Println("Midtrans workflow started:", midtransWorkflowID)
-
-	// 3. Signal the Midtrans workflow with the transaction data
-	err = t.workflow.SignalWorkflow(ctx, midtransRun.GetID(), midtransRun.GetRunID(), "MidtransTransaction", &messages.TransactionMidtransMessage{
-		UserID:            txResult.UserID,
-		FName:             txResult.FName,
-		LName:             txResult.LName,
-		Email:             txResult.Email,
-		Phone:             txResult.Phone,
-		TransactionCode:   txResult.Receipt.TransactionCode,
-		CafeID:            txResult.CafeID,
-		CafeFranchiseName: txResult.CafeFranchiseName,
-		CheckoutList:      request.Checkouts,
-	})
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to signal midtrans workflow`, err)
-	}
-
-	// 4. Wait for Midtrans workflow to complete and get the result
-	var midtransResponse *midtrans_client.MidtransResponse
-	err = t.workflow.GetWorkflowResult(context.Background(), midtransRun.GetID(), midtransRun.GetRunID(), &midtransResponse)
-	if err != nil {
-		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get midtrans workflow result`, err)
-	}
-
-	// 5. Attach Midtrans response to receipt
-	result = txResult.Receipt
-	result.MidtransResponse = midtransResponse
-
-	return result, nil
+	return txResult.Receipt, nil
 }
 
 func (t *transactionWorkflow) PaymentConfirmation(ctx context.Context, request *requests.PaymentConfirmationRequest) (result []*responses.PaymentConfirmationResponse, customErr *apperror.CustomError) {

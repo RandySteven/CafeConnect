@@ -7,7 +7,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (t *transactionWorkflow) checkUser(ctx context.Context, userID uint64) (*models.User, error) {
+func (t *transactionWorkflow) transactionCheckUser(ctx context.Context, userID uint64) (*models.User, error) {
 	user, err := t.userRepository.FindByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)

@@ -11,7 +11,8 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *transactionWorkflow) saveTransactionHeader(ctx context.Context, userID uint64, request *requests.CreateTransactionRequest) (*models.TransactionHeader, error) {
+func (t *transactionWorkflow) transactionSaveTransactionHeader(ctx context.Context, userID uint64, request *requests.CreateTransactionRequest) (*models.TransactionHeader, error) {
+	// return nil, errors.New("mock error")
 	transactionHeader := &models.TransactionHeader{
 		UserID:          userID,
 		TransactionCode: utils.GenerateCode(24),

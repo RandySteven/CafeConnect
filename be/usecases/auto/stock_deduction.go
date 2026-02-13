@@ -10,7 +10,7 @@ import (
 )
 
 func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, checkoutList []*requests.CheckoutList) error {
-	for _, checkout := range checkoutList {
+	for index, checkout := range checkoutList {
 		cafeProduct, err := t.cafeProductRepository.FindByID(ctx, checkout.CafeProductID)
 		if err != nil {
 			return fmt.Errorf("failed to get cafe product: %w", err)
@@ -18,9 +18,9 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, checkoutList 
 		if cafeProduct.Stock < checkout.Qty {
 			return fmt.Errorf("insufficient stock: %w", errors.New("insufficient stock"))
 		}
-		// if index == 2 {
-		// 	return fmt.Errorf("failed to stock deduction: %w", errors.New("failed to stock deduction"))
-		// }
+		if index == 2 {
+			return errors.New("STOCK DEDUCTION ERROR")
+		}
 		cafeProduct.Stock -= checkout.Qty
 		cafeProduct.UpdatedAt = time.Now()
 		_, err = t.cafeProductRepository.Update(ctx, cafeProduct)

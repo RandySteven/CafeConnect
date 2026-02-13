@@ -170,7 +170,7 @@ func (t *TransactionApi) CheckoutTransactionV4(w http.ResponseWriter, r *http.Re
 
 	result, customErr := t.autoWorkflow.AutoTransfer(ctx, request)
 	if customErr != nil {
-		utils.ResponseHandler(w, customErr.ErrCode(), customErr.LogMessage, nil, nil, customErr)
+		utils.ResponseHandler(w, customErr.ErrCode(), customErr.Error(), nil, nil, customErr)
 		return
 	}
 

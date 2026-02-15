@@ -29,7 +29,8 @@ type (
 	}
 
 	midtransWorkflow struct {
-		workflow                      temporal_client.Workflow
+		temporal                      temporal_client.Temporal
+		workflow                      temporal_client.WorkflowExecution
 		transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 		midtransTransactionRepository repository_interfaces.MidtransTransactionRepository
 		transactionDetailRepository   repository_interfaces.TransactionDetailRepository
@@ -40,22 +41,22 @@ type (
 )
 
 func (m *midtransWorkflow) registerWorkflowAndActivities() {
-	m.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	m.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkTransactionHeaderActivity,
 		Fn:   m.checkTransactionHeader,
 	})
 
-	m.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	m.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkoutListActivity,
 		Fn:   m.checkoutList,
 	})
 
-	m.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	m.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: createMidtransTransactionActivity,
 		Fn:   m.createMidtransTransaction,
 	})
 
-	m.workflow.RegisterWorkflow(temporal_client.WorkflowDefinition{
+	m.temporal.RegisterWorkflow(temporal_client.WorkflowDefinition{
 		Name: "MidtransTransaction",
 		Fn:   m.midtransTransaction,
 	})
@@ -64,7 +65,7 @@ func (m *midtransWorkflow) registerWorkflowAndActivities() {
 // CreateMidtransTransaction starts the Midtrans workflow, signals it with
 // the transaction data, and waits for the result.
 func (m *midtransWorkflow) CreateMidtransTransaction(ctx context.Context, message *messages.TransactionMidtransMessage) (result *midtrans_client.MidtransResponse, customErr *apperror.CustomError) {
-	workflowRun, err := m.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+	workflowRun, err := m.temporal.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
 		WorkflowID: fmt.Sprintf("MidtransTransaction-%s", message.TransactionCode),
 	}, m.midtransTransaction)
 	if err != nil {
@@ -72,13 +73,13 @@ func (m *midtransWorkflow) CreateMidtransTransaction(ctx context.Context, messag
 	}
 
 	// Signal the workflow with the transaction data
-	err = m.workflow.SignalWorkflow(ctx, workflowRun.GetID(), workflowRun.GetRunID(), "MidtransTransaction", message)
+	err = m.temporal.SignalWorkflow(ctx, workflowRun.GetID(), workflowRun.GetRunID(), "MidtransTransaction", message)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to signal midtrans workflow`, err)
 	}
 
 	// Wait for the workflow to complete and return the Midtrans response
-	err = m.workflow.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
+	err = m.temporal.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get workflow result`, err)
 	}
@@ -86,7 +87,8 @@ func (m *midtransWorkflow) CreateMidtransTransaction(ctx context.Context, messag
 	return result, nil
 }
 
-func NewMidtransWorkflow(workflow temporal_client.Workflow,
+func NewMidtransWorkflow(temporal temporal_client.Temporal,
+	workflow temporal_client.WorkflowExecution,
 	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository,
 	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository,
 	transactionDetailRepository repository_interfaces.TransactionDetailRepository,
@@ -94,6 +96,7 @@ func NewMidtransWorkflow(workflow temporal_client.Workflow,
 	productRepository repository_interfaces.ProductRepository,
 	midtrans midtrans_client.Midtrans) MidtransWorkflow {
 	mw := &midtransWorkflow{
+		temporal:                      temporal,
 		workflow:                      workflow,
 		transactionHeaderRepository:   transactionHeaderRepository,
 		midtransTransactionRepository: midtransTransactionRepository,

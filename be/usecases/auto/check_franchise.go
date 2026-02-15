@@ -3,12 +3,10 @@ package auto_transfer_usecases
 import (
 	"context"
 	"fmt"
-
-	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, franchiseID uint64) (*models.CafeFranchise, error) {
-	franchise, err := t.cafeFranchiseRepository.FindByID(ctx, franchiseID)
+func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, state *TransferState) (*TransferState, error) {
+	franchise, err := t.cafeFranchiseRepository.FindByID(ctx, state.Cafe.CafeFranchiseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get franchise: %w", err)
 	}
@@ -17,5 +15,6 @@ func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, franchiseID u
 		return nil, fmt.Errorf("franchise not found")
 	}
 
-	return franchise, nil
+	state.Franchise = franchise
+	return state, nil
 }

@@ -3,12 +3,10 @@ package auto_transfer_usecases
 import (
 	"context"
 	"fmt"
-
-	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (t *autoTransferWorkflow) checkUser(ctx context.Context, userID uint64) (*models.User, error) {
-	user, err := t.userRepository.FindByID(ctx, userID)
+func (t *autoTransferWorkflow) checkUser(ctx context.Context, state *TransferState) (*TransferState, error) {
+	user, err := t.userRepository.FindByID(ctx, state.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -17,6 +15,6 @@ func (t *autoTransferWorkflow) checkUser(ctx context.Context, userID uint64) (*m
 		return nil, fmt.Errorf("user not found")
 	}
 
-	return user, nil
-	// return nil, errors.New("mock error")
+	state.User = user
+	return state, nil
 }

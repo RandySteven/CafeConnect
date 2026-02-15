@@ -26,8 +26,9 @@ type (
 	}
 
 	ActivityExecutionInfo struct {
-		ActivityName string
-		SignalName   string
+		ActivityName    string
+		SignalName      string
+		ActivityOptions *workflow.ActivityOptions
 	}
 
 	WorkflowExecutionData struct {
@@ -36,8 +37,8 @@ type (
 		CurrState              string
 		RunID                  string
 		SignalEvent            string
-		activityExecutionInfos []ActivityExecutionInfo            // sequential pipeline
-		branchActivities       map[string]ActivityExecutionInfo   // branch-only targets (compensation, etc.)
+		activityExecutionInfos []ActivityExecutionInfo          // sequential pipeline
+		branchActivities       map[string]ActivityExecutionInfo // branch-only targets (compensation, etc.)
 		StartedAt              time.Time
 		CompletedAt            time.Time
 
@@ -47,20 +48,25 @@ type (
 	WorkflowExecution interface {
 		// Execute runs the sequential activity pipeline, threading state through each activity.
 		Execute(ctx workflow.Context, state interface{}) error
-	
+
 		// AddTransitionActivity registers an activity with the Temporal worker and adds it
 		// to the sequential execution pipeline. Activities run in the order they are added.
 		AddTransitionActivity(activityName string, signalName string, activityFn interface{})
-	
+
+		// AddTransitionActivityWithOptions registers an activity with the Temporal worker and adds it
+		// to the sequential execution pipeline. Activities run in the order they are added.
+		// It is used to add an activity with options to the sequential execution pipeline.
+		AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options workflow.ActivityOptions)
+
 		// AddBranchActivity registers an activity that is only reachable via branching.
 		// It is NOT part of the sequential pipeline — it only runs when another activity
 		// sets NextActivity to this activity's name.
 		// Use this for compensation, rollback, or alternative execution paths.
 		AddBranchActivity(activityName string, activityFn interface{})
-	
+
 		// RegisterWorkflow registers a workflow with the Temporal worker.
 		RegisterWorkflow(name string, fn interface{})
-	
+
 		// GetWorkflowExecutionData gets the workflow execution data.
 		// It is used to get the workflow execution data from the Temporal server.
 		GetWorkflowExecutionData(wfCtx workflow.Context, runID string, result interface{}) error
@@ -116,7 +122,13 @@ func (w *WorkflowExecutionData) executeBranch(ctx workflow.Context, activityName
 
 // runActivity executes a single activity and handles its signal if present.
 func (w *WorkflowExecutionData) runActivity(ctx workflow.Context, info ActivityExecutionInfo, state interface{}) error {
-	future := workflow.ExecuteActivity(ctx, info.ActivityName, state)
+	activityCtx := ctx
+
+	if info.ActivityOptions != nil {
+		activityCtx = workflow.WithActivityOptions(ctx, *info.ActivityOptions)
+	}
+
+	future := workflow.ExecuteActivity(activityCtx, info.ActivityName, state)
 	if err := future.Get(ctx, state); err != nil {
 		return fmt.Errorf("activity %s failed: %w", info.ActivityName, err)
 	}
@@ -158,7 +170,6 @@ func (w *WorkflowExecutionData) AddBranchActivity(activityName string, activityF
 	}
 }
 
-
 // RegisterWorkflow registers a workflow with the Temporal worker.
 func (w *WorkflowExecutionData) RegisterWorkflow(name string, fn interface{}) {
 	w.temporalClient.RegisterWorkflow(WorkflowDefinition{
@@ -190,6 +201,19 @@ func ExecuteChildWorkflow(ctx workflow.Context, signalName string, request inter
 	}
 
 	return nil
+}
+
+func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options workflow.ActivityOptions) {
+	w.temporalClient.RegisterActivity(ActivityDefinition{
+		Name: activityName,
+		Fn:   activityFn,
+	})
+
+	w.activityExecutionInfos = append(w.activityExecutionInfos, ActivityExecutionInfo{
+		ActivityName:    activityName,
+		SignalName:      signalName,
+		ActivityOptions: &options,
+	})
 }
 
 // NewWorkflowExecution creates a new WorkflowExecution.

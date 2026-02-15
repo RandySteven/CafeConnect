@@ -2,57 +2,100 @@ package temporal_client
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"go.temporal.io/sdk/workflow"
 )
 
 type (
-	WorkflowExecution interface {
-		// GetID returns the workflow ID.
-		GetID() string
-		// GetRunID returns the run ID.
-		GetRunID() string
-
-		// ExecuteLocalActivity executes a local activity.
-		ExecuteLocalActivity(ctx context.Context, activityFn interface{}, args ...interface{}) error
-
-		// GetWorkflowResult blocks until the workflow completes and returns the result.
-		GetWorkflowResult(ctx context.Context, workflowID string, runID string, result interface{}) error
+	ActivityExecutionInfo struct {
+		ActivityName string
+		SignalName   string
 	}
-	WorkflowExecutionInfo struct {
+
+	WorkflowExecutionData struct {
 		ID                     uint64
 		WorkflowID             string
+		CurrState              string
 		RunID                  string
-		ActivityName           string
-		TransitionActivityName string
-		PreviousWorkflowID     string
-		Metadata               map[string]interface{}
+		SignalEvent            string
+		activityExecutionInfos []ActivityExecutionInfo
+		StartedAt              time.Time
+		CompletedAt            time.Time
 
-		StartedAt   time.Time
-		CompletedAt time.Time
+		temporalClient Temporal
 	}
 )
 
-// func (t *temporalClient) GetWorkflowRunID(workflowID string, runID string) string {
-// 	run := t.client.GetWorkflow(context.Background(), workflowID, runID)
-// 	return run.GetRunID()
-// }
+// Execute runs all registered activities sequentially, threading the given state
+// through each one. Each activity receives the state as input and returns the
+// updated state as output. The state must be a non-nil pointer to a serializable struct.
+func (w *WorkflowExecutionData) Execute(ctx workflow.Context, state interface{}) error {
+	for _, info := range w.activityExecutionInfos {
+		future := workflow.ExecuteActivity(ctx, info.ActivityName, state)
+		if err := future.Get(ctx, state); err != nil {
+			return fmt.Errorf("activity %s failed: %w", info.ActivityName, err)
+		}
 
-// func (w *WorkflowExecution) GetID() string {
-// 	return w.ID
-// }
+		if info.SignalName != "" {
+			if err := ExecuteChildWorkflow(ctx, info.SignalName, state); err != nil {
+				return fmt.Errorf("child workflow for activity %s failed: %w", info.ActivityName, err)
+			}
+		}
+	}
+	return nil
+}
 
-// func (w *WorkflowExecution) GetRunID() string {
-// 	return w.RunID
-// }
+// AddTransitionActivity registers an activity with the Temporal worker and adds it
+// to the execution pipeline. Activities are executed in the order they are added.
+func (w *WorkflowExecutionData) AddTransitionActivity(activityName string, signalName string, activityFn interface{}) {
+	w.temporalClient.RegisterActivity(ActivityDefinition{
+		Name: activityName,
+		Fn:   activityFn,
+	})
 
-// func (w *WorkflowExecution) GetActivityName() string {
-// 	return w.ActivityName
-// }
+	w.activityExecutionInfos = append(w.activityExecutionInfos, ActivityExecutionInfo{
+		ActivityName: activityName,
+		SignalName:   signalName,
+	})
+}
 
-// func (w *WorkflowExecution) GetTransitionActivityName() string {
-// 	return w.TransitionActivityName
-// }
+func (w *WorkflowExecutionData) RegisterWorkflow(name string, fn interface{}) {
+	w.temporalClient.RegisterWorkflow(WorkflowDefinition{
+		Name: name,
+		Fn:   fn,
+	})
+}
 
-// func (w *WorkflowExecution) GetPreviousWorkflowID() string {
-// 	return w.PreviousWorkflowID
-// }
+func (w *WorkflowExecutionData) GetWorkflowExecutionData(wfCtx workflow.Context, runID string, result interface{}) error {
+	err := w.temporalClient.GetWorkflowResult(context.Background(), w.WorkflowID, runID, result)
+	if err != nil {
+		return fmt.Errorf("failed to get workflow execution data: %w", err)
+	}
+	return nil
+}
+
+func ExecuteChildWorkflow(ctx workflow.Context, signalName string, request interface{}) error {
+	childWorkflowRun := workflow.ExecuteChildWorkflow(ctx, "ChildWorkflow")
+	var workflowExecution workflow.Execution
+	if err := childWorkflowRun.GetChildWorkflowExecution().Get(ctx, &workflowExecution); err != nil {
+		return fmt.Errorf("failed to get child workflow execution: %w", err)
+	}
+
+	sigFuture := workflow.SignalExternalWorkflow(ctx, workflowExecution.ID, workflowExecution.RunID, signalName, request)
+	if err := sigFuture.Get(ctx, nil); err != nil {
+		return fmt.Errorf("failed to signal child workflow: %w", err)
+	}
+
+	return nil
+}
+
+func NewWorkflowExecutionData(
+	temporalClient Temporal,
+) WorkflowExecutionData {
+	return WorkflowExecutionData{
+		activityExecutionInfos: make([]ActivityExecutionInfo, 0),
+		temporalClient:         temporalClient,
+	}
+}

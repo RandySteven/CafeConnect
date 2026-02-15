@@ -14,7 +14,6 @@ import (
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	temporal_client "github.com/RandySteven/CafeConnect/be/pkg/temporal"
-	"github.com/google/uuid"
 )
 
 const (
@@ -33,7 +32,8 @@ type (
 	}
 
 	transactionWorkflow struct {
-		workflow                      temporal_client.Workflow
+		workflow                      temporal_client.WorkflowExecutionData
+		temporal                      temporal_client.Temporal
 		transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 		transactionDetailRepository   repository_interfaces.TransactionDetailRepository
 		addressRepository             repository_interfaces.AddressRepository
@@ -54,31 +54,31 @@ type (
 )
 
 func (t *transactionWorkflow) registerWorkflowAndActivities() {
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	t.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkUserActivity,
 		Fn:   t.transactionCheckUser,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	t.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkCafeActivity,
 		Fn:   t.transactionCheckCafe,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	t.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkFranchiseActivity,
 		Fn:   t.transactionCheckFranchise,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	t.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: saveTransactionHeaderActivity,
 		Fn:   t.transactionSaveTransactionHeader,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	t.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: publishTransactionActivity,
 		Fn:   t.publishTransaction,
 	})
-	t.workflow.RegisterActivity(temporal_client.ActivityDefinition{
+	t.temporal.RegisterActivity(temporal_client.ActivityDefinition{
 		Name: checkStatusActivity,
 		Fn:   t.transactionCheckUser,
 	})
-	t.workflow.RegisterWorkflow(temporal_client.WorkflowDefinition{
+	t.temporal.RegisterWorkflow(temporal_client.WorkflowDefinition{
 		Name: "CreateTransaction",
 		Fn:   t.transactionWorkflow,
 	})
@@ -90,12 +90,12 @@ func (t *transactionWorkflow) CheckoutTransactionV3(ctx context.Context, request
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user id from context`, fmt.Errorf("user id not found in context"))
 	}
 
-	correlationID := uuid.NewString()
+	// correlationID := uuid.NewString()
 
-	// 1. Start Transaction workflow and wait for it to complete
-	txWorkflowID := fmt.Sprintf("CreateTransaction-%s", correlationID)
-	txRun, err := t.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
-		WorkflowID: txWorkflowID,
+	// // 1. Start Transaction workflow and wait for it to complete
+	// txWorkflowID := fmt.Sprintf("CreateTransaction")
+	txRun, err := t.temporal.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+		WorkflowID: "CreateTransaction",
 	}, t.transactionWorkflow, userID, request)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start transaction workflow`, err)
@@ -104,7 +104,7 @@ func (t *transactionWorkflow) CheckoutTransactionV3(ctx context.Context, request
 
 	// 2. Wait for the workflow to complete (includes child MidtransTransaction)
 	var txResult transactionResult
-	err = t.workflow.GetWorkflowResult(context.Background(), txRun.GetID(), txRun.GetRunID(), &txResult)
+	err = t.temporal.GetWorkflowResult(context.Background(), txRun.GetID(), txRun.GetRunID(), &txResult)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get transaction workflow result`, err)
 	}
@@ -164,9 +164,12 @@ func NewTransactionWorkflow(
 	transactionCache cache_interfaces.TransactionCache,
 	productCache cache_interfaces.ProductCache,
 	checkoutCache cache_interfaces.CheckoutCache,
-	workflow temporal_client.Workflow,
+	workflow temporal_client.WorkflowExecutionData,
+	temporal temporal_client.Temporal,
 ) TransactionWorkflow {
 	tw := &transactionWorkflow{
+		workflow:                      workflow,
+		temporal:                      temporal,
 		transactionHeaderRepository:   transactionHeaderRepository,
 		transactionDetailRepository:   transactionDetailRepository,
 		addressRepository:             addressRepository,
@@ -183,7 +186,6 @@ func NewTransactionWorkflow(
 		transactionCache:              transactionCache,
 		productCache:                  productCache,
 		checkoutCache:                 checkoutCache,
-		workflow:                      workflow,
 	}
 	tw.registerWorkflowAndActivities()
 	return tw

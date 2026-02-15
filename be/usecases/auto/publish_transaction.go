@@ -2,31 +2,26 @@ package auto_transfer_usecases
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
-	"github.com/RandySteven/CafeConnect/be/entities/models"
-	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *autoTransferWorkflow) publishTransaction(ctx context.Context, user *models.User, cafe *models.Cafe, franchise *models.CafeFranchise, transactionHeader *models.TransactionHeader, request *requests.CreateTransactionRequest) error {
-	fname, lname := utils.FirstLastName(user.Name)
-	err := t.transactionTopic.WriteMessage(ctx, utils.WriteJSONObject[messages.TransactionMidtransMessage](&messages.TransactionMidtransMessage{
-		UserID:            user.ID,
+func (t *autoTransferWorkflow) publishTransaction(ctx context.Context, state *TransferState) (*TransferState, error) {
+	fname, lname := utils.FirstLastName(state.User.Name)
+
+	// Build the Midtrans signal message for the child workflow
+	state.MidtransMessage = &messages.TransactionMidtransMessage{
+		UserID:            state.User.ID,
 		FName:             fname,
-		Email:             user.Email,
-		Phone:             user.PhoneNumber,
+		Email:             state.User.Email,
+		Phone:             state.User.PhoneNumber,
 		LName:             lname,
-		TransactionCode:   transactionHeader.TransactionCode,
-		CafeID:            cafe.ID,
-		CafeFranchiseName: franchise.Name,
-		CheckoutList:      request.Checkouts,
-	}))
-	if err != nil {
-		return fmt.Errorf("failed to publish transaction: %w", err)
+		TransactionCode:   state.TransactionHeader.TransactionCode,
+		CafeID:            state.Cafe.ID,
+		CafeFranchiseName: state.Franchise.Name,
+		CheckoutList:      state.Request.Checkouts,
 	}
 
-	// return errors.New("mock error")
-	return nil
+	return state, nil
 }

@@ -35,7 +35,7 @@ type App struct {
 	Nsq       nsq_client.Nsq
 	Elastic   elastic_client.Elastic
 	Email     email_client.Email
-	Workflow  temporal_client.Workflow
+	Workflow  temporal_client.Temporal
 }
 
 func NewApps(config *configs.Config) (*App, error) {

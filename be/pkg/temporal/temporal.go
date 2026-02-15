@@ -16,9 +16,10 @@ import (
 
 type (
 	temporalClient struct {
-		worker    worker.Worker
-		client    client.Client
-		taskQueue string
+		worker                worker.Worker
+		client                client.Client
+		taskQueue             string
+		workflowExecutionData *WorkflowExecutionData
 	}
 
 	// StartWorkflowOptions configures how a workflow execution is started.
@@ -72,7 +73,7 @@ type (
 		Fn   interface{}
 	}
 
-	Workflow interface {
+	Temporal interface {
 		// RegisterWorkflow registers a workflow definition with the engine.
 		RegisterWorkflow(definition WorkflowDefinition)
 
@@ -102,6 +103,8 @@ type (
 
 		// Stop gracefully shuts down the worker.
 		Stop()
+
+		// AddTransitionActivity(ctx context.Context, activityName string, signalName string, activityFn interface{}, nextActivityNames ...string)
 	}
 )
 
@@ -185,7 +188,7 @@ func (t *temporalClient) GetWorkflowInfo(workflowCtx workflow.Context) (*workflo
 	return info, nil
 }
 
-func NewTemporalClient(config *configs.Config) (*temporalClient, error) {
+func NewTemporalClient(config *configs.Config) (Temporal, error) {
 	opts := client.Options{
 		HostPort:  fmt.Sprintf("%s:%s", config.Config.Temporal.Host, config.Config.Temporal.Port),
 		Namespace: config.Config.Temporal.Namespace,

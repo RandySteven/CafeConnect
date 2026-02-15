@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (t *autoTransferWorkflow) updateHeaderStatus(ctx context.Context, transactionCode string, status string) (err error) {
+func (t *autoTransferWorkflow) updateHeaderStatus(ctx context.Context, transactionCode string, status string) error {
 	transactionHeader, err := t.transactionHeaderRepository.FindByTransactionCode(ctx, transactionCode)
 	if err != nil {
 		return fmt.Errorf("failed to get transaction header: %w", err)

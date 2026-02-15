@@ -3,6 +3,7 @@ package auto_transfer_usecases
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
@@ -23,6 +24,9 @@ const (
 	autoTransferPublishTransactionActivity    = "AutoTransferPublishTransaction"
 	autoTransferStockDeductionActivity        = "AutoTransferStockDeduction"
 	autoTransferSaveTransactionDetailActivity = "AutoTransferSaveTransactionDetail"
+
+	sgNoNeed   = ""
+	sgMidtrans = "MidtransTransaction"
 )
 
 type (
@@ -31,7 +35,8 @@ type (
 	}
 
 	autoTransferWorkflow struct {
-		workflow                      temporal_client.Workflow
+		temporal                      temporal_client.Temporal
+		workflow                      temporal_client.WorkflowExecutionData
 		transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 		transactionDetailRepository   repository_interfaces.TransactionDetailRepository
 		addressRepository             repository_interfaces.AddressRepository
@@ -52,39 +57,15 @@ type (
 )
 
 func (a *autoTransferWorkflow) registerWorkflowAndActivities() {
-	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: autoTransferCheckUserActivity,
-		Fn:   a.checkUser,
-	})
-	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: autoTransferCheckCafeActivity,
-		Fn:   a.checkCafe,
-	})
-	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: autoTransferCheckFranchiseActivity,
-		Fn:   a.checkFranchise,
-	})
-	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: autoTransferSaveTransactionHeaderActivity,
-		Fn:   a.saveTransactionHeader,
-	})
-	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: autoTransferPublishTransactionActivity,
-		Fn:   a.publishTransaction,
-	})
-	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: autoTransferStockDeductionActivity,
-		Fn:   a.stockDeduction,
-	})
-	a.workflow.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: autoTransferSaveTransactionDetailActivity,
-		Fn:   a.saveTransactionDetail,
-	})
+	a.workflow.AddTransitionActivity(autoTransferCheckUserActivity, sgNoNeed, a.checkUser)
+	a.workflow.AddTransitionActivity(autoTransferCheckCafeActivity, sgNoNeed, a.checkCafe)
+	a.workflow.AddTransitionActivity(autoTransferCheckFranchiseActivity, sgNoNeed, a.checkFranchise)
+	a.workflow.AddTransitionActivity(autoTransferSaveTransactionHeaderActivity, sgNoNeed, a.saveTransactionHeader)
+	a.workflow.AddTransitionActivity(autoTransferStockDeductionActivity, sgNoNeed, a.stockDeduction)
+	a.workflow.AddTransitionActivity(autoTransferPublishTransactionActivity, sgNoNeed, a.publishTransaction)
+	a.workflow.AddTransitionActivity(autoTransferSaveTransactionDetailActivity, sgNoNeed, a.saveTransactionDetail)
 
-	a.workflow.RegisterWorkflow(temporal_client.WorkflowDefinition{
-		Name: "AutoTransfer",
-		Fn:   a.autoTransferWorkflow,
-	})
+	a.workflow.RegisterWorkflow("AutoTransfer", a.autoTransferWorkflow)
 }
 
 // AutoTransfer implements [AutoTransferWorkflow].
@@ -94,14 +75,14 @@ func (a *autoTransferWorkflow) AutoTransfer(ctx context.Context, request *reques
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user id from context`, fmt.Errorf("user id not found in context"))
 	}
 
-	workflowRun, err := a.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
-		WorkflowID: "AutoTransfer",
+	workflowRun, err := a.temporal.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+		WorkflowID: fmt.Sprintf("AutoTransfer-%d-%d", userID, time.Now().UnixNano()),
 	}, a.autoTransferWorkflow, userID, request)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start workflow`, err)
 	}
 
-	err = a.workflow.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
+	err = a.temporal.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get workflow result`, err)
 	}
@@ -114,7 +95,8 @@ func (a *autoTransferWorkflow) AutoTransfer(ctx context.Context, request *reques
 }
 
 func NewAutoTransferWorkflow(
-	workflow temporal_client.Workflow,
+	temporal temporal_client.Temporal,
+	workflow temporal_client.WorkflowExecutionData,
 	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository,
 	transactionDetailRepository repository_interfaces.TransactionDetailRepository,
 	addressRepository repository_interfaces.AddressRepository,
@@ -133,6 +115,7 @@ func NewAutoTransferWorkflow(
 	checkoutCache cache_interfaces.CheckoutCache,
 ) AutoTransferWorkflow {
 	atw := &autoTransferWorkflow{
+		temporal:                      temporal,
 		workflow:                      workflow,
 		transactionHeaderRepository:   transactionHeaderRepository,
 		transactionDetailRepository:   transactionDetailRepository,

@@ -14,6 +14,8 @@ import (
 	topics_interfaces "github.com/RandySteven/CafeConnect/be/interfaces/topics"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	temporal_client "github.com/RandySteven/CafeConnect/be/pkg/temporal"
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
 )
 
 const (
@@ -58,13 +60,23 @@ type (
 )
 
 func (a *autoTransferWorkflow) registerWorkflowAndActivities() {
-	a.workflow.AddTransitionActivity(autoTransferCheckUserActivity, sgNoNeed, a.checkUser)
-	a.workflow.AddTransitionActivity(autoTransferCheckCafeActivity, sgNoNeed, a.checkCafe)
-	a.workflow.AddTransitionActivity(autoTransferCheckFranchiseActivity, sgNoNeed, a.checkFranchise)
-	a.workflow.AddTransitionActivity(autoTransferSaveTransactionHeaderActivity, sgNoNeed, a.saveTransactionHeader)
-	a.workflow.AddTransitionActivity(autoTransferStockDeductionActivity, sgNoNeed, a.stockDeduction)
-	a.workflow.AddTransitionActivity(autoTransferPublishTransactionActivity, sgNoNeed, a.publishTransaction)
-	a.workflow.AddTransitionActivity(autoTransferSaveTransactionDetailActivity, sgNoNeed, a.saveTransactionDetail)
+	ao := &workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts:        5,
+			InitialInterval:        1 * time.Minute,
+			BackoffCoefficient:     2,
+			MaximumInterval:        5 * time.Minute,
+			NonRetryableErrorTypes: nonRetryableErrorTypes,
+		},
+	}
+	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckUserActivity, sgNoNeed, a.checkUser, nil)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckCafeActivity, sgNoNeed, a.checkCafe, nil)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckFranchiseActivity, sgNoNeed, a.checkFranchise, nil)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferSaveTransactionHeaderActivity, sgNoNeed, a.saveTransactionHeader, nil)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferStockDeductionActivity, sgNoNeed, a.stockDeduction, ao)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferPublishTransactionActivity, sgNoNeed, a.publishTransaction, nil)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferSaveTransactionDetailActivity, sgNoNeed, a.saveTransactionDetail, nil)
 
 	a.workflow.AddBranchActivity(autoTransferRestoreStockActivity, a.restoreStock)
 

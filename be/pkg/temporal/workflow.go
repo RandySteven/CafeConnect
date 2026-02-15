@@ -56,7 +56,7 @@ type (
 		// AddTransitionActivityWithOptions registers an activity with the Temporal worker and adds it
 		// to the sequential execution pipeline. Activities run in the order they are added.
 		// It is used to add an activity with options to the sequential execution pipeline.
-		AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options workflow.ActivityOptions)
+		AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options *workflow.ActivityOptions)
 
 		// AddBranchActivity registers an activity that is only reachable via branching.
 		// It is NOT part of the sequential pipeline — it only runs when another activity
@@ -203,7 +203,7 @@ func ExecuteChildWorkflow(ctx workflow.Context, signalName string, request inter
 	return nil
 }
 
-func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options workflow.ActivityOptions) {
+func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options *workflow.ActivityOptions) {
 	w.temporalClient.RegisterActivity(ActivityDefinition{
 		Name: activityName,
 		Fn:   activityFn,
@@ -212,7 +212,7 @@ func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName st
 	w.activityExecutionInfos = append(w.activityExecutionInfos, ActivityExecutionInfo{
 		ActivityName:    activityName,
 		SignalName:      signalName,
-		ActivityOptions: &options,
+		ActivityOptions: options,
 	})
 }
 

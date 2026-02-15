@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -70,6 +71,14 @@ type (
 		// GetWorkflowExecutionData gets the workflow execution data.
 		// It is used to get the workflow execution data from the Temporal server.
 		GetWorkflowExecutionData(wfCtx workflow.Context, runID string, result interface{}) error
+
+		// StartWorkflow starts a new workflow execution and returns the run ID.
+		// It is used to start a new workflow execution and returns the run ID.
+		StartWorkflow(ctx context.Context, opts StartWorkflowOptions, workflowFn interface{}, args ...interface{}) (client.WorkflowRun, error)
+
+		// GetWorkflowResult gets the workflow result from the Temporal server.
+		// It is used to get the workflow result from the Temporal server.
+		GetWorkflowResult(ctx context.Context, workflowID string, runID string, result interface{}) error
 	}
 )
 
@@ -97,6 +106,14 @@ func (w *WorkflowExecutionData) Execute(ctx workflow.Context, state interface{})
 	}
 
 	return nil
+}
+
+func (w *WorkflowExecutionData) StartWorkflow(ctx context.Context, opts StartWorkflowOptions, workflowFn interface{}, args ...interface{}) (client.WorkflowRun, error) {
+	return w.temporalClient.StartWorkflow(ctx, opts, workflowFn, args...)
+}
+
+func (w *WorkflowExecutionData) GetWorkflowResult(ctx context.Context, workflowID string, runID string, result interface{}) error {
+	return w.temporalClient.GetWorkflowResult(ctx, workflowID, runID, result)
 }
 
 // executeBranch follows a chain of branch activities. Each branch activity

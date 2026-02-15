@@ -90,14 +90,14 @@ func (a *autoTransferWorkflow) AutoTransfer(ctx context.Context, request *reques
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get user id from context`, fmt.Errorf("user id not found in context"))
 	}
 
-	workflowRun, err := a.temporal.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+	workflowRun, err := a.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
 		WorkflowID: fmt.Sprintf("AutoTransfer-%s-%d", request.IdempotencyKey, time.Now().UnixNano()),
 	}, a.autoTransferWorkflow, userID, request)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start workflow`, err)
 	}
 
-	err = a.temporal.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
+	err = a.workflow.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get workflow result`, err)
 	}

@@ -23,9 +23,19 @@ var (
 	}
 )
 
+// DeductedProduct tracks a stock deduction that was applied, so it can
+// be rolled back by the restoreStock compensation activity.
+type DeductedProduct struct {
+	CafeProductID uint64 `json:"cafe_product_id"`
+	Qty           uint64 `json:"qty"`
+}
+
 // TransferState is the shared serializable state threaded through all activities
 // in the auto transfer pipeline. Each activity reads its inputs from state and
 // writes its outputs back.
+//
+// It implements temporal_client.Navigable so activities can control branching
+// by setting NextActivity (e.g., to trigger compensation on failure).
 type TransferState struct {
 	// Inputs
 	UserID  uint64                             `json:"user_id"`
@@ -38,7 +48,22 @@ type TransferState struct {
 	TransactionHeader *models.TransactionHeader            `json:"transaction_header,omitempty"`
 	MidtransMessage   *messages.TransactionMidtransMessage `json:"midtrans_message,omitempty"`
 	MidtransResponse  *midtrans_client.MidtransResponse    `json:"midtrans_response,omitempty"`
+
+	// Branching — controls which activity runs next.
+	// If empty, Execute follows the default sequential order.
+	// Set to an activity name to branch (e.g., for compensation).
+	NextActivity string `json:"next_activity,omitempty"`
+
+	// Compensation tracking
+	DeductedProducts     []*DeductedProduct `json:"deducted_products,omitempty"`
+	StockDeductionFailed bool               `json:"stock_deduction_failed,omitempty"`
 }
+
+// GetNextActivity implements temporal_client.Navigable.
+func (s *TransferState) GetNextActivity() string { return s.NextActivity }
+
+// SetNextActivity implements temporal_client.Navigable.
+func (s *TransferState) SetNextActivity(name string) { s.NextActivity = name }
 
 func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context, userID uint64, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, err error) {
 	ao := workflow.ActivityOptions{
@@ -62,10 +87,15 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 		return nil, err
 	}
 
+	// If stock deduction failed and compensation was applied, stop here.
+	if state.StockDeductionFailed {
+		return nil, fmt.Errorf("stock deduction failed, compensation applied — deducted stock has been restored")
+	}
+
 	// Start MidtransTransaction child workflow and signal it,
 	// matching the pattern in transactions/transaction.go.
 	childCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
-		WorkflowID: fmt.Sprintf("MidtransTransaction-%s", state.TransactionHeader.TransactionCode),
+		WorkflowID: fmt.Sprintf("MidtransTransaction-%s", request.IdempotencyKey),
 	})
 
 	midtransRun := workflow.ExecuteChildWorkflow(childCtx, "MidtransTransaction")

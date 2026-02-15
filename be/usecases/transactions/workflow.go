@@ -32,7 +32,7 @@ type (
 	}
 
 	transactionWorkflow struct {
-		workflow                      temporal_client.WorkflowExecutionData
+		workflow                      temporal_client.WorkflowExecution
 		temporal                      temporal_client.Temporal
 		transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 		transactionDetailRepository   repository_interfaces.TransactionDetailRepository
@@ -164,7 +164,7 @@ func NewTransactionWorkflow(
 	transactionCache cache_interfaces.TransactionCache,
 	productCache cache_interfaces.ProductCache,
 	checkoutCache cache_interfaces.CheckoutCache,
-	workflow temporal_client.WorkflowExecutionData,
+	workflow temporal_client.WorkflowExecution,
 	temporal temporal_client.Temporal,
 ) TransactionWorkflow {
 	tw := &transactionWorkflow{

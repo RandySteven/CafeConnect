@@ -24,6 +24,7 @@ const (
 	autoTransferPublishTransactionActivity    = "AutoTransferPublishTransaction"
 	autoTransferStockDeductionActivity        = "AutoTransferStockDeduction"
 	autoTransferSaveTransactionDetailActivity = "AutoTransferSaveTransactionDetail"
+	autoTransferRestoreStockActivity          = "AutoTransferRestoreStock"
 
 	sgNoNeed   = ""
 	sgMidtrans = "MidtransTransaction"
@@ -36,7 +37,7 @@ type (
 
 	autoTransferWorkflow struct {
 		temporal                      temporal_client.Temporal
-		workflow                      temporal_client.WorkflowExecutionData
+		workflow                      temporal_client.WorkflowExecution
 		transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 		transactionDetailRepository   repository_interfaces.TransactionDetailRepository
 		addressRepository             repository_interfaces.AddressRepository
@@ -65,6 +66,8 @@ func (a *autoTransferWorkflow) registerWorkflowAndActivities() {
 	a.workflow.AddTransitionActivity(autoTransferPublishTransactionActivity, sgNoNeed, a.publishTransaction)
 	a.workflow.AddTransitionActivity(autoTransferSaveTransactionDetailActivity, sgNoNeed, a.saveTransactionDetail)
 
+	a.workflow.AddBranchActivity(autoTransferRestoreStockActivity, a.restoreStock)
+
 	a.workflow.RegisterWorkflow("AutoTransfer", a.autoTransferWorkflow)
 }
 
@@ -76,7 +79,7 @@ func (a *autoTransferWorkflow) AutoTransfer(ctx context.Context, request *reques
 	}
 
 	workflowRun, err := a.temporal.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
-		WorkflowID: fmt.Sprintf("AutoTransfer-%d-%d", userID, time.Now().UnixNano()),
+		WorkflowID: fmt.Sprintf("AutoTransfer-%s-%d", request.IdempotencyKey, time.Now().UnixNano()),
 	}, a.autoTransferWorkflow, userID, request)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start workflow`, err)
@@ -96,7 +99,7 @@ func (a *autoTransferWorkflow) AutoTransfer(ctx context.Context, request *reques
 
 func NewAutoTransferWorkflow(
 	temporal temporal_client.Temporal,
-	workflow temporal_client.WorkflowExecutionData,
+	workflow temporal_client.WorkflowExecution,
 	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository,
 	transactionDetailRepository repository_interfaces.TransactionDetailRepository,
 	addressRepository repository_interfaces.AddressRepository,

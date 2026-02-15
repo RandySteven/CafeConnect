@@ -30,7 +30,7 @@ type (
 
 	midtransWorkflow struct {
 		temporal                      temporal_client.Temporal
-		workflow                      temporal_client.WorkflowExecutionData
+		workflow                      temporal_client.WorkflowExecution
 		transactionHeaderRepository   repository_interfaces.TransactionHeaderRepository
 		midtransTransactionRepository repository_interfaces.MidtransTransactionRepository
 		transactionDetailRepository   repository_interfaces.TransactionDetailRepository
@@ -88,7 +88,7 @@ func (m *midtransWorkflow) CreateMidtransTransaction(ctx context.Context, messag
 }
 
 func NewMidtransWorkflow(temporal temporal_client.Temporal,
-	workflow temporal_client.WorkflowExecutionData,
+	workflow temporal_client.WorkflowExecution,
 	transactionHeaderRepository repository_interfaces.TransactionHeaderRepository,
 	midtransTransactionRepository repository_interfaces.MidtransTransactionRepository,
 	transactionDetailRepository repository_interfaces.TransactionDetailRepository,

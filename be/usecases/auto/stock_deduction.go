@@ -20,6 +20,7 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, state *Transf
 			state.StockDeductionFailed = true
 			state.NextActivity = autoTransferRestoreStockActivity
 			return state, nil
+			// return nil, fmt.Errorf("insufficient stock for product %d", checkout.CafeProductID)
 		}
 
 		cafeProduct.Stock -= checkout.Qty

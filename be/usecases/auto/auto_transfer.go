@@ -94,27 +94,9 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 
 	// Start MidtransTransaction child workflow and signal it,
 	// matching the pattern in transactions/transaction.go.
-	childCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
-		WorkflowID: fmt.Sprintf("MidtransTransaction-%s", request.IdempotencyKey),
-	})
-
-	midtransRun := workflow.ExecuteChildWorkflow(childCtx, "MidtransTransaction")
-
-	var childExecution workflow.Execution
-	if err := midtransRun.GetChildWorkflowExecution().Get(ctx, &childExecution); err != nil {
-		return nil, fmt.Errorf("failed to start midtrans child workflow: %w", err)
-	}
-
-	// Signal the child workflow with the prepared message from publishTransaction activity
-	sigFuture := workflow.SignalExternalWorkflow(ctx, childExecution.ID, childExecution.RunID, "MidtransTransaction", state.MidtransMessage)
-	if err := sigFuture.Get(ctx, nil); err != nil {
-		return nil, fmt.Errorf("failed to signal midtrans workflow: %w", err)
-	}
-
-	// Wait for the child workflow to complete and get the Midtrans response
-	var midtransResponse *midtrans_client.MidtransResponse
-	if err := midtransRun.Get(childCtx, &midtransResponse); err != nil {
-		return nil, fmt.Errorf("failed to get midtrans response: %w", err)
+	midtransResponse, err := t.midtransSignalTransaction(ctx, request, state)
+	if err != nil {
+		return nil, err
 	}
 
 	return &responses.TransactionReceiptResponse{
@@ -124,4 +106,15 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 		TransactionAt:   state.TransactionHeader.TransactionAt.Local(),
 		MidtransResponse: midtransResponse,
 	}, nil
+}
+
+func (t *autoTransferWorkflow) midtransSignalTransaction(ctx workflow.Context, request *requests.CreateTransactionRequest, state *TransferState) (*midtrans_client.MidtransResponse, error) {
+	var midtransResponse *midtrans_client.MidtransResponse
+
+	err := t.workflow.StartChildWorkflow(ctx, fmt.Sprintf("MidtransTransaction-%s", request.IdempotencyKey), "MidtransTransaction", state.MidtransMessage, &midtransResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start midtrans child workflow: %w", err)
+	}
+
+	return midtransResponse, nil
 }

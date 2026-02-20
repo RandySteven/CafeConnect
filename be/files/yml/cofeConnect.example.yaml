@@ -39,26 +39,27 @@ config:
   cron:
     time: "Asia/Jakarta"
   google:
-    apiKey: "API_KEY"
+    apiKey: "GOOGLE_MAPS_API_KEY"
   oauth2:
-    googleClientID: "GOOGLE_CLIENT_ID"
-    googleClientSecret: "GOOGLE_CLIENT_SECRET"
+    googleClientID: "GOOGLE_OAUTH_CLIENT_ID"
+    googleClientSecret: "GOOGLE_OAUTH_CLIENT_SECRET"
     scopes:
       - "https://www.googleapis.com/auth/userinfo.email"
       - "https://www.googleapis.com/auth/userinfo.profile"
     redirectEndpoint: "/google_callback"
   aws:
-    accessKeyID: "AWS_KEY_ID"
-    secretAccessKey: "AWS_SECRET_KEY"
+    accessKeyID: "AWS_ACCESS_KEY_ID"
+    secretAccessKey: "AWS_SECRET_ACCESS_KEY"
     region: "us-east-1"
   midtrans:
     serverKey: "MIDTRANS_SERVER_KEY"
     environment: "SANDBOX"
   rds:
-    endpoint: "MYSQL_RDS"
+    endpoint: "MYSQL_RDS_ENDPOINT"
     port: "3306"
   storage:
-    projectId: "cafeConnect-456615"
+    projectId: "GCP_PROJECT_ID"
+    # serviceAccount: "service-account@project.iam.gserviceaccount.com"
     bucketName: "cafe_connect"
   kafka:
     dial: "tcp"
@@ -74,3 +75,24 @@ config:
       timeout: 5
       keepAlive: 30
     maxRetries: 3
+  nsq:
+    nsqd_host: "127.0.0.1"
+    nsqd_tcp_port: "4150"
+    lookupd_http_port: "4161"
+    lookupd_tcp_port: "4160"
+  email:
+    host: ""
+    port: 0
+    senderName: "Cafe Connect"
+    authEmail: "SMTP_USERNAME_OR_EMAIL"
+    authPassword: "SMTP_PASSWORD"
+  temporal:
+    host: "localhost"
+    port: "7233"
+    namespace: "cafe_connect"
+    taskQueue: "cafe_connect"
+    workerOptions:
+      maxConcurrentActivityExecutionSize: 100
+      workerActivitiesPerSecond: 100
+      maxConcurrentLocalActivityExecutionSize: 100
+      workerLocalActivitiesPerSecond: 100

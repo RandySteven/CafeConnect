@@ -36,7 +36,7 @@ type DeductedProduct struct {
 //
 // It implements temporal_client.Navigable so activities can control branching
 // by setting NextActivity (e.g., to trigger compensation on failure).
-type TransferState struct {
+type TransferExecutionData struct {
 	// Inputs
 	UserID  uint64                             `json:"user_id"`
 	Request *requests.CreateTransactionRequest `json:"request"`
@@ -60,10 +60,10 @@ type TransferState struct {
 }
 
 // GetNextActivity implements temporal_client.Navigable.
-func (s *TransferState) GetNextActivity() string { return s.NextActivity }
+func (s *TransferExecutionData) GetNextActivity() string { return s.NextActivity }
 
 // SetNextActivity implements temporal_client.Navigable.
-func (s *TransferState) SetNextActivity(name string) { s.NextActivity = name }
+func (s *TransferExecutionData) SetNextActivity(name string) { s.NextActivity = name }
 
 func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context, userID uint64, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, err error) {
 	ao := workflow.ActivityOptions{
@@ -78,40 +78,40 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 	}
 	ctx := workflow.WithActivityOptions(workflowCtx, ao)
 
-	state := &TransferState{
+	executionData := &TransferExecutionData{
 		UserID:  userID,
 		Request: request,
 	}
 
-	if err := t.workflow.Execute(ctx, state); err != nil {
+	if err := t.workflow.Execute(ctx, executionData); err != nil {
 		return nil, err
 	}
 
 	// If stock deduction failed and compensation was applied, stop here.
-	if state.StockDeductionFailed {
+	if executionData.StockDeductionFailed {
 		return nil, fmt.Errorf("stock deduction failed, compensation applied — deducted stock has been restored")
 	}
 
 	// Start MidtransTransaction child workflow and signal it,
 	// matching the pattern in transactions/transaction.go.
-	midtransResponse, err := t.midtransSignalTransaction(ctx, request, state)
+	midtransResponse, err := t.midtransSignalTransaction(ctx, request, executionData)
 	if err != nil {
 		return nil, err
 	}
 
 	return &responses.TransactionReceiptResponse{
-		ID:              state.TransactionHeader.ID,
-		TransactionCode: state.TransactionHeader.TransactionCode,
-		Status:          state.TransactionHeader.Status,
-		TransactionAt:   state.TransactionHeader.TransactionAt.Local(),
+		ID:              executionData.TransactionHeader.ID,
+		TransactionCode: executionData.TransactionHeader.TransactionCode,
+		Status:          executionData.TransactionHeader.Status,
+		TransactionAt:   executionData.TransactionHeader.TransactionAt.Local(),
 		MidtransResponse: midtransResponse,
 	}, nil
 }
 
-func (t *autoTransferWorkflow) midtransSignalTransaction(ctx workflow.Context, request *requests.CreateTransactionRequest, state *TransferState) (*midtrans_client.MidtransResponse, error) {
+func (t *autoTransferWorkflow) midtransSignalTransaction(ctx workflow.Context, request *requests.CreateTransactionRequest, executionData *TransferExecutionData) (*midtrans_client.MidtransResponse, error) {
 	var midtransResponse *midtrans_client.MidtransResponse
 
-	err := t.workflow.StartChildWorkflow(ctx, fmt.Sprintf("MidtransTransaction-%s", request.IdempotencyKey), "MidtransTransaction", state.MidtransMessage, &midtransResponse)
+	err := t.workflow.StartChildWorkflow(ctx, fmt.Sprintf("MidtransTransaction-%s", request.IdempotencyKey), "MidtransTransaction", executionData.MidtransMessage, &midtransResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start midtrans child workflow: %w", err)
 	}

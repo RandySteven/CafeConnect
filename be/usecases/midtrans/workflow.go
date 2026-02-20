@@ -3,6 +3,7 @@ package midtrans_usecases
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/RandySteven/CafeConnect/be/apperror"
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
@@ -10,12 +11,15 @@ import (
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	temporal_client "github.com/RandySteven/CafeConnect/be/pkg/temporal"
 	"github.com/midtrans/midtrans-go"
+	"go.temporal.io/sdk/workflow"
 )
 
 const (
 	checkTransactionHeaderActivity    = "CheckTransactionHeader"
 	checkoutListActivity              = "CheckoutList"
 	createMidtransTransactionActivity = "CreateMidtransTransaction"
+
+	sgNoNeed = ""
 )
 
 type (
@@ -41,31 +45,20 @@ type (
 )
 
 func (m *midtransWorkflow) registerWorkflowAndActivities() {
-	m.temporal.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: checkTransactionHeaderActivity,
-		Fn:   m.checkTransactionHeader,
-	})
+	opts := &workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	}
 
-	m.temporal.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: checkoutListActivity,
-		Fn:   m.checkoutList,
-	})
-
-	m.temporal.RegisterActivity(temporal_client.ActivityDefinition{
-		Name: createMidtransTransactionActivity,
-		Fn:   m.createMidtransTransaction,
-	})
-
-	m.temporal.RegisterWorkflow(temporal_client.WorkflowDefinition{
-		Name: "MidtransTransaction",
-		Fn:   m.midtransTransaction,
-	})
+	m.workflow.AddTransitionActivityWithOptions(checkTransactionHeaderActivity, sgNoNeed, m.checkTransactionHeader, opts)
+	m.workflow.AddTransitionActivityWithOptions(checkoutListActivity, sgNoNeed, m.checkoutList, opts)
+	m.workflow.AddTransitionActivityWithOptions(createMidtransTransactionActivity, sgNoNeed, m.createMidtransTransaction, opts)
+	m.workflow.RegisterWorkflow("MidtransTransaction", m.midtransTransaction)
 }
 
 // CreateMidtransTransaction starts the Midtrans workflow, signals it with
 // the transaction data, and waits for the result.
 func (m *midtransWorkflow) CreateMidtransTransaction(ctx context.Context, message *messages.TransactionMidtransMessage) (result *midtrans_client.MidtransResponse, customErr *apperror.CustomError) {
-	workflowRun, err := m.temporal.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
+	workflowRun, err := m.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
 		WorkflowID: fmt.Sprintf("MidtransTransaction-%s", message.TransactionCode),
 	}, m.midtransTransaction)
 	if err != nil {
@@ -73,13 +66,13 @@ func (m *midtransWorkflow) CreateMidtransTransaction(ctx context.Context, messag
 	}
 
 	// Signal the workflow with the transaction data
-	err = m.temporal.SignalWorkflow(ctx, workflowRun.GetID(), workflowRun.GetRunID(), "MidtransTransaction", message)
+	err = m.workflow.SignalWorkflow(ctx, workflowRun.GetID(), workflowRun.GetRunID(), "MidtransTransaction", message)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to signal midtrans workflow`, err)
 	}
 
 	// Wait for the workflow to complete and return the Midtrans response
-	err = m.temporal.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
+	err = m.workflow.GetWorkflowResult(context.Background(), workflowRun.GetID(), workflowRun.GetRunID(), &result)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to get workflow result`, err)
 	}

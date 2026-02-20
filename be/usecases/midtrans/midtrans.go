@@ -1,14 +1,33 @@
 package midtrans_usecases
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/RandySteven/CafeConnect/be/entities/messages"
 	"github.com/RandySteven/CafeConnect/be/entities/models"
+	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
+	"github.com/midtrans/midtrans-go"
 	"go.temporal.io/sdk/workflow"
 )
+
+type (
+	MidtransExecutionData struct {
+		Request *requests.CreateTransactionRequest
+
+		Message           *messages.TransactionMidtransMessage
+		MidtransRequest   *midtrans_client.MidtransRequest
+		TransactionHeader *models.TransactionHeader
+		Items             []midtrans.ItemDetails
+		TotalAmount       int64
+		MidtransResponse  *midtrans_client.MidtransResponse
+
+		NextActivity string `json:"next_activity,omitempty"`
+	}
+)
+
+func (m *MidtransExecutionData) GetNextActivity() string     { return m.NextActivity }
+func (m *MidtransExecutionData) SetNextActivity(name string) { m.NextActivity = name }
 
 func (m *midtransWorkflow) midtransTransaction(workflowCtx workflow.Context) (*midtrans_client.MidtransResponse, error) {
 	// Wait for signal from the handler with the transaction data
@@ -21,28 +40,14 @@ func (m *midtransWorkflow) midtransTransaction(workflowCtx workflow.Context) (*m
 	}
 	workflowCtx = workflow.WithLocalActivityOptions(workflowCtx, lao)
 
-	var transactionHeader *models.TransactionHeader
-	if err := workflow.ExecuteLocalActivity(workflowCtx, m.checkTransactionHeader, message.TransactionCode).Get(workflowCtx, &transactionHeader); err != nil {
-		return nil, fmt.Errorf("failed to check transaction header: %w", err)
+	executionData := &MidtransExecutionData{
+		Message: &message,
 	}
 
-	var checkoutList *midtransCheckOut
-	if err := workflow.ExecuteLocalActivity(workflowCtx, m.checkoutList, message.CafeFranchiseName, message.CheckoutList).Get(workflowCtx, &checkoutList); err != nil {
-		return nil, fmt.Errorf("failed to checkout list: %w", err)
+	err := m.workflow.Execute(workflowCtx, executionData)
+	if err != nil {
+		return nil, err
 	}
 
-	var midtransResponse *midtrans_client.MidtransResponse
-	if err := workflow.ExecuteLocalActivity(workflowCtx, m.createMidtransTransaction, &midtrans_client.MidtransRequest{
-		FName:           message.FName,
-		LName:           message.LName,
-		Email:           message.Email,
-		Phone:           message.Phone,
-		TransactionCode: message.TransactionCode,
-		GrossAmt:        checkoutList.TotalAmount,
-		Items:           checkoutList.Items,
-	}).Get(workflowCtx, &midtransResponse); err != nil {
-		return nil, fmt.Errorf("failed to create midtrans transaction: %w", err)
-	}
-
-	return midtransResponse, nil
+	return executionData.MidtransResponse, nil
 }

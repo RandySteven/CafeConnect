@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-func (t *autoTransferWorkflow) checkUser(ctx context.Context, state *TransferState) (*TransferState, error) {
-	user, err := t.userRepository.FindByID(ctx, state.UserID)
+func (t *autoTransferWorkflow) checkUser(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+	user, err := t.userRepository.FindByID(ctx, executionData.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
@@ -15,6 +15,6 @@ func (t *autoTransferWorkflow) checkUser(ctx context.Context, state *TransferSta
 		return nil, fmt.Errorf("user not found")
 	}
 
-	state.User = user
-	return state, nil
+	executionData.User = user
+	return executionData, nil
 }

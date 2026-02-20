@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-func (t *autoTransferWorkflow) checkCafe(ctx context.Context, state *TransferState) (*TransferState, error) {
-	cafe, err := t.cafeRepository.FindByID(ctx, state.Request.CafeID)
+func (t *autoTransferWorkflow) checkCafe(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+	cafe, err := t.cafeRepository.FindByID(ctx, executionData.Request.CafeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cafe: %w", err)
 	}
@@ -15,6 +15,6 @@ func (t *autoTransferWorkflow) checkCafe(ctx context.Context, state *TransferSta
 		return nil, fmt.Errorf("cafe not found")
 	}
 
-	state.Cafe = cafe
-	return state, nil
+	executionData.Cafe = cafe
+	return executionData, nil
 }

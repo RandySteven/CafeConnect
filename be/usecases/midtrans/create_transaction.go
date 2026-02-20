@@ -4,23 +4,23 @@ import (
 	"context"
 
 	"github.com/RandySteven/CafeConnect/be/entities/models"
-	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 )
 
-func (m *midtransWorkflow) createMidtransTransaction(ctx context.Context, request *midtrans_client.MidtransRequest) (*midtrans_client.MidtransResponse, error) {
-	midtransResponse, err := m.midtrans.CreateTransaction(ctx, request)
+func (m *midtransWorkflow) createMidtransTransaction(ctx context.Context, executionData *MidtransExecutionData) (*MidtransExecutionData, error) {
+	midtransResponse, err := m.midtrans.CreateTransaction(ctx, executionData.MidtransRequest)
 	if err != nil {
 		return nil, err
 	}
 
 	_, err = m.midtransTransactionRepository.Save(ctx, &models.MidtransTransaction{
-		TransactionCode: request.TransactionCode,
-		TotalAmt:        request.GrossAmt,
+		TransactionCode: executionData.Message.TransactionCode,
+		TotalAmt:        executionData.TotalAmount,
 		Token:           midtransResponse.Token,
 		RedirectURL:     midtransResponse.RedirectURL})
 	if err != nil {
 		return nil, err
 	}
 
-	return midtransResponse, nil
+	executionData.MidtransResponse = midtransResponse
+	return executionData, nil
 }

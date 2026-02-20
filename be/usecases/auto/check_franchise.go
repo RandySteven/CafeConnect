@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, state *TransferState) (*TransferState, error) {
-	franchise, err := t.cafeFranchiseRepository.FindByID(ctx, state.Cafe.CafeFranchiseID)
+func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+	franchise, err := t.cafeFranchiseRepository.FindByID(ctx, executionData.Cafe.CafeFranchiseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get franchise: %w", err)
 	}
@@ -15,6 +15,6 @@ func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, state *Transf
 		return nil, fmt.Errorf("franchise not found")
 	}
 
-	state.Franchise = franchise
-	return state, nil
+	executionData.Franchise = franchise
+	return executionData, nil
 }

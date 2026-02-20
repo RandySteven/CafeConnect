@@ -7,10 +7,10 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (t *autoTransferWorkflow) saveTransactionDetail(ctx context.Context, state *TransferState) (*TransferState, error) {
-	for _, checkout := range state.Request.Checkouts {
+func (t *autoTransferWorkflow) saveTransactionDetail(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+	for _, checkout := range executionData.Request.Checkouts {
 		transactionDetail := &models.TransactionDetail{
-			TransactionID: state.TransactionHeader.ID,
+			TransactionID: executionData.TransactionHeader.ID,
 			CafeProductID: checkout.CafeProductID,
 			Qty:           checkout.Qty,
 		}
@@ -19,5 +19,5 @@ func (t *autoTransferWorkflow) saveTransactionDetail(ctx context.Context, state 
 			return nil, fmt.Errorf("failed to save transaction detail: %w", err)
 		}
 	}
-	return state, nil
+	return executionData, nil
 }

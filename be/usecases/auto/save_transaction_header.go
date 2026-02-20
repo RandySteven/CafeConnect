@@ -10,11 +10,11 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *autoTransferWorkflow) saveTransactionHeader(ctx context.Context, state *TransferState) (*TransferState, error) {
+func (t *autoTransferWorkflow) saveTransactionHeader(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
 	transactionHeader := &models.TransactionHeader{
-		UserID:          state.User.ID,
+		UserID:          executionData.User.ID,
 		TransactionCode: utils.GenerateCode(24),
-		CafeID:          state.Request.CafeID,
+		CafeID:          executionData.Request.CafeID,
 		Status:          enums.TransactionPENDING.String(),
 		TransactionAt:   time.Now(),
 	}
@@ -23,6 +23,6 @@ func (t *autoTransferWorkflow) saveTransactionHeader(ctx context.Context, state 
 		return nil, fmt.Errorf("failed to save transaction header: %w", err)
 	}
 
-	state.TransactionHeader = transactionHeader
-	return state, nil
+	executionData.TransactionHeader = transactionHeader
+	return executionData, nil
 }

@@ -3,12 +3,10 @@ package midtrans_usecases
 import (
 	"context"
 	"fmt"
-
-	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (m *midtransWorkflow) checkTransactionHeader(ctx context.Context, transactionCode string) (result *models.TransactionHeader, err error) {
-	transactionHeader, err := m.transactionHeaderRepository.FindByTransactionCode(ctx, transactionCode)
+func (m *midtransWorkflow) checkTransactionHeader(ctx context.Context, executionData *MidtransExecutionData) (*MidtransExecutionData, error) {
+	transactionHeader, err := m.transactionHeaderRepository.FindByTransactionCode(ctx, executionData.Message.TransactionCode)
 	if err != nil {
 		return nil, err
 	}
@@ -17,5 +15,6 @@ func (m *midtransWorkflow) checkTransactionHeader(ctx context.Context, transacti
 		return nil, fmt.Errorf("transaction header not found")
 	}
 
-	return transactionHeader, nil
+	executionData.TransactionHeader = transactionHeader
+	return executionData, nil
 }

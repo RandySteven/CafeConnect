@@ -5,14 +5,14 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
+	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
 	"github.com/midtrans/midtrans-go"
 )
 
-func (m *midtransWorkflow) checkoutList(ctx context.Context, cafeFranchiseName string, checkoutList []*requests.CheckoutList) (result *midtransCheckOut, err error) {
-	items := make([]midtrans.ItemDetails, len(checkoutList))
+func (m *midtransWorkflow) checkoutList(ctx context.Context, executionData *MidtransExecutionData) (*MidtransExecutionData, error) {
+	items := make([]midtrans.ItemDetails, len(executionData.Message.CheckoutList))
 	totalAmount := int64(0)
-	for i, item := range checkoutList {
+	for i, item := range executionData.Message.CheckoutList {
 		cafeProduct, err := m.cafeProductRepository.FindByID(ctx, item.CafeProductID)
 		if err != nil {
 			log.Println("failed to find cafe product:", err)
@@ -30,13 +30,21 @@ func (m *midtransWorkflow) checkoutList(ctx context.Context, cafeFranchiseName s
 			Name:         product.Name,
 			Qty:          int32(item.Qty),
 			Price:        int64(cafeProduct.Price),
-			MerchantName: cafeFranchiseName,
+			MerchantName: executionData.Message.CafeFranchiseName,
 		}
 		totalAmount += int64(cafeProduct.Price * item.Qty)
 	}
 
-	return &midtransCheckOut{
-		Items:       items,
-		TotalAmount: totalAmount,
-	}, nil
+	executionData.Items = items
+	executionData.TotalAmount = totalAmount
+	executionData.MidtransRequest = &midtrans_client.MidtransRequest{
+		FName:           executionData.Message.FName,
+		LName:           executionData.Message.LName,
+		Email:           executionData.Message.Email,
+		Phone:           executionData.Message.Phone,
+		TransactionCode: executionData.Message.TransactionCode,
+		GrossAmt:        totalAmount,
+		Items:           items,
+	}
+	return executionData, nil
 }

@@ -46,5 +46,7 @@ func (m *midtransWorkflow) checkoutList(ctx context.Context, executionData *Midt
 		GrossAmt:        totalAmount,
 		Items:           items,
 	}
+
+	executionData.SetNextActivity(createMidtransTransactionActivity)
 	return executionData, nil
 }

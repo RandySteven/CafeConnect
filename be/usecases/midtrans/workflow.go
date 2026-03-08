@@ -24,8 +24,10 @@ const (
 
 type (
 	midtransCheckOut struct {
-		Items       []midtrans.ItemDetails
-		TotalAmount int64
+		Items           []midtrans.ItemDetails
+		TotalAmount     int64
+		NextActivity    string
+		CurrentActivity string
 	}
 
 	MidtransWorkflow interface {
@@ -49,9 +51,10 @@ func (m *midtransWorkflow) registerWorkflowAndActivities() {
 		StartToCloseTimeout: 10 * time.Second,
 	}
 
-	m.workflow.AddTransitionActivityWithOptions(checkTransactionHeaderActivity, sgNoNeed, m.checkTransactionHeader, opts)
-	m.workflow.AddTransitionActivityWithOptions(checkoutListActivity, sgNoNeed, m.checkoutList, opts)
+	m.workflow.AddTransitionActivityWithOptions(checkTransactionHeaderActivity, sgNoNeed, m.checkTransactionHeader, opts, checkoutListActivity)
+	m.workflow.AddTransitionActivityWithOptions(checkoutListActivity, sgNoNeed, m.checkoutList, opts, createMidtransTransactionActivity)
 	m.workflow.AddTransitionActivityWithOptions(createMidtransTransactionActivity, sgNoNeed, m.createMidtransTransaction, opts)
+
 	m.workflow.RegisterWorkflow("MidtransTransaction", m.midtransTransaction)
 }
 

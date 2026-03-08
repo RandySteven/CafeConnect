@@ -47,8 +47,7 @@ type (
 		RunID                  string
 		SignalEvent            string
 		activityExecutionInfos []ActivityExecutionInfo
-		branchActivities       map[string]ActivityExecutionInfo // branch-only targets (compensation, etc.)
-		activity               map[string]ActivityExecutionInfo
+		activity               map[string]*ActivityExecutionInfo
 		firstActivity          string
 		StartedAt              time.Time
 		CompletedAt            time.Time
@@ -68,12 +67,6 @@ type (
 		// to the sequential execution pipeline. Activities run in the order they are added.
 		// It is used to add an activity with options to the sequential execution pipeline.
 		AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options *workflow.ActivityOptions, nextActivities ...string)
-
-		// AddBranchActivity registers an activity that is only reachable via branching.
-		// It is NOT part of the sequential pipeline — it only runs when another activity
-		// sets NextActivity to this activity's name.
-		// Use this for compensation, rollback, or alternative execution paths.
-		AddBranchActivity(activityName string, activityFn interface{})
 
 		// RegisterWorkflow registers a workflow with the Temporal worker.
 		RegisterWorkflow(name string, fn interface{})
@@ -110,31 +103,25 @@ func (w *WorkflowExecutionData) Execute(ctx workflow.Context, executionData inte
 	navigable, _ := executionData.(NavigatableActivity)
 	currActivity := w.activity[w.firstActivity]
 
-	for currActivity.NextActivities != nil {
+	for currActivity != nil {
 		if err := w.runActivity(ctx, currActivity, executionData, navigable); err != nil {
 			return err
 		}
 
-		nextActivity, err := w.getNextActivity(currActivity, navigable.GetNextActivity())
-		if err != nil {
-			return err
-		}
-
-		currActivity = *nextActivity
+		currActivity = w.getNextActivity(currActivity, navigable.GetNextActivity())
 	}
 
 	return nil
 }
 
-func (w *WorkflowExecutionData) getNextActivity(currActivity ActivityExecutionInfo, nextActivity string) (*ActivityExecutionInfo, error) {
+func (w *WorkflowExecutionData) getNextActivity(currActivity *ActivityExecutionInfo, nextActivity string) (*ActivityExecutionInfo) {
 	log.Println("next activity", nextActivity)
 	for _, info := range currActivity.NextActivities {
 		if info == nextActivity {
-			result := w.activity[info]
-			return &result, nil
+			return w.activity[info]
 		}
 	}
-	return nil, fmt.Errorf("next activity not found")
+	return nil
 }
 
 // StartWorkflow starts a new workflow execution and returns the run ID.
@@ -151,29 +138,8 @@ func (w *WorkflowExecutionData) SignalWorkflow(ctx context.Context, workflowID s
 	return w.temporalClient.SignalWorkflow(ctx, workflowID, runID, signalName, arg)
 }
 
-// executeBranch follows a chain of branch activities. Each branch activity
-// can set NextActivity to chain to another branch activity. When an activity
-// does not set NextActivity, the chain ends and executeBranch returns.
-func (w *WorkflowExecutionData) executeBranch(ctx workflow.Context, activityName string, executionData interface{}, navigable NavigatableActivity) error {
-	current := activityName
-	for current != "" {
-		info, ok := w.branchActivities[current]
-		if !ok {
-			return fmt.Errorf("branch activity %q not found", current)
-		}
-
-		if err := w.runActivity(ctx, info, executionData, navigable); err != nil {
-			return err
-		}
-
-		current = navigable.GetCurrentActivity()
-		navigable.SetCurrentActivity("")
-	}
-	return nil
-}
-
 // runActivity executes a single activity and handles its signal if present.
-func (w *WorkflowExecutionData) runActivity(ctx workflow.Context, info ActivityExecutionInfo, executionData interface{}, navigable NavigatableActivity) error {
+func (w *WorkflowExecutionData) runActivity(ctx workflow.Context, info *ActivityExecutionInfo, executionData interface{}, navigable NavigatableActivity) error {
 	activityCtx := ctx
 
 	if info.ActivityOptions != nil {
@@ -216,21 +182,6 @@ func (w *WorkflowExecutionData) AddTransitionActivity(activityName string, signa
 	})
 }
 
-// AddBranchActivity registers an activity that is only reachable via branching.
-// It is NOT part of the sequential pipeline — it only runs when another activity
-// sets NextActivity to this activity's name.
-// Use this for compensation, rollback, or alternative execution paths.
-func (w *WorkflowExecutionData) AddBranchActivity(activityName string, activityFn interface{}) {
-	w.temporalClient.RegisterActivity(ActivityDefinition{
-		Name: activityName,
-		Fn:   activityFn,
-	})
-
-	w.branchActivities[activityName] = ActivityExecutionInfo{
-		ActivityName: activityName,
-	}
-}
-
 // RegisterWorkflow registers a workflow with the Temporal worker.
 func (w *WorkflowExecutionData) RegisterWorkflow(name string, fn interface{}) {
 	w.temporalClient.RegisterWorkflow(WorkflowDefinition{
@@ -260,7 +211,7 @@ func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName st
 		w.firstActivity = activityName
 	}
 
-	w.activity[activityName] = ActivityExecutionInfo{
+	w.activity[activityName] = &ActivityExecutionInfo{
 		ActivityName:    activityName,
 		SignalName:      signalName,
 		ActivityFn:      activityFn,
@@ -269,7 +220,7 @@ func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName st
 	}
 
 	for _, nextActivity := range nextActivities {
-		w.activity[nextActivity] = ActivityExecutionInfo{}
+		w.activity[nextActivity] = &ActivityExecutionInfo{}
 	}
 }
 
@@ -307,8 +258,7 @@ func NewWorkflowExecution(
 ) WorkflowExecution {
 	return &WorkflowExecutionData{
 		activityExecutionInfos: make([]ActivityExecutionInfo, 0),
-		branchActivities:       make(map[string]ActivityExecutionInfo),
 		temporalClient:         temporalClient,
-		activity:               make(map[string]ActivityExecutionInfo),
+		activity:               make(map[string]*ActivityExecutionInfo),
 	}
 }

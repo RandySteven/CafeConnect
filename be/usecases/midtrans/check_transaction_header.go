@@ -16,5 +16,6 @@ func (m *midtransWorkflow) checkTransactionHeader(ctx context.Context, execution
 	}
 
 	executionData.TransactionHeader = transactionHeader
+	executionData.SetNextActivity(checkoutListActivity)
 	return executionData, nil
 }

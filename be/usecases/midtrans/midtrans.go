@@ -22,12 +22,15 @@ type (
 		TotalAmount       int64
 		MidtransResponse  *midtrans_client.MidtransResponse
 
-		NextActivity string `json:"next_activity,omitempty"`
+		NextActivity    string `json:"next_activity,omitempty"`
+		CurrentActivity string `json:"current_activity,omitempty"`
 	}
 )
 
-func (m *MidtransExecutionData) GetNextActivity() string     { return m.NextActivity }
-func (m *MidtransExecutionData) SetNextActivity(name string) { m.NextActivity = name }
+func (m *MidtransExecutionData) GetNextActivity() string        { return m.NextActivity }
+func (m *MidtransExecutionData) SetNextActivity(name string)    { m.NextActivity = name }
+func (m *MidtransExecutionData) GetCurrentActivity() string     { return m.CurrentActivity }
+func (m *MidtransExecutionData) SetCurrentActivity(name string) { m.CurrentActivity = name }
 
 func (m *midtransWorkflow) midtransTransaction(workflowCtx workflow.Context) (*midtrans_client.MidtransResponse, error) {
 	// Wait for signal from the handler with the transaction data

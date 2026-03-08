@@ -16,5 +16,6 @@ func (t *autoTransferWorkflow) checkUser(ctx context.Context, executionData *Tra
 	}
 
 	executionData.User = user
+	executionData.SetNextActivity(autoTransferCheckCafeActivity)
 	return executionData, nil
 }

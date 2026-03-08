@@ -30,21 +30,15 @@ type DeductedProduct struct {
 	Qty           uint64 `json:"qty"`
 }
 
-// TransferState is the shared serializable state threaded through all activities
-// in the auto transfer pipeline. Each activity reads its inputs from state and
-// writes its outputs back.
-//
-// It implements temporal_client.Navigable so activities can control branching
-// by setting NextActivity (e.g., to trigger compensation on failure).
 type TransferExecutionData struct {
-	// Inputs
+	// Request inputs data
 	UserID  uint64                             `json:"user_id"`
 	Request *requests.CreateTransactionRequest `json:"request"`
 
 	// Intermediate results — populated by activities
-	User              *models.User                        `json:"user,omitempty"`
-	Cafe              *models.Cafe                        `json:"cafe,omitempty"`
-	Franchise         *models.CafeFranchise               `json:"franchise,omitempty"`
+	User              *models.User                         `json:"user,omitempty"`
+	Cafe              *models.Cafe                         `json:"cafe,omitempty"`
+	Franchise         *models.CafeFranchise                `json:"franchise,omitempty"`
 	TransactionHeader *models.TransactionHeader            `json:"transaction_header,omitempty"`
 	MidtransMessage   *messages.TransactionMidtransMessage `json:"midtrans_message,omitempty"`
 	MidtransResponse  *midtrans_client.MidtransResponse    `json:"midtrans_response,omitempty"`
@@ -52,17 +46,24 @@ type TransferExecutionData struct {
 	// Branching — controls which activity runs next.
 	// If empty, Execute follows the default sequential order.
 	// Set to an activity name to branch (e.g., for compensation).
-	NextActivity string `json:"next_activity,omitempty"`
+	CurrentActivity string `json:"current_activity,omitempty"`
+	NextActivity    string `json:"next_activity,omitempty"`
 
 	// Compensation tracking
 	DeductedProducts     []*DeductedProduct `json:"deducted_products,omitempty"`
 	StockDeductionFailed bool               `json:"stock_deduction_failed,omitempty"`
 }
 
-// GetNextActivity implements temporal_client.Navigable.
+// GetCurrentActivity implements temporal_client.NavigatableActivity.
+func (s *TransferExecutionData) GetCurrentActivity() string { return s.CurrentActivity }
+
+// SetCurrentActivity implements temporal_client.NavigatableActivity.
+func (s *TransferExecutionData) SetCurrentActivity(name string) { s.CurrentActivity = name }
+
+// GetNextActivity implements temporal_client.NavigatableActivity.
 func (s *TransferExecutionData) GetNextActivity() string { return s.NextActivity }
 
-// SetNextActivity implements temporal_client.Navigable.
+// SetNextActivity implements temporal_client.NavigatableActivity.
 func (s *TransferExecutionData) SetNextActivity(name string) { s.NextActivity = name }
 
 func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context, userID uint64, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, err error) {
@@ -100,10 +101,10 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 	}
 
 	return &responses.TransactionReceiptResponse{
-		ID:              executionData.TransactionHeader.ID,
-		TransactionCode: executionData.TransactionHeader.TransactionCode,
-		Status:          executionData.TransactionHeader.Status,
-		TransactionAt:   executionData.TransactionHeader.TransactionAt.Local(),
+		ID:               executionData.TransactionHeader.ID,
+		TransactionCode:  executionData.TransactionHeader.TransactionCode,
+		Status:           executionData.TransactionHeader.Status,
+		TransactionAt:    executionData.TransactionHeader.TransactionAt.Local(),
 		MidtransResponse: midtransResponse,
 	}, nil
 }
@@ -111,7 +112,7 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 func (t *autoTransferWorkflow) midtransSignalTransaction(ctx workflow.Context, request *requests.CreateTransactionRequest, executionData *TransferExecutionData) (*midtrans_client.MidtransResponse, error) {
 	var midtransResponse *midtrans_client.MidtransResponse
 
-	err := t.workflow.StartChildWorkflow(ctx, fmt.Sprintf("MidtransTransaction-%s", request.IdempotencyKey), "MidtransTransaction", executionData.MidtransMessage, &midtransResponse)
+	err := t.workflow.StartChildWorkflow(ctx, fmt.Sprintf("%s-%s", sgMidtrans, request.IdempotencyKey), "MidtransTransaction", executionData.MidtransMessage, &midtransResponse)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start midtrans child workflow: %w", err)
 	}

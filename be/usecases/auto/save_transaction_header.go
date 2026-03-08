@@ -24,5 +24,6 @@ func (t *autoTransferWorkflow) saveTransactionHeader(ctx context.Context, execut
 	}
 
 	executionData.TransactionHeader = transactionHeader
+	executionData.SetNextActivity(autoTransferStockDeductionActivity)
 	return executionData, nil
 }

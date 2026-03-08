@@ -70,15 +70,14 @@ func (a *autoTransferWorkflow) registerWorkflowAndActivities() {
 			NonRetryableErrorTypes: nonRetryableErrorTypes,
 		},
 	}
-	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckUserActivity, sgNoNeed, a.checkUser, nil)
-	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckCafeActivity, sgNoNeed, a.checkCafe, nil)
-	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckFranchiseActivity, sgNoNeed, a.checkFranchise, nil)
-	a.workflow.AddTransitionActivityWithOptions(autoTransferSaveTransactionHeaderActivity, sgNoNeed, a.saveTransactionHeader, nil)
-	a.workflow.AddTransitionActivityWithOptions(autoTransferStockDeductionActivity, sgNoNeed, a.stockDeduction, ao)
-	a.workflow.AddTransitionActivityWithOptions(autoTransferPublishTransactionActivity, sgNoNeed, a.publishTransaction, nil)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckUserActivity, sgNoNeed, a.checkUser, nil, autoTransferCheckCafeActivity)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckCafeActivity, sgNoNeed, a.checkCafe, nil, autoTransferCheckFranchiseActivity)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferCheckFranchiseActivity, sgNoNeed, a.checkFranchise, nil, autoTransferSaveTransactionHeaderActivity)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferSaveTransactionHeaderActivity, sgNoNeed, a.saveTransactionHeader, nil, autoTransferStockDeductionActivity)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferStockDeductionActivity, sgNoNeed, a.stockDeduction, ao, autoTransferRestoreStockActivity, autoTransferPublishTransactionActivity)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferRestoreStockActivity, sgNoNeed, a.restoreStock, nil)
+	a.workflow.AddTransitionActivityWithOptions(autoTransferPublishTransactionActivity, sgNoNeed, a.publishTransaction, nil, autoTransferSaveTransactionDetailActivity)
 	a.workflow.AddTransitionActivityWithOptions(autoTransferSaveTransactionDetailActivity, sgNoNeed, a.saveTransactionDetail, nil)
-
-	a.workflow.AddBranchActivity(autoTransferRestoreStockActivity, a.restoreStock)
 
 	a.workflow.RegisterWorkflow("AutoTransfer", a.autoTransferWorkflow)
 }
@@ -91,7 +90,7 @@ func (a *autoTransferWorkflow) AutoTransfer(ctx context.Context, request *reques
 	}
 
 	workflowRun, err := a.workflow.StartWorkflow(ctx, temporal_client.StartWorkflowOptions{
-		WorkflowID: fmt.Sprintf("AutoTransfer-%s-%d", request.IdempotencyKey, time.Now().UnixNano()),
+		WorkflowID: fmt.Sprintf("AutoTransfer-%s", request.IdempotencyKey),
 	}, a.autoTransferWorkflow, userID, request)
 	if err != nil {
 		return nil, apperror.NewCustomError(apperror.ErrInternalServer, `failed to start workflow`, err)

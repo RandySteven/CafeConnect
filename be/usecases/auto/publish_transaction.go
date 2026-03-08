@@ -22,6 +22,6 @@ func (t *autoTransferWorkflow) publishTransaction(ctx context.Context, execution
 		CafeFranchiseName: executionData.Franchise.Name,
 		CheckoutList:      executionData.Request.Checkouts,
 	}
-
+	executionData.SetNextActivity(autoTransferSaveTransactionDetailActivity)
 	return executionData, nil
 }

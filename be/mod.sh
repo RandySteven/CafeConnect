@@ -28,3 +28,4 @@ go get gopkg.in/gomail.v2
 go get github.com/nsqio/go-nsq
 go get go.temporal.io/sdk/client
 go get go.temporal.io/sdk/worker
+go get github.com/stripe/stripe-go/v84

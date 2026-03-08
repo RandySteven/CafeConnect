@@ -16,5 +16,6 @@ func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, executionData
 	}
 
 	executionData.Franchise = franchise
+	executionData.SetNextActivity(autoTransferSaveTransactionHeaderActivity)
 	return executionData, nil
 }

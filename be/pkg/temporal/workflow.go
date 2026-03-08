@@ -3,6 +3,7 @@ package temporal_client
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"go.temporal.io/sdk/client"
@@ -21,15 +22,22 @@ type (
 	// After branching, execution stops (the branch path runs to completion,
 	// then Execute returns). The workflow function can inspect the state to
 	// decide what to do next.
-	Navigable interface {
+	NavigatableActivity interface {
+		GetCurrentActivity() string
+		SetCurrentActivity(name string)
 		GetNextActivity() string
 		SetNextActivity(name string)
+	}
+
+	SignalActivity struct {
 	}
 
 	ActivityExecutionInfo struct {
 		ActivityName    string
 		SignalName      string
+		ActivityFn      interface{}
 		ActivityOptions *workflow.ActivityOptions
+		NextActivities  []string
 	}
 
 	WorkflowExecutionData struct {
@@ -38,8 +46,10 @@ type (
 		CurrState              string
 		RunID                  string
 		SignalEvent            string
-		activityExecutionInfos []ActivityExecutionInfo          
+		activityExecutionInfos []ActivityExecutionInfo
 		branchActivities       map[string]ActivityExecutionInfo // branch-only targets (compensation, etc.)
+		activity               map[string]ActivityExecutionInfo
+		firstActivity          string
 		StartedAt              time.Time
 		CompletedAt            time.Time
 
@@ -57,7 +67,7 @@ type (
 		// AddTransitionActivityWithOptions registers an activity with the Temporal worker and adds it
 		// to the sequential execution pipeline. Activities run in the order they are added.
 		// It is used to add an activity with options to the sequential execution pipeline.
-		AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options *workflow.ActivityOptions)
+		AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options *workflow.ActivityOptions, nextActivities ...string)
 
 		// AddBranchActivity registers an activity that is only reachable via branching.
 		// It is NOT part of the sequential pipeline — it only runs when another activity
@@ -84,7 +94,11 @@ type (
 		// It is used to start a new child workflow execution and returns the run ID.
 		StartChildWorkflow(ctx workflow.Context, workflowID string, signalName string, request interface{}, result interface{}) error
 
+		//SignalWorkflow signals a workflow.
 		SignalWorkflow(ctx context.Context, workflowID string, runID string, signalName string, arg interface{}) error
+
+		//Goroutine workflow run
+		Goroutine(ctx workflow.Context, goroutineFn func(ctx workflow.Context))
 	}
 )
 
@@ -93,25 +107,34 @@ type (
 // to that activity (which must be registered via AddBranchActivity). After the branch
 // chain completes, Execute returns — it does NOT resume the sequential pipeline.
 func (w *WorkflowExecutionData) Execute(ctx workflow.Context, executionData interface{}) error {
-	navigable, hasBranching := executionData.(Navigable)
+	navigable, _ := executionData.(NavigatableActivity)
+	currActivity := w.activity[w.firstActivity]
 
-	for i := 0; i < len(w.activityExecutionInfos); i++ {
-		info := w.activityExecutionInfos[i]
-
-		if err := w.runActivity(ctx, info, executionData); err != nil {
+	for currActivity.NextActivities != nil {
+		if err := w.runActivity(ctx, currActivity, executionData, navigable); err != nil {
 			return err
 		}
 
-		// Check if the activity wants to branch
-		if hasBranching {
-			if next := navigable.GetNextActivity(); next != "" {
-				navigable.SetNextActivity("")
-				return w.executeBranch(ctx, next, executionData, navigable)
-			}
+		nextActivity, err := w.getNextActivity(currActivity, navigable.GetNextActivity())
+		if err != nil {
+			return err
 		}
+
+		currActivity = *nextActivity
 	}
 
 	return nil
+}
+
+func (w *WorkflowExecutionData) getNextActivity(currActivity ActivityExecutionInfo, nextActivity string) (*ActivityExecutionInfo, error) {
+	log.Println("next activity", nextActivity)
+	for _, info := range currActivity.NextActivities {
+		if info == nextActivity {
+			result := w.activity[info]
+			return &result, nil
+		}
+	}
+	return nil, fmt.Errorf("next activity not found")
 }
 
 // StartWorkflow starts a new workflow execution and returns the run ID.
@@ -131,7 +154,7 @@ func (w *WorkflowExecutionData) SignalWorkflow(ctx context.Context, workflowID s
 // executeBranch follows a chain of branch activities. Each branch activity
 // can set NextActivity to chain to another branch activity. When an activity
 // does not set NextActivity, the chain ends and executeBranch returns.
-func (w *WorkflowExecutionData) executeBranch(ctx workflow.Context, activityName string, executionData interface{}, navigable Navigable) error {
+func (w *WorkflowExecutionData) executeBranch(ctx workflow.Context, activityName string, executionData interface{}, navigable NavigatableActivity) error {
 	current := activityName
 	for current != "" {
 		info, ok := w.branchActivities[current]
@@ -139,31 +162,40 @@ func (w *WorkflowExecutionData) executeBranch(ctx workflow.Context, activityName
 			return fmt.Errorf("branch activity %q not found", current)
 		}
 
-		if err := w.runActivity(ctx, info, executionData); err != nil {
+		if err := w.runActivity(ctx, info, executionData, navigable); err != nil {
 			return err
 		}
 
-		current = navigable.GetNextActivity()
-		navigable.SetNextActivity("")
+		current = navigable.GetCurrentActivity()
+		navigable.SetCurrentActivity("")
 	}
 	return nil
 }
 
 // runActivity executes a single activity and handles its signal if present.
-func (w *WorkflowExecutionData) runActivity(ctx workflow.Context, info ActivityExecutionInfo, executionData interface{}) error {
+func (w *WorkflowExecutionData) runActivity(ctx workflow.Context, info ActivityExecutionInfo, executionData interface{}, navigable NavigatableActivity) error {
 	activityCtx := ctx
 
 	if info.ActivityOptions != nil {
 		activityCtx = workflow.WithActivityOptions(ctx, *info.ActivityOptions)
 	}
 
-	future := workflow.ExecuteActivity(activityCtx, info.ActivityName, executionData)
+	future := workflow.ExecuteActivity(activityCtx, info.ActivityFn, executionData)
 	if err := future.Get(ctx, executionData); err != nil {
 		return fmt.Errorf("activity %s failed: %w", info.ActivityName, err)
 	}
 
+	if navigable.GetCurrentActivity() != "" {
+		for _, nextActivity := range info.NextActivities {
+			if navigable.GetNextActivity() == nextActivity {
+				navigable.SetCurrentActivity(nextActivity)
+				return nil
+			}
+		}
+	}
+
 	if info.SignalName != "" {
-		if err := ExecuteChildWorkflow(ctx, info.SignalName, executionData); err != nil {
+		if err := w.StartChildWorkflow(ctx, w.WorkflowID, info.SignalName, executionData, executionData); err != nil {
 			return fmt.Errorf("child workflow for activity %s failed: %w", info.ActivityName, err)
 		}
 	}
@@ -217,32 +249,28 @@ func (w *WorkflowExecutionData) GetWorkflowExecutionData(wfCtx workflow.Context,
 	return nil
 }
 
-func ExecuteChildWorkflow(ctx workflow.Context, signalName string, request interface{}) error {
-	childWorkflowRun := workflow.ExecuteChildWorkflow(ctx, "ChildWorkflow")
-	var workflowExecution workflow.Execution
-	if err := childWorkflowRun.GetChildWorkflowExecution().Get(ctx, &workflowExecution); err != nil {
-		return fmt.Errorf("failed to get child workflow execution: %w", err)
-	}
-
-	sigFuture := workflow.SignalExternalWorkflow(ctx, workflowExecution.ID, workflowExecution.RunID, signalName, request)
-	if err := sigFuture.Get(ctx, nil); err != nil {
-		return fmt.Errorf("failed to signal child workflow: %w", err)
-	}
-
-	return nil
-}
-
-func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options *workflow.ActivityOptions) {
+func (w *WorkflowExecutionData) AddTransitionActivityWithOptions(activityName string, signalName string, activityFn interface{}, options *workflow.ActivityOptions, nextActivities ...string) {
 	w.temporalClient.RegisterActivity(ActivityDefinition{
 		Name: activityName,
 		Fn:   activityFn,
 	})
 
-	w.activityExecutionInfos = append(w.activityExecutionInfos, ActivityExecutionInfo{
+	//initiate first activity
+	if len(w.activity) == 0 {
+		w.firstActivity = activityName
+	}
+
+	w.activity[activityName] = ActivityExecutionInfo{
 		ActivityName:    activityName,
 		SignalName:      signalName,
+		ActivityFn:      activityFn,
 		ActivityOptions: options,
-	})
+		NextActivities:  nextActivities,
+	}
+
+	for _, nextActivity := range nextActivities {
+		w.activity[nextActivity] = ActivityExecutionInfo{}
+	}
 }
 
 func (w *WorkflowExecutionData) StartChildWorkflow(ctx workflow.Context, workflowID string, signalName string, request interface{}, result interface{}) error {
@@ -268,6 +296,10 @@ func (w *WorkflowExecutionData) StartChildWorkflow(ctx workflow.Context, workflo
 	return nil
 }
 
+func (w *WorkflowExecutionData) Goroutine(ctx workflow.Context, goroutineFn func(ctx workflow.Context)) {
+	workflow.Go(ctx, goroutineFn)
+}
+
 // NewWorkflowExecution creates a new WorkflowExecution.
 // It is used to create a new WorkflowExecution.
 func NewWorkflowExecution(
@@ -277,5 +309,6 @@ func NewWorkflowExecution(
 		activityExecutionInfos: make([]ActivityExecutionInfo, 0),
 		branchActivities:       make(map[string]ActivityExecutionInfo),
 		temporalClient:         temporalClient,
+		activity:               make(map[string]ActivityExecutionInfo),
 	}
 }

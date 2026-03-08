@@ -12,13 +12,16 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData
 		if err != nil {
 			// Something already deducted — branch to compensation
 			executionData.StockDeductionFailed = true
-			executionData.NextActivity = autoTransferRestoreStockActivity
+			executionData.CurrentActivity = autoTransferRestoreStockActivity
 			return executionData, nil
 		}
-		if cafeProduct.Stock < checkout.Qty {
+		// if index == 1 {
+		// 	return nil, fmt.Errorf("dummy error")
+		// }
+		if cafeProduct.Stock <= checkout.Qty {
 			// Insufficient stock — branch to compensation to undo prior deductions
 			executionData.StockDeductionFailed = true
-			executionData.NextActivity = autoTransferRestoreStockActivity
+			executionData.SetNextActivity(autoTransferRestoreStockActivity)
 			return executionData, nil
 			// return nil, fmt.Errorf("insufficient stock for product %d", checkout.CafeProductID)
 		}
@@ -28,7 +31,7 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData
 		_, err = t.cafeProductRepository.Update(ctx, cafeProduct)
 		if err != nil {
 			executionData.StockDeductionFailed = true
-			executionData.NextActivity = autoTransferRestoreStockActivity
+			executionData.SetNextActivity(autoTransferRestoreStockActivity)
 			return executionData, nil
 		}
 
@@ -38,6 +41,7 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData
 			Qty:           checkout.Qty,
 		})
 	}
+	executionData.SetNextActivity(autoTransferPublishTransactionActivity)
 	return executionData, nil
 }
 

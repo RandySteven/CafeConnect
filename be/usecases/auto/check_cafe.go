@@ -16,5 +16,6 @@ func (t *autoTransferWorkflow) checkCafe(ctx context.Context, executionData *Tra
 	}
 
 	executionData.Cafe = cafe
+	executionData.SetNextActivity(autoTransferCheckFranchiseActivity)
 	return executionData, nil
 }

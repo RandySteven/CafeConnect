@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	for _, checkout := range executionData.Request.Checkouts {
 		cafeProduct, err := t.cafeProductRepository.FindByID(ctx, checkout.CafeProductID)
 		if err != nil {
@@ -21,7 +21,7 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData
 		if cafeProduct.Stock <= checkout.Qty {
 			// Insufficient stock — branch to compensation to undo prior deductions
 			executionData.StockDeductionFailed = true
-			executionData.SetNextActivity(autoTransferRestoreStockActivity)
+			executionData.SetActivity(autoTransferRestoreStockActivity)
 			return executionData, nil
 			// return nil, fmt.Errorf("insufficient stock for product %d", checkout.CafeProductID)
 		}
@@ -31,7 +31,7 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData
 		_, err = t.cafeProductRepository.Update(ctx, cafeProduct)
 		if err != nil {
 			executionData.StockDeductionFailed = true
-			executionData.SetNextActivity(autoTransferRestoreStockActivity)
+			executionData.SetActivity(autoTransferRestoreStockActivity)
 			return executionData, nil
 		}
 
@@ -41,11 +41,11 @@ func (t *autoTransferWorkflow) stockDeduction(ctx context.Context, executionData
 			Qty:           checkout.Qty,
 		})
 	}
-	executionData.SetNextActivity(autoTransferPublishTransactionActivity)
+	executionData.SetActivity(autoTransferPublishTransactionActivity)
 	return executionData, nil
 }
 
-func (t *autoTransferWorkflow) restoreStock(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) restoreStock(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	for _, dp := range executionData.DeductedProducts {
 		cafeProduct, err := t.cafeProductRepository.FindByID(ctx, dp.CafeProductID)
 		if err != nil {

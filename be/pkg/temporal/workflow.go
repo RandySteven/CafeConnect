@@ -23,10 +23,8 @@ type (
 	// then Execute returns). The workflow function can inspect the state to
 	// decide what to do next.
 	NavigatableActivity interface {
-		GetCurrentActivity() string
-		SetCurrentActivity(name string)
-		GetNextActivity() string
-		SetNextActivity(name string)
+		SetActivity(activityName string)
+		GetActivity() string
 	}
 
 	SignalActivity struct {
@@ -41,16 +39,15 @@ type (
 	}
 
 	WorkflowExecutionData struct {
-		ID                     uint64
-		WorkflowID             string
-		CurrState              string
-		RunID                  string
-		SignalEvent            string
-		activityExecutionInfos []ActivityExecutionInfo
-		activity               map[string]*ActivityExecutionInfo
-		firstActivity          string
-		StartedAt              time.Time
-		CompletedAt            time.Time
+		ID            uint64
+		WorkflowID    string
+		RunID         string
+
+		activity      map[string]*ActivityExecutionInfo
+		firstActivity string
+		StartedAt     time.Time
+
+		CompletedAt   time.Time
 
 		temporalClient Temporal
 	}
@@ -58,10 +55,6 @@ type (
 	WorkflowExecution interface {
 		// Execute runs the sequential activity pipeline, threading state through each activity.
 		Execute(ctx workflow.Context, executionData interface{}) error
-
-		// AddTransitionActivity registers an activity with the Temporal worker and adds it
-		// to the sequential execution pipeline. Activities run in the order they are added.
-		AddTransitionActivity(activityName string, signalName string, activityFn interface{})
 
 		// AddTransitionActivityWithOptions registers an activity with the Temporal worker and adds it
 		// to the sequential execution pipeline. Activities run in the order they are added.
@@ -92,6 +85,10 @@ type (
 
 		//Goroutine workflow run
 		Goroutine(ctx workflow.Context, goroutineFn func(ctx workflow.Context))
+
+		//GetSignalResult gets the signal result from the Temporal server.
+		//It is used to get the signal result from the Temporal server.
+		GetSignalResult(ctx workflow.Context, signalName string, result interface{}) error
 	}
 )
 
@@ -103,18 +100,31 @@ func (w *WorkflowExecutionData) Execute(ctx workflow.Context, executionData inte
 	navigable, _ := executionData.(NavigatableActivity)
 	currActivity := w.activity[w.firstActivity]
 
+	w.StartedAt = time.Now()
+
 	for currActivity != nil {
 		if err := w.runActivity(ctx, currActivity, executionData, navigable); err != nil {
 			return err
 		}
 
-		currActivity = w.getNextActivity(currActivity, navigable.GetNextActivity())
+		if currActivity.NextActivities == nil {
+			break
+		}
+
+		nextActivity := navigable.GetActivity()
+		if nextActivity == "" {
+			break
+		}
+
+		currActivity = w.getNextActivity(currActivity, nextActivity)
 	}
+
+	w.CompletedAt = time.Now()
 
 	return nil
 }
 
-func (w *WorkflowExecutionData) getNextActivity(currActivity *ActivityExecutionInfo, nextActivity string) (*ActivityExecutionInfo) {
+func (w *WorkflowExecutionData) getNextActivity(currActivity *ActivityExecutionInfo, nextActivity string) *ActivityExecutionInfo {
 	log.Println("next activity", nextActivity)
 	for _, info := range currActivity.NextActivities {
 		if info == nextActivity {
@@ -151,10 +161,10 @@ func (w *WorkflowExecutionData) runActivity(ctx workflow.Context, info *Activity
 		return fmt.Errorf("activity %s failed: %w", info.ActivityName, err)
 	}
 
-	if navigable.GetCurrentActivity() != "" {
+	if navigable.GetActivity() != "" {
 		for _, nextActivity := range info.NextActivities {
-			if navigable.GetNextActivity() == nextActivity {
-				navigable.SetCurrentActivity(nextActivity)
+			if navigable.GetActivity() == nextActivity {
+				navigable.SetActivity(nextActivity)
 				return nil
 			}
 		}
@@ -166,20 +176,6 @@ func (w *WorkflowExecutionData) runActivity(ctx workflow.Context, info *Activity
 		}
 	}
 	return nil
-}
-
-// AddTransitionActivity registers an activity with the Temporal worker and adds it
-// to the sequential execution pipeline. Activities run in the order they are added.
-func (w *WorkflowExecutionData) AddTransitionActivity(activityName string, signalName string, activityFn interface{}) {
-	w.temporalClient.RegisterActivity(ActivityDefinition{
-		Name: activityName,
-		Fn:   activityFn,
-	})
-
-	w.activityExecutionInfos = append(w.activityExecutionInfos, ActivityExecutionInfo{
-		ActivityName: activityName,
-		SignalName:   signalName,
-	})
 }
 
 // RegisterWorkflow registers a workflow with the Temporal worker.
@@ -251,14 +247,29 @@ func (w *WorkflowExecutionData) Goroutine(ctx workflow.Context, goroutineFn func
 	workflow.Go(ctx, goroutineFn)
 }
 
+// GetSignalResult gets the signal result from the Temporal server.
+// It is used to get the signal result from the Temporal server.
+func (w *WorkflowExecutionData) GetSignalResult(ctx workflow.Context, signalName string, result interface{}) error {
+	resultSelector := workflow.NewSelector(ctx)
+
+	resultChan := workflow.GetSignalChannel(ctx, signalName)
+
+	resultSelector.AddReceive(resultChan, func(c workflow.ReceiveChannel, more bool) {
+		c.Receive(ctx, result)
+	})
+
+	resultSelector.Select(ctx)
+
+	return nil
+}
+
 // NewWorkflowExecution creates a new WorkflowExecution.
 // It is used to create a new WorkflowExecution.
 func NewWorkflowExecution(
 	temporalClient Temporal,
 ) WorkflowExecution {
 	return &WorkflowExecutionData{
-		activityExecutionInfos: make([]ActivityExecutionInfo, 0),
-		temporalClient:         temporalClient,
-		activity:               make(map[string]*ActivityExecutionInfo),
+		temporalClient: temporalClient,
+		activity:       make(map[string]*ActivityExecutionInfo),
 	}
 }

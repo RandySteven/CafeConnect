@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	franchise, err := t.cafeFranchiseRepository.FindByID(ctx, executionData.Cafe.CafeFranchiseID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get franchise: %w", err)
@@ -16,6 +16,6 @@ func (t *autoTransferWorkflow) checkFranchise(ctx context.Context, executionData
 	}
 
 	executionData.Franchise = franchise
-	executionData.SetNextActivity(autoTransferSaveTransactionHeaderActivity)
+	executionData.SetActivity(autoTransferSaveTransactionHeaderActivity)
 	return executionData, nil
 }

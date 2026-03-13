@@ -9,7 +9,7 @@ import (
 	"github.com/midtrans/midtrans-go"
 )
 
-func (m *midtransWorkflow) checkoutList(ctx context.Context, executionData *MidtransExecutionData) (*MidtransExecutionData, error) {
+func (m *midtransWorkflow) checkoutList(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	items := make([]midtrans.ItemDetails, len(executionData.Message.CheckoutList))
 	totalAmount := int64(0)
 	for i, item := range executionData.Message.CheckoutList {
@@ -47,6 +47,6 @@ func (m *midtransWorkflow) checkoutList(ctx context.Context, executionData *Midt
 		Items:           items,
 	}
 
-	executionData.SetNextActivity(createMidtransTransactionActivity)
+	executionData.SetActivity(createMidtransTransactionActivity)
 	return executionData, nil
 }

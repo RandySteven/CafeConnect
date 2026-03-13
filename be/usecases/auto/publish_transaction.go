@@ -7,7 +7,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *autoTransferWorkflow) publishTransaction(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) publishTransaction(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	fname, lname := utils.FirstLastName(executionData.User.Name)
 
 	// Build the Midtrans signal message for the child workflow
@@ -22,6 +22,6 @@ func (t *autoTransferWorkflow) publishTransaction(ctx context.Context, execution
 		CafeFranchiseName: executionData.Franchise.Name,
 		CheckoutList:      executionData.Request.Checkouts,
 	}
-	executionData.SetNextActivity(autoTransferSaveTransactionDetailActivity)
+	executionData.SetActivity(autoTransferSaveTransactionDetailActivity)
 	return executionData, nil
 }

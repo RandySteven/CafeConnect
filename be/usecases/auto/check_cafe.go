@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (t *autoTransferWorkflow) checkCafe(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) checkCafe(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	cafe, err := t.cafeRepository.FindByID(ctx, executionData.Request.CafeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cafe: %w", err)
@@ -16,6 +16,6 @@ func (t *autoTransferWorkflow) checkCafe(ctx context.Context, executionData *Tra
 	}
 
 	executionData.Cafe = cafe
-	executionData.SetNextActivity(autoTransferCheckFranchiseActivity)
+	executionData.SetActivity(autoTransferCheckFranchiseActivity)
 	return executionData, nil
 }

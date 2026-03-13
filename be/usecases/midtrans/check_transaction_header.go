@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (m *midtransWorkflow) checkTransactionHeader(ctx context.Context, executionData *MidtransExecutionData) (*MidtransExecutionData, error) {
+func (m *midtransWorkflow) checkTransactionHeader(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	transactionHeader, err := m.transactionHeaderRepository.FindByTransactionCode(ctx, executionData.Message.TransactionCode)
 	if err != nil {
 		return nil, err
@@ -16,6 +16,6 @@ func (m *midtransWorkflow) checkTransactionHeader(ctx context.Context, execution
 	}
 
 	executionData.TransactionHeader = transactionHeader
-	executionData.SetNextActivity(checkoutListActivity)
+	executionData.SetActivity(checkoutListActivity)
 	return executionData, nil
 }

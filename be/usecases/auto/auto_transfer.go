@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/RandySteven/CafeConnect/be/entities/messages"
-	"github.com/RandySteven/CafeConnect/be/entities/models"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/requests"
 	"github.com/RandySteven/CafeConnect/be/entities/payloads/responses"
 	midtrans_client "github.com/RandySteven/CafeConnect/be/pkg/midtrans"
@@ -23,49 +21,6 @@ var (
 	}
 )
 
-// DeductedProduct tracks a stock deduction that was applied, so it can
-// be rolled back by the restoreStock compensation activity.
-type DeductedProduct struct {
-	CafeProductID uint64 `json:"cafe_product_id"`
-	Qty           uint64 `json:"qty"`
-}
-
-type TransferExecutionData struct {
-	// Request inputs data
-	UserID  uint64                             `json:"user_id"`
-	Request *requests.CreateTransactionRequest `json:"request"`
-
-	// Intermediate results — populated by activities
-	User              *models.User                         `json:"user,omitempty"`
-	Cafe              *models.Cafe                         `json:"cafe,omitempty"`
-	Franchise         *models.CafeFranchise                `json:"franchise,omitempty"`
-	TransactionHeader *models.TransactionHeader            `json:"transaction_header,omitempty"`
-	MidtransMessage   *messages.TransactionMidtransMessage `json:"midtrans_message,omitempty"`
-	MidtransResponse  *midtrans_client.MidtransResponse    `json:"midtrans_response,omitempty"`
-
-	// Branching — controls which activity runs next.
-	// If empty, Execute follows the default sequential order.
-	// Set to an activity name to branch (e.g., for compensation).
-	CurrentActivity string `json:"current_activity,omitempty"`
-	NextActivity    string `json:"next_activity,omitempty"`
-
-	// Compensation tracking
-	DeductedProducts     []*DeductedProduct `json:"deducted_products,omitempty"`
-	StockDeductionFailed bool               `json:"stock_deduction_failed,omitempty"`
-}
-
-// GetCurrentActivity implements temporal_client.NavigatableActivity.
-func (s *TransferExecutionData) GetCurrentActivity() string { return s.CurrentActivity }
-
-// SetCurrentActivity implements temporal_client.NavigatableActivity.
-func (s *TransferExecutionData) SetCurrentActivity(name string) { s.CurrentActivity = name }
-
-// GetNextActivity implements temporal_client.NavigatableActivity.
-func (s *TransferExecutionData) GetNextActivity() string { return s.NextActivity }
-
-// SetNextActivity implements temporal_client.NavigatableActivity.
-func (s *TransferExecutionData) SetNextActivity(name string) { s.NextActivity = name }
-
 func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context, userID uint64, request *requests.CreateTransactionRequest) (result *responses.TransactionReceiptResponse, err error) {
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
@@ -79,7 +34,7 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 	}
 	ctx := workflow.WithActivityOptions(workflowCtx, ao)
 
-	executionData := &TransferExecutionData{
+	executionData := &ExecutionData{
 		UserID:  userID,
 		Request: request,
 	}
@@ -109,7 +64,7 @@ func (t *autoTransferWorkflow) autoTransferWorkflow(workflowCtx workflow.Context
 	}, nil
 }
 
-func (t *autoTransferWorkflow) midtransSignalTransaction(ctx workflow.Context, request *requests.CreateTransactionRequest, executionData *TransferExecutionData) (*midtrans_client.MidtransResponse, error) {
+func (t *autoTransferWorkflow) midtransSignalTransaction(ctx workflow.Context, request *requests.CreateTransactionRequest, executionData *ExecutionData) (*midtrans_client.MidtransResponse, error) {
 	var midtransResponse *midtrans_client.MidtransResponse
 
 	err := t.workflow.StartChildWorkflow(ctx, fmt.Sprintf("%s-%s", sgMidtrans, request.IdempotencyKey), "MidtransTransaction", executionData.MidtransMessage, &midtransResponse)

@@ -10,7 +10,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/utils"
 )
 
-func (t *autoTransferWorkflow) saveTransactionHeader(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) saveTransactionHeader(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	transactionHeader := &models.TransactionHeader{
 		UserID:          executionData.User.ID,
 		TransactionCode: utils.GenerateCode(24),
@@ -24,6 +24,6 @@ func (t *autoTransferWorkflow) saveTransactionHeader(ctx context.Context, execut
 	}
 
 	executionData.TransactionHeader = transactionHeader
-	executionData.SetNextActivity(autoTransferStockDeductionActivity)
+	executionData.SetActivity(autoTransferStockDeductionActivity)
 	return executionData, nil
 }

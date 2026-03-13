@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func (t *autoTransferWorkflow) checkUser(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) checkUser(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	user, err := t.userRepository.FindByID(ctx, executionData.UserID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
@@ -16,6 +16,6 @@ func (t *autoTransferWorkflow) checkUser(ctx context.Context, executionData *Tra
 	}
 
 	executionData.User = user
-	executionData.SetNextActivity(autoTransferCheckCafeActivity)
+	executionData.SetActivity(autoTransferCheckCafeActivity)
 	return executionData, nil
 }

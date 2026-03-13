@@ -7,7 +7,7 @@ import (
 	"github.com/RandySteven/CafeConnect/be/entities/models"
 )
 
-func (t *autoTransferWorkflow) saveTransactionDetail(ctx context.Context, executionData *TransferExecutionData) (*TransferExecutionData, error) {
+func (t *autoTransferWorkflow) saveTransactionDetail(ctx context.Context, executionData *ExecutionData) (*ExecutionData, error) {
 	for _, checkout := range executionData.Request.Checkouts {
 		transactionDetail := &models.TransactionDetail{
 			TransactionID: executionData.TransactionHeader.ID,
